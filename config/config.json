@@ -1,0 +1,26 @@
+{
+  "port": 5555,
+  "AdministratorId": "5a97c4eb0d1b2b07281cda93",
+  "mongoose": {
+    "url": "mongodb://localhost/EMPS",
+    "options": {
+      "server": {
+        "socketOptions": {
+          "keepAlive": 1
+        }
+      }
+    }
+  },
+  "session": {
+    "secret": "FackYouSpielbirg",
+    "resave": true,
+    "saveUninitialized": true,
+    "key": "sid",
+    "cookie": {
+      "path": "/",
+      "httpOnly": true,
+      "maxAge": null
+    }
+  }
+}
+

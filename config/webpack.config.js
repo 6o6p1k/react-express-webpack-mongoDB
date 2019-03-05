@@ -1,0 +1,53 @@
+const path = require('path');
+const WriteFilePlugin = require('write-file-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require("webpack");
+
+
+console.log('webPack output path: ',path.resolve(__dirname, '../public/js'));
+
+module.exports = {
+    mode: 'development',
+    devtool: 'inline-source-map',
+
+    devServer: {
+        contentBase: './public',
+        hot: true
+    },
+
+
+
+    entry: {
+        main: [path.resolve(__dirname, '../src/index.js'),"webpack-hot-middleware/client?path=/__webpack_hmr&timeout=20000"]
+    },
+
+    output: {
+        path: path.resolve(__dirname, '../public/js'),
+        filename: 'bundle.js',
+        publicPath: '/' || path.resolve(__dirname, '../public/'),
+    },
+    module: {
+        rules: [
+            {
+                test: /\.js?$/,
+                loader: ['babel-loader'],
+                exclude: /node_modules/,
+            },
+            {
+                test: /\.css$/,
+                use: [ 'style-loader', 'css-loader' ]
+            },
+
+        ]
+    },
+    plugins: [
+        new WriteFilePlugin({
+            // exclude hot-update files
+            test: /^(?!.*(hot)).*/,
+        }),
+        new HtmlWebpackPlugin({
+            template: path.resolve(__dirname, '../public/htmlTemp/index.html')
+        }),
+        new webpack.HotModuleReplacementPlugin()
+    ],
+};
