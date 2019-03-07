@@ -138,6 +138,88 @@ module.exports = function (server) {
         globalChatUsers[username] = {sockedId:reqSocketId};//update global chat users obj
         socket.broadcast.emit('addUsers',{name:username,sId:globalChatUsers[username].sockedId});//send to all users what they must add you
         //console.log('globalChatUsers: ',globalChatUsers);
+        //get extended user data
+        socket.on('getExtendedUserData', async function (name,cb) {
+            console.log('getUserData: ',name);
+            if(!globalChatUsers[username]) return cb(new HttpError(401, 'Socket connection err. Please reconnect and try one more.'));
+            let {err,user} = await User.findOne({username:name});
+            if(err) return (new DevError(500, 'DB err: ' + err));
+            if(user) return  cb(user);
+        });
+        //req to add me to contact list
+        socket.on('addMe', async function (data,cb) {
+            console.log('addMe: ',data);
+            let {errRequesting,userRequesting} = await User.find({username:username});//get requesting user
+            let {errRequested,userRequested} = await User.find({username:data.name});//get requested user
+            if(errRequesting || errRequested) return cb("Request send filed. No users found named "+ data.name + "&" + username);
+            userRequesting.blockedContacts.push(data.name);
+            userRequested.blockedContacts.push(username);
+            await userRequesting.save();
+            await userRequested.save();
+
+            let {errMessage,mes} = await Message.messageHandler({members:[username,data.name]});
+            if(errMessage) return cb("Request send filed. Something wrong");
+            if(mes.messages.length === 0) {//Save message in DB only one time
+                await Message.messageHandler({members:[username,data.name],message:{
+                    user: username,
+                    text: "Do you want add user name:"+username+" to you contact list?",
+                    status: false,
+                    date: data.date}});
+                if(globalChatUsers[data.name]) {//Send message "Add me to you contact list" if user online
+                    socket.broadcast.to(globalChatUsers[data.name].id).emit('addMe', {
+                        user: username,
+                        text: "Do you want add user name: "+username+" to you contact list?",
+                        status: false,
+                        date: data.date});
+                }
+                return cb("Request send successful")
+            }else return cb("You always send request. Await then user response you.");
+        });
+        //res to add me
+        socket.on('resAddMe', async function (data,cb) {
+            console.log('resAddMe: ',data);
+            let {errRequesting,userRequesting} = await User.find({username:username});//get requesting user
+            let {errRequested,userRequested} = await User.find({username:data.name});//get requested user
+            if(errRequesting || errRequested) return cb("Request send filed. No users found named "+ data.name + "&" + username);
+            userRequesting.blockedContacts.filter(itm=> itm === data.name);
+            userRequested.blockedContacts.filter(itm=> itm === username);
+            userRequesting.contacts.push(data.name);
+            userRequested.contacts.push(username);
+            await userRequesting.save();
+            await userRequested.save();
+            if(globalChatUsers[data.name]) {//Send message "Add me to you contact list" if user online
+                socket.broadcast.to(globalChatUsers[data.name].id).emit('addMe', {
+                    user: username,
+                    text: "User name:"+username+" add you for his contact list.",
+                    status: false,
+                    date: data.date});
+            }
+
+            cb("User name"+data.name+"added to you contact list")
+
+        });
+        //Add users to contact list
+        socket.on('addUsers', async function (data,cb) {
+            console.log('addUsers: ',data);
+
+            let {err,user} = await User.userAddToContacts(data);
+            if(err) return (new DevError(500, 'DB err: ' + err));
+            if(user) return  cb(user);
+        });
+        //Remuve users to contact list
+        socket.on('remUsers', async function (data,cb) {
+            console.log('remUsers: ',data);
+            let {err,user} = await User.userRemFromContacts(data);
+            if(err) return (new DevError(500, 'DB err: ' + err));
+            if(user) return  cb(user);
+        });
+        //Find contacts
+        socket.on('findContacts', async function (data,cb) {
+            console.log('findContacts: ',data);
+            let {err,users} = await User.userFindContacts(data);
+            if(err) return (new DevError(500, 'DB err: ' + err));
+            if(users) return  cb(users);
+        });
         //chat users list cb
         socket.on('getUsers', function (cb) {
             console.log('globalChatUsers: ',globalChatUsers);

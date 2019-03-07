@@ -11,7 +11,8 @@ var user = new mongoose.Schema({
     salt: {type: String, required: true},
     created: {type: Date, default: Date.now},
     //email: { type: String, lowercase: true, unique: true },
-    contacts: []
+    contacts: [],
+    blockedContacts: []
 });
 var room = new mongoose.Schema({
     name: { type: String, lowercase: true, unique: true },
@@ -43,7 +44,7 @@ user.methods.checkPassword = function (password) {
     return this.encryptPassword(password) === this.hashedPassword;
 };
 
-message.statics.userRemFromContacts = async function (data) {
+user.statics.userRemFromContacts = async function (data) {
     var User = this;
     let user = {};
     let err = {};
@@ -65,7 +66,7 @@ message.statics.userRemFromContacts = async function (data) {
     }
 };
 
-message.statics.userAddToContacts = async function (data) {
+user.statics.userAddToContacts = async function (data) {
     var User = this;
     let user = {};
     let err = {};
@@ -79,14 +80,13 @@ message.statics.userAddToContacts = async function (data) {
         }else {
             return {err:err,user:null};
         }
-
     } catch(err) {
         console.log('userAddToContacts err: ',err);
         return {err:err,user:null};
     }
 };
 
-message.statics.userFindContacts = async function (nameString) {
+user.statics.userFindContacts = async function (nameString) {
     var User = this;
     let users = [];
     let err = {};
