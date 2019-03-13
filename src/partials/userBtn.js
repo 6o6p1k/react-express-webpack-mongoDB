@@ -10,24 +10,33 @@ class UserBtn extends React.Component {
         let itm = this.props.itm;
         let i = this.props.i;
         let messageBlockHandlerId = this.props.messageBlockHandlerId;
-        let users = this.props.users;
+        let userData = this.props.users;
         const inxHandler = this.props.inxHandler;
         const getUserLog = this.props.getUserLog;
         return (
-            <button key={i} onClick={()=>{inxHandler(i);getUserLog(itm.name,null)}} name={itm.name}  type="button" className={(messageBlockHandlerId === i)?"btn clicked":"btn"}>
+            <button key={i} onClick={()=>{inxHandler(i); getUserLog(itm.name,null)}} name={itm.name}  type="button" className={(messageBlockHandlerId === i)?"btn clicked":"btn"}>
                 {itm.name}
-                {(users[i].msgCounter !== 0)?(
-                    <div className="unread-mess">
-                        {users[i].msgCounter}
-                    </div>
-                ):('')}
-                <div className="typing">
-                    {(users[i].typing)?(
-                        <div className="loader">
-                            <span/>
+                {
+                    (userData)?(
+                        <div className="userItm">
+                            {
+                                (userData.msgCounter !== 0)?(
+                                    <div className="unread-mess">
+                                        {userData[i].msgCounter}
+                                    </div>
+                                ):('')
+                            }
+                            <div className="typing">
+                                {(userData.typing)?(
+                                    <div className="loader">
+                                        <span/>
+                                    </div>
+                                ):('')}
+                            </div>
                         </div>
-                    ):('')}
-                </div>
+                    ):("")
+                }
+
             </button>
         )
     }

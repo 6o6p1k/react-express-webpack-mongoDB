@@ -4,6 +4,8 @@ import io from 'socket.io-client';
 import {Redirect} from 'react-router-dom'
 import UserBtn from '../partials/userBtn.js'
 import Modal from '../partials/modalWindow.js'
+import Confirm from '../partials/confirmModalWindow.js'
+
 
 class Chat extends React.Component {
 
@@ -12,6 +14,7 @@ class Chat extends React.Component {
         super(props);
         this.state = {
             modalWindow:false,
+            modalFoundContacts:false,
             userBtnClassActive: false,
             errorRedirect: false,
             loginRedirect:false,
@@ -22,7 +25,12 @@ class Chat extends React.Component {
             message: '',
             users: [],
             filteredUsers: [],
+            foundContacts: [],
+            unregisteredContacts: [],
             messageBlockHandlerId: undefined,
+            confirmRes:undefined,
+            ConfirmModalWindow:false,
+            confirmMessage:""
         };
     }
 
@@ -44,9 +52,9 @@ class Chat extends React.Component {
         let socket = io.connect('', {reconnection: true});
         this.socket = socket
             .emit('getUsers', (data)=> {
-                console.log("getUsers: ",data);
+                //console.log("getUsers: ",data);
                 let userList = data.filter((itm)=> itm.name !== this.state.user.username);//filter != current user
-                console.log("userList filtered: ",userList);
+                //console.log("getUsers userList filtered: ",userList);
                 this.setState({users: userList});
             })
             .emit('getGlobalLog', (messages)=> {
@@ -109,7 +117,7 @@ class Chat extends React.Component {
         this.socket.emit('getUserLog',reqUsername,reqMesCountCb,(arr)=>{
             console.log("getUserLog: ",arr);
             reqUser.messages = arr;
-            this.setState({reqUser},()=>console.log("user[id]:",this.state.users[this.getUsersIdx(reqUsername)]))
+            this.setState({reqUser});
         })
     };
 
@@ -121,10 +129,24 @@ class Chat extends React.Component {
         return characters => characters.name.substring(0,str.length).toLowerCase() === str.toLowerCase();
     };
 
-    setFiltered = (nameStr) => {
+/*    setFiltered = (nameStr) => {
         if(nameStr.length === 0) this.setState({filteredUsers: []});
         this.setState({filteredUsers: this.state.users.filter(this.filterSearch(nameStr))});
         //console.log('nameStr: ',nameStr,', ','filteredUsers: ',this.state.filteredUsers);
+    };*/
+
+    setFiltered = (nameStr) => {
+        if(nameStr.length === 0) this.setState({filteredUsers: []});
+        this.setState({filteredUsers: this.state.users.filter(this.filterSearch(nameStr))},()=>{
+            if(this.state.filteredUsers.length === 0) {
+                this.socket.emit('findContacts', nameStr,(usersArr)=>{
+                    this.setState({
+                        foundContacts:usersArr,
+                        modalFoundContacts:true
+                    });
+                })
+            }
+        });
     };
 
     typing =(sId,ev)=> {
@@ -237,8 +259,34 @@ class Chat extends React.Component {
         this.setState({users: tempUsers});
     };
 
-    hideModal = () => {
+    hideModal =()=> {
         this.setState({modalWindow: false});
+    };
+
+    addMe =(name)=> {
+        this.setState({
+            ConfirmModalWindow:false,
+            confirmMessage:"Send a request to the user "+name+" to add you?"
+        })
+    };
+
+    confirmHandler = (confirmRes) => {
+        console.log('confirmRes: ',confirmRes);
+        if(confirmRes){
+            this.socket.emit('findContacts', nameStr,(usersArr)=>{
+                this.setState({
+                    foundContacts:usersArr,
+                    modalFoundContacts:true
+                });
+            })
+        }else{
+
+        }
+        this.setState({
+            confirmRes: confirmRes,
+            ConfirmModalWindow: false,
+            confirmMessage:""
+        });
     };
 
 
@@ -267,13 +315,16 @@ class Chat extends React.Component {
                 </button>
             )
         };*/
-        //console.log('/chat user:', this.state.user);
+        //console.log('/chat user:', this.state);
         if(this.state.errorRedirect) {return <Redirect to='/error'/>}//passing props in Redirect to={{pathname:'/error',state:{error:this.state.err}}} get props: this.props.location.state.error
         if(this.state.loginRedirect) {return <Redirect to='/login'/>}
         return (
             <Page user={this.state.user} title="CHAT PAGE" className="container">
                 {(this.state.modalWindow)?(
                     <Modal show={this.state.modalWindow} handleClose={this.hideModal} err={this.state.err}/>
+                ):('')}
+                {(this.state.ConfirmModalWindow)?(
+                    <Confirm confirmHandler={this.confirmHandler} show={this.state.ConfirmModalWindow} message={this.state.confirmMessage}/>
                 ):('')}
                 <div className="chat-room">
                     <div className="chat-users">
@@ -291,13 +342,49 @@ class Chat extends React.Component {
                             </button>
                             {
                                 (this.state.filteredUsers.length === 0)?(
-                                    this.state.users.map((itm,i) => <UserBtn key={i} itm={itm} i={i} getUserLog={this.getUserLog} inxHandler={this.inxHandler} users={this.state.users} messageBlockHandlerId={this.state.messageBlockHandlerId}/>)
+                                    (this.state.foundContacts.length !== 0)? (
+                                        this.state.foundContacts.map((name,i) =><UserBtn
+                                            key={i}
+                                            i={i}
+                                            itm={{name:name}}
+                                            addMe={this.addMe(name)}
+                                        />)
+                                    ):(
+                                        this.state.users.map((itm,i) => <UserBtn
+                                            key={i}
+                                            itm={itm}
+                                            i={i}
+                                            getUserLog={this.getUserLog}
+                                            inxHandler={this.inxHandler}
+                                            userData={this.state.users[this.getUsersIdx(itm.name)]}
+                                            messageBlockHandlerId={this.state.messageBlockHandlerId}
+                                        />)
+                                    )
+
                                 ):(
                                     this.state.users.filter(items => this.state.filteredUsers
                                         .map(i => i.name)
                                         .includes(items.name))
-                                        .map((itm,i) => <UserBtn key={i} itm={itm} i={this.getUsersIdx(itm.name)} getUserLog={this.getUserLog} inxHandler={this.inxHandler} users={this.state.users} messageBlockHandlerId={this.state.messageBlockHandlerId}/>)
+                                        .map((itm,i) => <UserBtn
+                                            key={i}
+                                            itm={itm}
+                                            i={this.getUsersIdx(itm.name)}
+                                            getUserLog={this.getUserLog}
+                                            inxHandler={this.inxHandler}
+                                            userData={this.state.users[this.getUsersIdx(itm.name)]}
+                                            messageBlockHandlerId={this.state.messageBlockHandlerId}
+                                        />)
                                 )
+                            }
+                            <div>black list users</div>
+                            {
+                                (this.state.unregisteredContacts.length !== 0)? (
+                                    this.state.unregisteredContacts.map((itm,i) =>
+                                        <div className="searchedItems" key={i}>
+                                            {itm}
+                                            {/*cheackBox with handler add to selectedNames*/}
+                                        </div>)
+                                ):("")
                             }
                         </div>
                     </div>

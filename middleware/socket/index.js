@@ -138,27 +138,18 @@ module.exports = function (server) {
         globalChatUsers[username] = {sockedId:reqSocketId};//update global chat users obj
         socket.broadcast.emit('addUsers',{name:username,sId:globalChatUsers[username].sockedId});//send to all users what they must add you
         //console.log('globalChatUsers: ',globalChatUsers);
-        //get extended user data
-        socket.on('getExtendedUserData', async function (name,cb) {
-            console.log('getUserData: ',name);
-            if(!globalChatUsers[username]) return cb(new HttpError(401, 'Socket connection err. Please reconnect and try one more.'));
-            let {err,user} = await User.findOne({username:name});
-            if(err) return (new DevError(500, 'DB err: ' + err));
-            if(user) return  cb(user);
-        });
+
         //req to add me to contact list
         socket.on('addMe', async function (data,cb) {
             console.log('addMe: ',data);
-            let {errRequesting,userRequesting} = await User.find({username:username});//get requesting user
-            let {errRequested,userRequested} = await User.find({username:data.name});//get requested user
-            if(errRequesting || errRequested) return cb("Request send filed. No users found named "+ data.name + "&" + username);
-            userRequesting.blockedContacts.push(data.name);
-            userRequested.blockedContacts.push(username);
-            await userRequesting.save();
-            await userRequested.save();
+            let {userRGerr,userRG} = await User.userATBC(username,data.name);
+            let {userRDerr,userRD} = await User.userATBC(data.name,username);
+            if(userRGerr) return cb("Request rejected. DB err: ",userRGerr);
+            if(userRGerr) return cb("Request rejected. DB err: ",userRDerr);
+
 
             let {errMessage,mes} = await Message.messageHandler({members:[username,data.name]});
-            if(errMessage) return cb("Request send filed. Something wrong");
+            if(errMessage) return cb("Save message filed. DB err: ",errMessage);
             if(mes.messages.length === 0) {//Save message in DB only one time
                 await Message.messageHandler({members:[username,data.name],message:{
                     user: username,
@@ -178,15 +169,11 @@ module.exports = function (server) {
         //res to add me
         socket.on('resAddMe', async function (data,cb) {
             console.log('resAddMe: ',data);
-            let {errRequesting,userRequesting} = await User.find({username:username});//get requesting user
-            let {errRequested,userRequested} = await User.find({username:data.name});//get requested user
-            if(errRequesting || errRequested) return cb("Request send filed. No users found named "+ data.name + "&" + username);
-            userRequesting.blockedContacts.filter(itm=> itm === data.name);
-            userRequested.blockedContacts.filter(itm=> itm === username);
-            userRequesting.contacts.push(data.name);
-            userRequested.contacts.push(username);
-            await userRequesting.save();
-            await userRequested.save();
+            let {userRGerr,userRG} = await User.userMFBCTC(username,data.name);
+            let {userRDerr,userRD} = await User.userMFBCTC(data.name,username);
+            if(userRGerr) return cb("Request rejected. DB err: ",userRGerr);
+            if(userRGerr) return cb("Request rejected. DB err: ",userRDerr);
+
             if(globalChatUsers[data.name]) {//Send message "Add me to you contact list" if user online
                 socket.broadcast.to(globalChatUsers[data.name].id).emit('addMe', {
                     user: username,
@@ -201,7 +188,6 @@ module.exports = function (server) {
         //Add users to contact list
         socket.on('addUsers', async function (data,cb) {
             console.log('addUsers: ',data);
-
             let {err,user} = await User.userAddToContacts(data);
             if(err) return (new DevError(500, 'DB err: ' + err));
             if(user) return  cb(user);
@@ -217,8 +203,12 @@ module.exports = function (server) {
         socket.on('findContacts', async function (data,cb) {
             console.log('findContacts: ',data);
             let {err,users} = await User.userFindContacts(data);
-            if(err) return (new DevError(500, 'DB err: ' + err));
-            if(users) return  cb(users);
+            //console.log('findContacts users: ',users);
+            if(err) return console.log("findContacts err:",err);
+            if(users) {
+                let usersArr = users.map(itm=>itm.username);
+                return  cb(usersArr);
+            }
         });
         //chat users list cb
         socket.on('getUsers', function (cb) {

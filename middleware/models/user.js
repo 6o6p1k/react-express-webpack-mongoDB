@@ -44,16 +44,17 @@ user.methods.checkPassword = function (password) {
     return this.encryptPassword(password) === this.hashedPassword;
 };
 
-user.statics.userRemFromContacts = async function (data) {
+user.statics.userMFCTBC = async function (reqUser,contacts) {//MoveFromContactsToBlockedContacts
     var User = this;
     let user = {};
     let err = {};
-    console.log('userRemFromContacts data: ',data);
+    console.log('userMFBCTC userReq: ',reqUser,",","moving contacts: ",contacts);
     try {
-        user = await User.findOne({username:data.username});
+        user = await User.findOne({username:reqUser});
         if(user){
-            user.contacts.filter(items => data.contacts.includes(items.name));//remuve from user contact user in incoming arr
-            console.log('userRemFromContacts user.contacts.filter: ',user);
+            user.contacts.filter(itm => contacts.includes(itm));//remuve users from blockedContacts using names from incoming arr
+            user.blockedContacts.push(contacts);//add from incoming arr to user contacts
+            console.log('userMFBCTC user: ',user);
             await user.save();
             return {err:null,user:user};
         }else {
@@ -61,27 +62,66 @@ user.statics.userRemFromContacts = async function (data) {
         }
 
     } catch(err) {
-        console.log('userRemFromContacts err: ',err);
+        console.log('userMFBCTC err: ',err);
         return {err:err,user:null};
     }
 };
 
-user.statics.userAddToContacts = async function (data) {
+user.statics.userMFBCTC = async function (reqUser,contacts) {//MoveFromBlockedContactsToContacts
     var User = this;
     let user = {};
     let err = {};
-    console.log('userAddToContacts data: ',data);
+    console.log('userMFBCTC userReq: ',reqUser,",","moving contacts: ",contacts);
     try {
-        user = await User.findOne({username:data.username});
+        user = await User.findOne({username:reqUser});
         if(user){
-            user.contacts.push(data.contacts);//add users from incoming arr
+            user.blockedContacts.filter(itm => contacts.includes(itm));//remuve users from blockedContacts using names from incoming arr
+            user.contacts.push(contacts);//add from incoming arr to user contacts
+            console.log('userMFBCTC user: ',user);
+            await user.save();
+            return {err:null,user:user};
+        }else {
+            return {err:err,user:null};
+        }
+
+    } catch(err) {
+        console.log('userMFBCTC err: ',err);
+        return {err:err,user:null};
+    }
+};
+
+user.statics.userATBC = async function (reqUser,contacts) {//AddToBlockedContacts
+    var User = this;
+    console.log('userATBC userReq: ',reqUser,",","moving contacts: ",contacts);
+    try {
+        let {err,user} = await User.findOne({username:reqUser});
+        if(user){
+            user.blockedContacts.push(contacts);//add users from incoming arr
             await user.save();
             return {err:null,user:user};
         }else {
             return {err:err,user:null};
         }
     } catch(err) {
-        console.log('userAddToContacts err: ',err);
+        console.log('userATBC err: ',err);
+        return {err:err,user:null};
+    }
+};
+
+user.statics.userRFBC = async function (reqUser,contacts) {//RemoveFromBlockedContacts
+    var User = this;
+    console.log('userATBC userReq: ',reqUser,",","moving contacts: ",contacts);
+    try {
+        let {err,user} = await User.findOne({username:reqUser});
+        if(user){
+            user.blockedContacts.filter(itm => contacts.includes(itm));//remove from user blockedContacts using names from incoming arr
+            await user.save();
+            return {err:null,user:user};
+        }else {
+            return {err:err,user:null};
+        }
+    } catch(err) {
+        console.log('userATBC err: ',err);
         return {err:err,user:null};
     }
 };
@@ -92,8 +132,12 @@ user.statics.userFindContacts = async function (nameString) {
     let err = {};
     console.log('userFindContacts data: ',nameString);
     try {
-        user = await User.find({username:nameString});
+        users = await User.find( { "username": { "$regex": nameString, "$options": "i" } } );
+        //users = await User.find({username:nameString});
+        //users = await User.aggregate([{ $match: {username:nameString}}]);
+
         if(users){
+            console.log('userFindContacts data users: ',users);
             return {err:null,users:users};
         }
     } catch(err) {
