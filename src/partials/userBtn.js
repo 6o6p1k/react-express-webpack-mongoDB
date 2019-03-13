@@ -10,12 +10,16 @@ class UserBtn extends React.Component {
         let itm = this.props.itm;
         let i = this.props.i;
         let messageBlockHandlerId = this.props.messageBlockHandlerId;
-        let userData = this.props.users;
+        let userData = this.props.userData;
         const inxHandler = this.props.inxHandler;
         const getUserLog = this.props.getUserLog;
         return (
-            <button key={i} onClick={()=>{inxHandler(i); getUserLog(itm.name,null)}} name={itm.name}  type="button" className={(messageBlockHandlerId === i)?"btn clicked":"btn"}>
-                {itm.name}
+            <button key={i}
+                    onClick={()=>{inxHandler(i); getUserLog(itm.name,null)}}
+                    name={itm.name}
+                    type="button"
+                    className={(messageBlockHandlerId === i)?"btn clicked":"btn"}>
+                <font color={userData.onLine ? "blue":"red"}>{itm.name}</font>
                 {
                     (userData)?(
                         <div className="userItm">

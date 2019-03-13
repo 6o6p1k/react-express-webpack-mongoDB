@@ -45,16 +45,6 @@ function loadUser(session, callback) {
 }
 
 
-
-function cookArray(obj,callback){
-    let arr = [];
-    for (var prop in obj) {
-        //console.log("obj." + prop + " = " + obj[prop]);
-        arr.push({name:prop,sId:obj[prop].sockedId,messages:[],msgCounter:0,typing:false,})
-    }
-    callback(arr);
-}
-
 module.exports = function (server) {
 
     var io = require('socket.io').listen(server);
@@ -131,13 +121,36 @@ module.exports = function (server) {
         });
     });
 
-    io.sockets.on('connection', function (socket) {
+    io.sockets.on('connection', async function (socket) {
         //Global Chat Events
         let username = socket.request.user.username;//req username
         let reqSocketId = socket.id;//req user socket id
-        globalChatUsers[username] = {sockedId:reqSocketId};//update global chat users obj
-        socket.broadcast.emit('addUsers',{name:username,sId:globalChatUsers[username].sockedId});//send to all users what they must add you
-        //console.log('globalChatUsers: ',globalChatUsers);
+        let userDB = await User.findOne({username:username});
+        //update global chat users obj
+        globalChatUsers[username] = {
+            sockedId:reqSocketId,
+            contacts:userDB.contacts
+        };
+
+        //req get users from globalChatUsers who online
+        socket.on('getUsersOnLine', async function (cb) {
+            let contacts = globalChatUsers[username].contacts;
+            console.log("getUsersOnLine, username: ",username,", contacts: ",contacts);
+            let usersOnLine = contacts.filter(name => globalChatUsers[name]);
+            //res for my contacts what Iam onLine
+            contacts.forEach((name)=>{
+                if(globalChatUsers[name]) socket.broadcast.to(globalChatUsers[name].sockedId).emit('onLine', username);
+            });
+            cb(usersOnLine);
+        });
+        //req send for my contacts what Iam onLine
+        socket.on('onLine', async function () {
+            let contacts = globalChatUsers[username].contacts;
+            console.log("onLine, username: ",username,", contacts: ",contacts);
+            contacts.forEach((name)=>{
+                if(globalChatUsers[name]) socket.broadcast.to(globalChatUsers[name].sockedId).emit('onLine', username);
+            })
+        });
 
         //req to add me to contact list
         socket.on('addMe', async function (data,cb) {
@@ -185,20 +198,7 @@ module.exports = function (server) {
             cb("User name"+data.name+"added to you contact list")
 
         });
-        //Add users to contact list
-        socket.on('addUsers', async function (data,cb) {
-            console.log('addUsers: ',data);
-            let {err,user} = await User.userAddToContacts(data);
-            if(err) return (new DevError(500, 'DB err: ' + err));
-            if(user) return  cb(user);
-        });
-        //Remuve users to contact list
-        socket.on('remUsers', async function (data,cb) {
-            console.log('remUsers: ',data);
-            let {err,user} = await User.userRemFromContacts(data);
-            if(err) return (new DevError(500, 'DB err: ' + err));
-            if(user) return  cb(user);
-        });
+
         //Find contacts
         socket.on('findContacts', async function (data,cb) {
             console.log('findContacts: ',data);
@@ -209,13 +209,6 @@ module.exports = function (server) {
                 let usersArr = users.map(itm=>itm.username);
                 return  cb(usersArr);
             }
-        });
-        //chat users list cb
-        socket.on('getUsers', function (cb) {
-            console.log('globalChatUsers: ',globalChatUsers);
-            if(!globalChatUsers[username]) return cb(new HttpError(401, 'No user found!'));
-            socket.broadcast.emit('addUsers',{name:username,sId:globalChatUsers[username].sockedId});//send to all users what they must add you
-            cookArray(globalChatUsers,(arr)=>cb(arr))
         });
         //get history global chat
         socket.on('getGlobalLog', async function (cb) {
@@ -228,7 +221,7 @@ module.exports = function (server) {
             //reqMesCountCb How mach last messages need request
             //for who reqUsername need request
             //console.log('getUserLog reqUsername: ',reqUsername,',','');
-            if(!globalChatUsers[reqUsername]) return cb(new HttpError(401, 'User do not connect!'));
+
             let {err,mes} = await Message.messageHandler({members:[username,reqUsername]});
             if(err) {
                 console.log("getUserLog err: ", err);
@@ -244,18 +237,16 @@ module.exports = function (server) {
             socket.broadcast.to(id).emit('typing', username);
         });
         //chat message receiver
-        socket.on('message', async function (text,id,resToUserName,dateNow, cb) {
-            console.log('message text: ',text, 'id: ',id, 'iresToUserName: ',resToUserName, 'dateNow: ',dateNow);
+        socket.on('message', async function (text,name,dateNow, cb) {
+            let sid = globalChatUsers[name].sockedId;
+            console.log('message text: ',text, 'sid: ',sid, 'resToUserName: ',name, 'dateNow: ',dateNow);
             if (text.length === 0) return;
-            if (text.length >= 60) {
-                socket.broadcast.emit('message', 'Admin', 'to long message');
-                return;
-            }
-            if (id) {                //append to individual chat log
+            if (text.length >= 60) {return socket.broadcast.emit('message', 'Admin', 'to long message');}
+            if (name) {                //append to individual chat log
                 console.log('!GC');
                 let {err,mes} = await Message.messageHandler({members:[username,resToUserName],message:{ user: username, text: text, status: false, date: dateNow}});
                 //console.log("message!GC: ",mes,",","err: ",err);
-                socket.broadcast.to(id).emit('message', { user: username, text: text, status: false, date: dateNow});
+                socket.broadcast.to(sid).emit('message', { user: username, text: text, status: false, date: dateNow});
                 cb && cb();
             } else {                //append global chat log
                 console.log('GC');
@@ -267,10 +258,15 @@ module.exports = function (server) {
  
         });
         // when the user disconnects perform this
-        socket.on('disconnect', function () {
-            console.log('disconnect username: ',username);
+        socket.on('disconnect', async function () {
+            let contacts = globalChatUsers[username].contacts;
+            console.log("disconnect, username: ",username,", contacts: ",contacts);
+            //res for my contacts what Iam offLine
+            contacts.forEach((name)=>{
+                if(globalChatUsers[name]) socket.broadcast.to(globalChatUsers[name].sockedId).emit('offLine', username);
+            });
+            //del user from globalUsers
             delete globalChatUsers[username];
-            socket.broadcast.emit('remuveUserName',username);//send to all users what they must remuve you
         });
     });
 
