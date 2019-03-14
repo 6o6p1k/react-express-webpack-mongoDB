@@ -34,11 +34,12 @@ class Chat extends React.Component {
             addMeHandler:false,
             confirmMessage:"",
             reqAddMeName:""
+
         };
         console.log("/chat this.state: ",this.state);
     }
 
-    componentDidUpdate(prevProps, prevState){
+/*    componentDidUpdate(prevProps, prevState){
         if(this.state.messageBlockHandlerId !== undefined) {
             //console.log("this.state.messageBlockHandlerId: ",this.state.messageBlockHandlerId,",","prevState.users: ",prevState.users);
             if(this.state.users[this.state.messageBlockHandlerId] === undefined || prevState.users[this.state.messageBlockHandlerId].name !== this.state.users[this.state.messageBlockHandlerId].name) {
@@ -47,7 +48,7 @@ class Chat extends React.Component {
         }
         //move scroll bootom
         //this.scrollToBottom(this.refs.InpUl);
-    }
+    }*/
 
     componentDidMount(){
         //move scroll bootom
@@ -65,16 +66,22 @@ class Chat extends React.Component {
                 users.map((itm,i) => onLineUsers.includes(itm.name) ? users[i].onLine = true : users[i].onLine = false );
                 this.setState({users:users})
             })
+            .on('updateUsers',(userData)=>{
+                this.setState({
+                    users:userData.contacts,
+                    unregisteredContacts:userData.blockedContacts,
+                });
+            })
             .on('onLine', (name)=> {
                 console.log('receiver user onLine: ',name);
                 let users = this.state.users;
-                users[this.getUsersIdx(name)].onLine = true;
+                users[this.getUsersIdx("users",name)].onLine = true;
                 this.setState({users:users});
             })
             .on('offLine', (name)=> {
                 //console.log('receiver user offLine: ',name);
                 let users = this.state.users;
-                users[this.getUsersIdx(name)].onLine = false;
+                users[this.getUsersIdx("users",name)].onLine = false;
                 this.setState({users:users});
             })
             .on('messageGlobal', (data)=> {
@@ -85,12 +92,12 @@ class Chat extends React.Component {
             })
             .on('message', (data)=> {
                 //receiver
-                this.printMessage({name:data.user,text:data.text,status:data.status,date:data.date},this.getUsersIdx(data.user));
-                this.msgCounter(this.getUsersIdx(data.user));
+                this.printMessage({name:data.user,text:data.text,status:data.status,date:data.date},this.getUsersIdx("users",data.user));
+                this.msgCounter(this.getUsersIdx("users",data.user));
             })
             .on('typing', (username)=> {
                 //receiver
-                this.typingHandler(this.getUsersIdx(username));
+                this.typingHandler(this.getUsersIdx("users",username));
             })
 
             .on('error',(message)=>{
@@ -125,9 +132,10 @@ class Chat extends React.Component {
     componentWillUnmount(){
         this.socket.disconnect();
     };
-
+//доделать управление inxHandler чтения истории
     getUserLog =(reqUsername,reqMesCountCb)=>{
-        let reqUser = this.state.users[this.getUsersIdx(reqUsername)];
+        let reqUser = this.state.users[this.getUsersIdx("users",reqUsername)] || this.state.unregisteredContacts[this.getUsersIdx("unregisteredContacts",reqUsername)];
+
         this.socket.emit('getUserLog',reqUsername,reqMesCountCb,(arr)=>{
             console.log("getUserLog: ",arr);
             reqUser.messages = arr;
@@ -144,13 +152,13 @@ class Chat extends React.Component {
     };
 
     setFiltered = (nameStr) => {
+        console.log("setFiltered str: ",nameStr);
         if(nameStr.length === 0) this.setState({filteredUsers: []});
         this.setState({filteredUsers: this.state.users.filter(this.filterSearch(nameStr))},()=>{
             if(this.state.filteredUsers.length === 0) {
                 this.socket.emit('findContacts', nameStr,(usersArr)=>{
                     this.setState({
-                        foundContacts:usersArr,
-                        modalFoundContacts:true
+                        foundContacts:usersArr
                     });
                 })
             }
@@ -222,8 +230,8 @@ class Chat extends React.Component {
 
     };
 
-    getUsersIdx =(username)=> {
-        return this.state.users.map((itm)=>{return itm.name;}).indexOf(username);
+    getUsersIdx =(arrName,username)=> {
+        return this.state[arrName].map((itm)=>{return itm.name;}).indexOf(username);
     };
 
     printMessage =(data,i)=> {
@@ -264,6 +272,7 @@ class Chat extends React.Component {
     };
 
     addMe =(name)=> {
+        console.log("addMe: ",name);
         this.setState({
             addMeHandler:true,
             reqAddMeName:name,
@@ -274,17 +283,23 @@ class Chat extends React.Component {
     addMeHandler = (confirmRes) => {
         console.log('confirmRes: ',confirmRes);
         if(confirmRes){
-            this.socket.emit('addMe', this.state.reqAddMeName,(err,userData)=>{
+            this.socket.emit('addMe', {name:this.state.reqAddMeName,date:Date.now()},(err,userData)=>{
+                console.log("addMe callback err: ",err," ,userData: ",userData);
                 if(err) {
                     this.setState({
+                        addMeHandler: false,
+                        confirmMessage:"",
+                        reqAddMeName:"",
                         modalWindow:true,
-                        err:err
+                        err:{message:err}
                     })
                 }
                 this.setState({
                     users:userData.contacts,
                     unregisteredContacts:userData.blockedContacts,
-                    modalFoundContacts:false
+                    addMeHandler: false,
+                    confirmMessage:"",
+                    reqAddMeName:"",
                 });
             })
         }else{
@@ -309,7 +324,7 @@ class Chat extends React.Component {
                     <Modal show={this.state.modalWindow} handleClose={this.hideModal} err={this.state.err}/>
                 ):('')}
                 {(this.state.addMeHandler)?(
-                    <Confirm confirmHandler={this.addMeHandler} show={this.state.modalWindow} message={this.state.confirmMessage}/>
+                    <Confirm confirmHandler={this.addMeHandler} show={this.state.addMeHandler} message={this.state.confirmMessage}/>
                 ):('')}
                 <div className="chat-room">
                     <div className="chat-users">
@@ -332,7 +347,7 @@ class Chat extends React.Component {
                                             key={i}
                                             i={i}
                                             itm={{name:name}}
-                                            addMe={this.addMe(name)}
+                                            addMe={this.addMe}
                                         />)
                                     ):(
                                         this.state.users.map((itm,i) => <UserBtn
@@ -341,7 +356,7 @@ class Chat extends React.Component {
                                             i={i}
                                             getUserLog={this.getUserLog}
                                             inxHandler={this.inxHandler}
-                                            userData={this.state.users[this.getUsersIdx(itm.name)]}
+                                            userData={this.state.users[this.getUsersIdx("users",itm.name)]}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
                                         />)
                                     )
@@ -353,10 +368,10 @@ class Chat extends React.Component {
                                         .map((itm,i) => <UserBtn
                                             key={i}
                                             itm={itm}
-                                            i={this.getUsersIdx(itm.name)}
+                                            i={this.getUsersIdx("users",itm.name)}
                                             getUserLog={this.getUserLog}
                                             inxHandler={this.inxHandler}
-                                            userData={this.state.users[this.getUsersIdx(itm.name)]}
+                                            userData={this.state.users[this.getUsersIdx("users",itm.name)]}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
                                         />)
                                 )
@@ -365,10 +380,15 @@ class Chat extends React.Component {
                             {
                                 (this.state.unregisteredContacts.length !== 0)? (
                                     this.state.unregisteredContacts.map((itm,i) =>
-                                        <div className="searchedItems" key={i}>
-                                            {itm}
-                                            {/*cheackBox with handler add to selectedNames*/}
-                                        </div>)
+                                        <UserBtn
+                                            key={i}
+                                            itm={itm}
+                                            i={i}
+                                            getUserLog={this.getUserLog}
+                                            inxHandler={this.inxHandler}
+                                            userData={this.state.unregisteredContacts[this.getUsersIdx("unregisteredContacts",itm.name)]}
+                                            messageBlockHandlerId={this.state.messageBlockHandlerId}
+                                        />)
                                 ):("")
                             }
                         </div>

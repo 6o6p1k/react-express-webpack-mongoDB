@@ -13,16 +13,27 @@ class UserBtn extends React.Component {
         let userData = this.props.userData;
         const inxHandler = this.props.inxHandler;
         const getUserLog = this.props.getUserLog;
+        const addMe = this.props.addMe;
         return (
             <button key={i}
-                    onClick={()=>{inxHandler(i); getUserLog(itm.name,null)}}
+                    onClick={()=>{
+                        if(addMe) {
+                            addMe(itm.name)
+                        }else {
+                            inxHandler(i);
+                            getUserLog(itm.name,null)
+                        }
+                    }}
                     name={itm.name}
                     type="button"
                     className={(messageBlockHandlerId === i)?"btn clicked":"btn"}>
-                <font color={userData.onLine ? "blue":"red"}>{itm.name}</font>
+                {
+                    userData ? <font color={userData.onLine ? "blue":"red"}>{itm.name}</font> : <font>{itm.name}</font>
+                }
                 {
                     (userData)?(
                         <div className="userItm">
+
                             {
                                 (userData.msgCounter !== 0)?(
                                     <div className="unread-mess">
@@ -40,7 +51,6 @@ class UserBtn extends React.Component {
                         </div>
                     ):("")
                 }
-
             </button>
         )
     }

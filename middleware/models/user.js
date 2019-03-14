@@ -44,63 +44,58 @@ user.methods.checkPassword = function (password) {
     return this.encryptPassword(password) === this.hashedPassword;
 };
 
-user.statics.userMFCTBC = async function (reqUser,contacts) {//MoveFromContactsToBlockedContacts
+user.statics.userMFCTBC = async function (reqUser,contact) {//MoveFromContactsToBlockedContacts
     var User = this;
     let user = {};
-    let err = {};
-    console.log('userMFBCTC userReq: ',reqUser,",","moving contacts: ",contacts);
+    console.log('userMFBCTC userReq: ',reqUser,",","moving contacts: ",contact);
     try {
         user = await User.findOne({username:reqUser});
         if(user){
-            user.contacts.filter(itm => contacts.includes(itm));//remuve users from blockedContacts using names from incoming arr
-            user.blockedContacts.push(contacts);//add from incoming arr to user contacts
+            user.contacts.filter(itm => contact.includes(itm));//remuve users from blockedContacts using names from incoming arr
+            if(user.blockedContacts.includes(contact)) return {err:"You always send request",user:null};
+            user.blockedContacts.push(contact);//add from incoming arr to user contacts
             console.log('userMFBCTC user: ',user);
             await user.save();
             return {err:null,user:user};
-        }else {
-            return {err:err,user:null};
         }
-
     } catch(err) {
         console.log('userMFBCTC err: ',err);
         return {err:err,user:null};
     }
 };
 
-user.statics.userMFBCTC = async function (reqUser,contacts) {//MoveFromBlockedContactsToContacts
+user.statics.userMFBCTC = async function (reqUser,contact) {//MoveFromBlockedContactsToContacts
     var User = this;
     let user = {};
-    let err = {};
-    console.log('userMFBCTC userReq: ',reqUser,",","moving contacts: ",contacts);
+    console.log('userMFBCTC userReq: ',reqUser,",","moving contacts: ",contact);
     try {
         user = await User.findOne({username:reqUser});
         if(user){
-            user.blockedContacts.filter(itm => contacts.includes(itm));//remuve users from blockedContacts using names from incoming arr
-            user.contacts.push(contacts);//add from incoming arr to user contacts
+            user.blockedContacts.filter(itm => contact.includes(itm));//remuve users from blockedContacts using names from incoming arr
+            if(user.contacts.includes(contact)) return {err:"You always send request",user:null};
+            user.contacts.push(contact);//add from incoming arr to user contacts
             console.log('userMFBCTC user: ',user);
             await user.save();
             return {err:null,user:user};
-        }else {
-            return {err:err,user:null};
         }
-
     } catch(err) {
         console.log('userMFBCTC err: ',err);
         return {err:err,user:null};
     }
 };
 
-user.statics.userATBC = async function (reqUser,contacts) {//AddToBlockedContacts
+user.statics.userATBC = async function (reqUser,contact) {//AddToBlockedContacts
     var User = this;
-    console.log('userATBC userReq: ',reqUser,",","moving contacts: ",contacts);
+    let user = {};
+    console.log('userATBC userReq: ',reqUser,",","moving contacts: ",contact);
     try {
-        let {err,user} = await User.findOne({username:reqUser});
+        user = await User.findOne({username:reqUser});
+        console.log('userATBC user: ',user);
         if(user){
-            user.blockedContacts.push(contacts);//add users from incoming arr
+            if(user.blockedContacts.includes(contact)) return {err:"You always send request",user:null};
+            user.blockedContacts.push(contact);//add users from incoming arr
             await user.save();
-            return {err:null,user:user};
-        }else {
-            return {err:err,user:null};
+            return ({err:null,user:user});
         }
     } catch(err) {
         console.log('userATBC err: ',err);
@@ -108,17 +103,16 @@ user.statics.userATBC = async function (reqUser,contacts) {//AddToBlockedContact
     }
 };
 
-user.statics.userRFBC = async function (reqUser,contacts) {//RemoveFromBlockedContacts
+user.statics.userRFBC = async function (reqUser,contact) {//RemoveFromBlockedContacts
     var User = this;
-    console.log('userATBC userReq: ',reqUser,",","moving contacts: ",contacts);
+    let user = {};
+    console.log('userATBC userReq: ',reqUser,",","moving contacts: ",contact);
     try {
-        let {err,user} = await User.findOne({username:reqUser});
+        user = await User.findOne({username:reqUser});
         if(user){
-            user.blockedContacts.filter(itm => contacts.includes(itm));//remove from user blockedContacts using names from incoming arr
+            user.blockedContacts.filter(itm => contact.includes(itm));//remove from user blockedContacts using names from incoming arr
             await user.save();
             return {err:null,user:user};
-        }else {
-            return {err:err,user:null};
         }
     } catch(err) {
         console.log('userATBC err: ',err);
@@ -228,7 +222,7 @@ message.statics.messageHandler = async function (data) {
     var Message = this;
     let mes = {};
     let err = {};
-    console.log('messageHandlerRoomChat data: ',data);
+    console.log('DB messageHandler: ',data);
     try {
         mes = await Message.findOne({members:data.members}) || await Message.findOne({members:[data.members[1],data.members[0]]});
         //console.log("message.statics.messageHandlerRoomChat mes: ", mes);
@@ -244,8 +238,7 @@ message.statics.messageHandler = async function (data) {
             }
         }else {//read data
             if(!mes) {
-                //let err = (JSON.stringify(new DevError(500, 'DB err: No data with room name'+data.members+' found')));
-                return {err:'History log between members  '+data.members+' not found',mes:null};
+                return {err:'History log between members  '+data.members[1]+" & "+data.members[0]+' not found',mes:null};
             }else {
                 return {err:null,mes:mes};
             }

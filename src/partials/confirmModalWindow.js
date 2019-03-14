@@ -3,7 +3,7 @@ import React from 'react';
 class ConfirmWindow extends React.Component {
 
     render() {
-        //console.log('Modal props: ',this.props);
+        console.log('Confirm props: ',this.props);
         const handle = this.props.confirmHandler;
         const show = this.props.show;
         const showHideClassName = show ? 'modal display-block' : 'modal display-none';

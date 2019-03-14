@@ -126,6 +126,7 @@ module.exports = function (server) {
         let username = socket.request.user.username;//req username
         let reqSocketId = socket.id;//req user socket id
         let userDB = await User.findOne({username:username});
+        console.log("connection");
         //update global chat users obj
         globalChatUsers[username] = {
             sockedId:reqSocketId,
@@ -155,14 +156,16 @@ module.exports = function (server) {
         //req to add me to contact list
         socket.on('addMe', async function (data,cb) {
             console.log('addMe: ',data);
-            let {userRGerr,userRG} = await User.userATBC(username,data.name);
-            let {userRDerr,userRD} = await User.userATBC(data.name,username);
-            if(userRGerr) return cb("Request rejected. DB err: ",userRGerr);
-            if(userRGerr) return cb("Request rejected. DB err: ",userRDerr);
+
+            let userRG = await User.userATBC(username,data.name);
+            let userRD = await User.userATBC(data.name,username);
+            if(userRG.err) return cb("Request rejected. DB err: "+userRG.err,null);
+            if(userRD.err) return cb("Request rejected. DB err: "+userRD.err,null);
+            console.log("addMe userRG: ",userRG," ,userRD: ",userRD);
 
 
             let {errMessage,mes} = await Message.messageHandler({members:[username,data.name]});
-            if(errMessage) return cb("Save message filed. DB err: ",errMessage);
+            if(errMessage) return cb("Save message filed. DB err: " + errMessage,null);
             if(mes.messages.length === 0) {//Save message in DB only one time
                 await Message.messageHandler({members:[username,data.name],message:{
                     user: username,
@@ -170,14 +173,10 @@ module.exports = function (server) {
                     status: false,
                     date: data.date}});
                 if(globalChatUsers[data.name]) {//Send message "Add me to you contact list" if user online
-                    socket.broadcast.to(globalChatUsers[data.name].id).emit('addMe', {
-                        user: username,
-                        text: "Do you want add user name: "+username+" to you contact list?",
-                        status: false,
-                        date: data.date});
+                    socket.broadcast.to(globalChatUsers[data.name].id).emit('updateUsers', userRD.user);
                 }
-                return cb("Request send successful")
-            }else return cb("You always send request. Await then user response you.");
+                cb(null,userRG.user);
+            }else return cb("Request rejected. You always send request. Await then user response you.",null);
         });
         //res to add me
         socket.on('resAddMe', async function (data,cb) {
@@ -218,10 +217,6 @@ module.exports = function (server) {
         });
         //chat users history cb
         socket.on('getUserLog', async function (reqUsername,reqMesCountCb,cb) {
-            //reqMesCountCb How mach last messages need request
-            //for who reqUsername need request
-            //console.log('getUserLog reqUsername: ',reqUsername,',','');
-
             let {err,mes} = await Message.messageHandler({members:[username,reqUsername]});
             if(err) {
                 console.log("getUserLog err: ", err);
