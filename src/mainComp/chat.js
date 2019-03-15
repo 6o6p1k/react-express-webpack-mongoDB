@@ -15,14 +15,15 @@ class Chat extends React.Component {
         super(props);
         this.state = {
             modalWindow:false,
-            modalFoundContacts:false,
-            userBtnClassActive: false,
             errorRedirect: false,
             loginRedirect:false,
             err:{},
+
             user: user,
+
             messages: [],
             msgCounter: 0,
+
             message: '',
 
             users: this.addUsers(user.contacts) || [],
@@ -30,25 +31,30 @@ class Chat extends React.Component {
             foundContacts: [],
             unregisteredContacts: this.addUsers(user.blockedContacts) || [],
 
+            arrayBlockHandlerId: undefined,
             messageBlockHandlerId: undefined,
-            addMeHandler:false,
-            confirmMessage:"",
-            reqAddMeName:""
 
+            resAddMeHandler:false,
+            resAddMeAddMeName:"",
+            addMeHandler:false,
+            reqAddMeName:"",
+            confirmMessage:"",
         };
         console.log("/chat this.state: ",this.state);
     }
 
-/*    componentDidUpdate(prevProps, prevState){
-        if(this.state.messageBlockHandlerId !== undefined) {
-            //console.log("this.state.messageBlockHandlerId: ",this.state.messageBlockHandlerId,",","prevState.users: ",prevState.users);
-            if(this.state.users[this.state.messageBlockHandlerId] === undefined || prevState.users[this.state.messageBlockHandlerId].name !== this.state.users[this.state.messageBlockHandlerId].name) {
-                this.setState({messageBlockHandlerId: undefined});
-            }
+    componentDidUpdate(prevProps, prevState){
+        if(prevState.unregisteredContacts.length !== this.state.unregisteredContacts.length || prevState.users.length !== this.state.users.length) {
+            this.setState({
+                arrayBlockHandlerId: undefined,
+                messageBlockHandlerId: undefined,
+            })
         }
+
+
         //move scroll bootom
         //this.scrollToBottom(this.refs.InpUl);
-    }*/
+    }
 
     componentDidMount(){
         //move scroll bootom
@@ -56,6 +62,14 @@ class Chat extends React.Component {
 
         let socket = io.connect('', {reconnection: true});
         this.socket = socket
+            .on('updateUserData',(userData)=>{
+                this.setState({
+                    user:userData,
+                    users:this.addUsers(userData.contacts),
+                    unregisteredContacts:this.addUsers(userData.blockedContacts),
+                });
+            })
+
             .emit('getGlobalLog', (messages)=> {
                 //console.log('getGlobalLog: ',messages);
                 this.setState({messages: messages});
@@ -75,13 +89,13 @@ class Chat extends React.Component {
             .on('onLine', (name)=> {
                 console.log('receiver user onLine: ',name);
                 let users = this.state.users;
-                users[this.getUsersIdx("users",name)].onLine = true;
+                if(this.getUsersIdx("users",name) !== -1) users[this.getUsersIdx("users",name)].onLine = true;
                 this.setState({users:users});
             })
             .on('offLine', (name)=> {
                 //console.log('receiver user offLine: ',name);
                 let users = this.state.users;
-                users[this.getUsersIdx("users",name)].onLine = false;
+                if(this.getUsersIdx("users",name)!== -1) users[this.getUsersIdx("users",name)].onLine = false;
                 this.setState({users:users});
             })
             .on('messageGlobal', (data)=> {
@@ -132,10 +146,9 @@ class Chat extends React.Component {
     componentWillUnmount(){
         this.socket.disconnect();
     };
-//доделать управление inxHandler чтения истории
-    getUserLog =(reqUsername,reqMesCountCb)=>{
-        let reqUser = this.state.users[this.getUsersIdx("users",reqUsername)] || this.state.unregisteredContacts[this.getUsersIdx("unregisteredContacts",reqUsername)];
 
+    getUserLog =(reqUsername,reqArrName,reqMesCountCb)=>{
+        let reqUser = this.state[reqArrName][this.getUsersIdx(reqArrName,reqUsername)];
         this.socket.emit('getUserLog',reqUsername,reqMesCountCb,(arr)=>{
             console.log("getUserLog: ",arr);
             reqUser.messages = arr;
@@ -195,10 +208,14 @@ class Chat extends React.Component {
         }
     };
 
-    inxHandler =(inx)=> {
-        //console.log('inxHandler: ',inx);
-        this.setState({messageBlockHandlerId: inx});
-        const eUser = this.state.users[inx];
+    inxHandler =(arrName,inx)=> {
+        console.log('inxHandler arrName: ',arrName,", arrName inx: ", inx);
+        this.setState({
+            messageBlockHandlerId: inx,
+            arrayBlockHandlerId:arrName
+        });
+        if(arrName === undefined || inx === undefined) return;
+        const eUser = this.state[arrName][inx];
         if (inx === undefined && this.state.msgCounter !== 0) {
             this.setState({msgCounter:0})
         } else {
@@ -276,7 +293,16 @@ class Chat extends React.Component {
         this.setState({
             addMeHandler:true,
             reqAddMeName:name,
-            confirmMessage:"Send a request to the user "+name+" to add you?"
+            confirmMessage:"Send request to add user "+name+"?"
+        })
+    };
+
+    resAddMe =(name)=>{
+        console.log("resAddMe: ",name);
+        this.setState({
+            resAddMeHandler:true,
+            resAddMeAddMeName:name,
+            confirmMessage:"Allow user "+name+" to add you?"
         })
     };
 
@@ -287,11 +313,11 @@ class Chat extends React.Component {
                 console.log("addMe callback err: ",err," ,userData: ",userData);
                 if(err) {
                     this.setState({
+                        modalWindow:true,
+                        err:{message:err},
                         addMeHandler: false,
                         confirmMessage:"",
                         reqAddMeName:"",
-                        modalWindow:true,
-                        err:{message:err}
                     })
                 }
                 this.setState({
@@ -311,6 +337,37 @@ class Chat extends React.Component {
         }
     };
 
+    resAddMeHandler =(confirmRes)=>{
+        console.log('resAddMeHandler: ',confirmRes);
+        if(confirmRes){
+            this.socket.emit('resAddMe', {name:this.state.resAddMeAddMeName,date:Date.now()},(err,userData)=>{
+                console.log("resAddMeHandler callback err: ",err," ,userData: ",userData);
+                if(err) {
+                    this.setState({
+                        modalWindow:true,
+                        err:{message:err},
+                        resAddMeHandler:false,
+                        resAddMeAddMeName:"",
+                        confirmMessage:""
+                    })
+                }
+                this.setState({
+                    users:userData.contacts,
+                    unregisteredContacts:userData.blockedContacts,
+                    resAddMeHandler:false,
+                    resAddMeAddMeName:"",
+                    confirmMessage:""
+                });
+            })
+        }else{
+            this.setState({
+                resAddMeHandler:false,
+                resAddMeAddMeName:"",
+                confirmMessage:""
+            });
+        }
+    };
+
 
 
     render() {
@@ -326,13 +383,16 @@ class Chat extends React.Component {
                 {(this.state.addMeHandler)?(
                     <Confirm confirmHandler={this.addMeHandler} show={this.state.addMeHandler} message={this.state.confirmMessage}/>
                 ):('')}
+                {(this.state.resAddMeHandler)?(
+                    <Confirm confirmHandler={this.resAddMeHandler} show={this.state.resAddMeHandler} message={this.state.confirmMessage}/>
+                ):('')}
                 <div className="chat-room">
                     <div className="chat-users">
                         <div className="login-form">
                             <input name="nameSearchInp" className="form-control" autoComplete="off" autoFocus placeholder="Search..."
                                     onChange={ev => this.setFiltered(ev.target.value)}
                             />
-                            <button  key='GC' onClick={()=>this.inxHandler(undefined)} type="button" className={(this.state.messageBlockHandlerId === undefined)?"btn clicked":"btn"}>
+                            <button  key='GC' onClick={()=>this.inxHandler(undefined,undefined)} type="button" className={(this.state.messageBlockHandlerId === undefined)?"btn clicked":"btn"}>
                                 GLOBAL CHAT
                                 {(this.state.msgCounter !== 0)?(
                                     <div className="unread-mess">
@@ -354,8 +414,8 @@ class Chat extends React.Component {
                                             key={i}
                                             itm={itm}
                                             i={i}
-                                            getUserLog={this.getUserLog}
-                                            inxHandler={this.inxHandler}
+                                            getUserLog={() => this.getUserLog(itm.name,"users",null)}
+                                            inxHandler={()=> this.inxHandler("users",i)}
                                             userData={this.state.users[this.getUsersIdx("users",itm.name)]}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
                                         />)
@@ -369,8 +429,8 @@ class Chat extends React.Component {
                                             key={i}
                                             itm={itm}
                                             i={this.getUsersIdx("users",itm.name)}
-                                            getUserLog={this.getUserLog}
-                                            inxHandler={this.inxHandler}
+                                            getUserLog={(reqUsername,reqArrName,reqMesCountCb) => this.getUserLog(itm.name,"users",null)}
+                                            inxHandler={(arrName,inx) => this.inxHandler("users",i)}
                                             userData={this.state.users[this.getUsersIdx("users",itm.name)]}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
                                         />)
@@ -384,8 +444,8 @@ class Chat extends React.Component {
                                             key={i}
                                             itm={itm}
                                             i={i}
-                                            getUserLog={this.getUserLog}
-                                            inxHandler={this.inxHandler}
+                                            getUserLog={(reqUsername,reqArrName,reqMesCountCb) => this.getUserLog(itm.name,"unregisteredContacts",null)}
+                                            inxHandler={(arrName,inx) => this.inxHandler("unregisteredContacts",i)}
                                             userData={this.state.unregisteredContacts[this.getUsersIdx("unregisteredContacts",itm.name)]}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
                                         />)
@@ -395,9 +455,14 @@ class Chat extends React.Component {
                     </div>
 
                     {
-                        ((e) => {
-                            //console.log('message-block: e:',e);
-                            const eUser = this.state.users[e];
+                        ((a,e) => {
+                            console.log('message-block: e:',e,", a:",a);
+                            let eUser = undefined;
+                            if(a !== undefined && e !== undefined) {
+                                eUser = this.state[a][e];
+                                console.log('eUser: ',eUser);
+                            }
+
                             return (
                                 <div className="message-block">
                                     <div name="chatRoom" id="chatDiv">
@@ -432,15 +497,24 @@ class Chat extends React.Component {
                                                        value={this.state.message}
                                                        onChange={ev => (eUser) ? (this.typing(eUser.sId, ev)) : (this.typing(null, ev))}
                                                 />
-                                                <span className="input-group-btn">
-                                                    <button onClick={() => this.sendMessage(e)} name="msgBtn" type="button" className="btn">SEND</button>
-                                                </span>
+                                                {
+                                                    (a !== "unregisteredContacts") ? (
+                                                        <span className="input-group-btn">
+                                                            <button onClick={() => this.sendMessage(e)} name="msgBtn" type="button" className="btn">SEND</button>
+                                                        </span>
+                                                    ):(
+                                                        <span className="input-group-btn">
+                                                            <button onClick={() => this.resAddMe(eUser.name)} name="msgBtn" type="button" className="btn">SEND RESPONSE TO ADD</button>
+                                                        </span>
+                                                    )
+                                                }
+
                                             </div>
                                         </form>
                                     </div>
                                 </div>
                             );
-                        })(this.state.messageBlockHandlerId)
+                        })(this.state.arrayBlockHandlerId,this.state.messageBlockHandlerId)
                      }
 
                 </div>

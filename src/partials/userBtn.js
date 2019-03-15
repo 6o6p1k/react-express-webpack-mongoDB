@@ -20,8 +20,8 @@ class UserBtn extends React.Component {
                         if(addMe) {
                             addMe(itm.name)
                         }else {
-                            inxHandler(i);
-                            getUserLog(itm.name,null)
+                            inxHandler();
+                            getUserLog();
                         }
                     }}
                     name={itm.name}
