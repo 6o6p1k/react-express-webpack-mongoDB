@@ -11,7 +11,7 @@ class Chat extends React.Component {
 
     constructor(props) {
         let user = JSON.parse(sessionStorage.getItem('user')).user;
-        console.log("/chat user: ",user);
+        //console.log("/chat user: ",user);
         super(props);
         this.state = {
             modalWindow:false,
@@ -40,10 +40,9 @@ class Chat extends React.Component {
             reqAddMeName:"",
             confirmMessage:"",
         };
-        console.log("/chat this.state: ",this.state);
     }
 
-    componentDidUpdate(prevProps, prevState){
+/*    componentDidUpdate(prevProps, prevState){
         if(prevState.unregisteredContacts.length !== this.state.unregisteredContacts.length || prevState.users.length !== this.state.users.length) {
             this.setState({
                 arrayBlockHandlerId: undefined,
@@ -54,7 +53,8 @@ class Chat extends React.Component {
 
         //move scroll bootom
         //this.scrollToBottom(this.refs.InpUl);
-    }
+    }*/
+//TEst when no one users in contact list !!!!!!!!!!!
 
     componentDidMount(){
         //move scroll bootom
@@ -70,24 +70,21 @@ class Chat extends React.Component {
                 });
             })
 
-            .emit('getGlobalLog', (messages)=> {
-                //console.log('getGlobalLog: ',messages);
-                this.setState({messages: messages});
-            })
             .emit('getUsersOnLine', (onLineUsers)=>{
-                console.log("getUsersOnLine: ",onLineUsers);
+                //console.log("getUsersOnLine: ",onLineUsers);
                 let users = this.state.users;
                 users.map((itm,i) => onLineUsers.includes(itm.name) ? users[i].onLine = true : users[i].onLine = false );
                 this.setState({users:users})
             })
             .on('updateUsers',(userData)=>{
+                //console.log("updateUsers: ",userData);
                 this.setState({
                     users:userData.contacts,
                     unregisteredContacts:userData.blockedContacts,
                 });
             })
             .on('onLine', (name)=> {
-                console.log('receiver user onLine: ',name);
+                //console.log('receiver user onLine: ',name);
                 let users = this.state.users;
                 if(this.getUsersIdx("users",name) !== -1) users[this.getUsersIdx("users",name)].onLine = true;
                 this.setState({users:users});
@@ -98,12 +95,6 @@ class Chat extends React.Component {
                 if(this.getUsersIdx("users",name)!== -1) users[this.getUsersIdx("users",name)].onLine = false;
                 this.setState({users:users});
             })
-            .on('messageGlobal', (data)=> {
-                //receiver
-                //console.log('receiverGlobal data: ',data);
-                this.printMessage({name:data.user,text:data.text,status:data.status,date:data.date},undefined);//{ user: username, text: text, status: false, date: dateNow}
-                this.msgCounter(undefined);
-            })
             .on('message', (data)=> {
                 //receiver
                 this.printMessage({name:data.user,text:data.text,status:data.status,date:data.date},this.getUsersIdx("users",data.user));
@@ -111,17 +102,24 @@ class Chat extends React.Component {
             })
             .on('typing', (username)=> {
                 //receiver
-                this.typingHandler(this.getUsersIdx("users",username));
+                if(this.getUsersIdx("users",username) < 0) return;
+                const typingUser = this.state.users[this.getUsersIdx("users",username)];
+                typingUser.typing = true;
+                this.setState({typingUser});
+                setTimeout(()=>{
+                    typingUser.typing = false;
+                    this.setState({typingUser});
+                },2000)
             })
 
             .on('error',(message)=>{
-                console.log('Server error happened: ',message);
+                //console.log('Server error happened: ',message);
                 if(typeof message === 'string' || message instanceof String) {
                     let data = JSON.parse(message);
                     if(data.status == 423 || data.status == 401) {
                         this.setState({err: data});
                         sessionStorage.setItem('error', message);
-                        console.log('this.state.err: ',this.state.err);
+                        //console.log('this.state.err: ',this.state.err);
                         this.setState({errorRedirect: true});
                     }
                     this.setState({
@@ -136,7 +134,7 @@ class Chat extends React.Component {
                 }
             })
             .on('logout',()=>{
-                console.log('logout');
+                //console.log('logout');
                 sessionStorage.removeItem('user');
                 sessionStorage.removeItem('error');
                 this.setState({loginRedirect:true})
@@ -147,10 +145,10 @@ class Chat extends React.Component {
         this.socket.disconnect();
     };
 
-    getUserLog =(reqUsername,reqArrName,reqMesCountCb)=>{
+    getUserLog =(reqArrName, reqUsername,reqMesCountCb)=>{
         let reqUser = this.state[reqArrName][this.getUsersIdx(reqArrName,reqUsername)];
         this.socket.emit('getUserLog',reqUsername,reqMesCountCb,(arr)=>{
-            console.log("getUserLog: ",arr);
+            //console.log("getUserLog: ",arr);
             reqUser.messages = arr;
             this.setState({reqUser});
         })
@@ -178,73 +176,45 @@ class Chat extends React.Component {
         });
     };
 
-    typing =(sId,ev)=> {
+    typing =(name,ev)=> {
         //console.log('this.typing sId: ', sId);
         this.setState({message: ev.target.value});
-        if(sId) {this.socket.emit('typing', sId)}
-    };
-
-    typingHandler =(i)=> {
-        const typingUser = this.state.users[i];
-        typingUser.typing = true;
-        this.setState({typingUser});
-        setTimeout(()=>{
-            typingUser.typing = false;
-            this.setState({typingUser});
-        },2000)
+        if(name) {this.socket.emit('typing', name)}
     };
 
     msgCounter =(i)=> {
-        if (i === undefined ) {
-            //console.log('msgCounter !i : ', i);
-            if(this.state.messageBlockHandlerId !== undefined) this.setState({msgCounter: this.state.msgCounter + 1});
-        } else {
-            if(this.state.messageBlockHandlerId !== i) {
-                const currentUser = this.state.users[i];
-                currentUser.msgCounter = currentUser.msgCounter + 1;
-                this.setState({currentUser});
-                //console.log('msgCounter i: ', i, 'user[i]: ', user);
-            }
+        //console.log('msgCounter i : ', i);
+        if(this.state.messageBlockHandlerId === "users") return;
+        if(this.state.messageBlockHandlerId !== i) {
+            const currentUser = this.state.users[i];
+            currentUser.msgCounter = currentUser.msgCounter + 1;
+            this.setState({currentUser});
         }
     };
 
     inxHandler =(arrName,inx)=> {
-        console.log('inxHandler arrName: ',arrName,", arrName inx: ", inx);
+        //console.log('inxHandler arrName: ',arrName,", arrName inx: ", inx);
         this.setState({
             messageBlockHandlerId: inx,
-            arrayBlockHandlerId:arrName
+            arrayBlockHandlerId: arrName
         });
-        if(arrName === undefined || inx === undefined) return;
-        const eUser = this.state[arrName][inx];
-        if (inx === undefined && this.state.msgCounter !== 0) {
-            this.setState({msgCounter:0})
-        } else {
-            if (eUser && eUser.msgCounter !== 0) {
-                eUser.msgCounter = 0;
-                this.setState({eUser});
-            }
+        if(arrName !== "users") return;
+        const eUser = this.state.users[inx];
+        if (eUser && eUser.msgCounter !== 0) {
+            eUser.msgCounter = 0;
+            this.setState({eUser});
         }
     };
 
     sendMessage =(name)=> {
-        //console.log('this.sendMessage i: ', i);
-        const currentDate = new Date();
-        const text = this.state.message;
-        if (i === undefined) {
-            //console.log('this.sendMessage text: ', text,",","currentDate: ",currentDate);
-            this.socket.emit('message', text,null,null,currentDate, ()=> {
-                this.printMessage({name:this.state.user.username,text:text,date:currentDate,status:false});
+        if (name) {
+            console.log('this.sendMessage !GC');
+            this.socket.emit('message', this.state.message, name, new Date(), ()=> {
+                this.printMessage({name:this.state.user.username, text:this.state.message, date:new Date(), status:false},this.getUsersIdx("users",name));
+                this.setState({message:''});
             });
-            this.setState({message:''});
-            return false;
-        } else {
-            this.socket.emit('message', text,name,currentDate, ()=> {
-                this.printMessage({name:this.state.user.username,text:text,date:currentDate,status:false},i);
-            });
-            this.setState({message:''});
             return false;
         }
-
     };
 
     getUsersIdx =(arrName,username)=> {
@@ -260,15 +230,10 @@ class Chat extends React.Component {
             + currentdate.getHours() + ":"
             + currentdate.getMinutes() + ":"
             + currentdate.getSeconds();
-        if (i === undefined) {
-            this.setState({messages: [...this.state.messages,{user:data.name,text:data.text,status:data.status,date:datetime}]});
-            //console.log('this.state.messages: ',this.state.messages);
-        } else {
-            const currentUser = this.state.users[i];
-            currentUser.messages = [...currentUser.messages,{user:data.name,text:data.text,status:data.status,date:datetime}];
-            this.setState({currentUser});
-            //console.log('this.state.users[i]: ',this.state.users[i]);
-        }
+        const currentUser = this.state.users[i];
+        currentUser.messages = [...currentUser.messages,{user:data.name, text:data.text, status:data.status, date:datetime}];
+        this.setState({currentUser});
+
     };
 
     addUsers =(nameArr)=> {
@@ -307,10 +272,10 @@ class Chat extends React.Component {
     };
 
     addMeHandler = (confirmRes) => {
-        console.log('confirmRes: ',confirmRes);
+        //console.log('confirmRes: ',confirmRes);
         if(confirmRes){
             this.socket.emit('addMe', {name:this.state.reqAddMeName,date:Date.now()},(err,userData)=>{
-                console.log("addMe callback err: ",err," ,userData: ",userData);
+                //console.log("addMe callback err: ",err," ,userData: ",userData);
                 if(err) {
                     this.setState({
                         modalWindow:true,
@@ -338,10 +303,10 @@ class Chat extends React.Component {
     };
 
     resAddMeHandler =(confirmRes)=>{
-        console.log('resAddMeHandler: ',confirmRes);
+        //('resAddMeHandler: ',confirmRes);
         if(confirmRes){
             this.socket.emit('resAddMe', {name:this.state.resAddMeAddMeName,date:Date.now()},(err,userData)=>{
-                console.log("resAddMeHandler callback err: ",err," ,userData: ",userData);
+                //console.log("resAddMeHandler callback err: ",err," ,userData: ",userData);
                 if(err) {
                     this.setState({
                         modalWindow:true,
@@ -392,16 +357,8 @@ class Chat extends React.Component {
                             <input name="nameSearchInp" className="form-control" autoComplete="off" autoFocus placeholder="Search..."
                                     onChange={ev => this.setFiltered(ev.target.value)}
                             />
-                            <button  key='GC' onClick={()=>this.inxHandler(undefined,undefined)} type="button" className={(this.state.messageBlockHandlerId === undefined)?"btn clicked":"btn"}>
-                                GLOBAL CHAT
-                                {(this.state.msgCounter !== 0)?(
-                                    <div className="unread-mess">
-                                        {this.state.msgCounter}
-                                    </div>
-                                ):('')}
-                            </button>
-                            {
-                                (this.state.filteredUsers.length === 0)?(
+                            <div>white list users</div>
+                            {(this.state.filteredUsers.length === 0)?(
                                     (this.state.foundContacts.length !== 0)? (
                                         this.state.foundContacts.map((name,i) =><UserBtn
                                             key={i}
@@ -409,108 +366,93 @@ class Chat extends React.Component {
                                             itm={{name:name}}
                                             addMe={this.addMe}
                                         />)
-                                    ):(
-                                        this.state.users.map((itm,i) => <UserBtn
+                                    ):(this.state.users.map((itm,i) => <UserBtn
                                             key={i}
                                             itm={itm}
                                             i={i}
-                                            getUserLog={() => this.getUserLog(itm.name,"users",null)}
+                                            getUserLog={() => this.getUserLog("users",itm.name,null)}
                                             inxHandler={()=> this.inxHandler("users",i)}
-                                            userData={this.state.users[this.getUsersIdx("users",itm.name)]}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
-                                        />)
-                                    )
-
-                                ):(
-                                    this.state.users.filter(items => this.state.filteredUsers
+                                        />))
+                                ):(this.state.users.filter(items => this.state.filteredUsers
                                         .map(i => i.name)
                                         .includes(items.name))
                                         .map((itm,i) => <UserBtn
                                             key={i}
                                             itm={itm}
                                             i={this.getUsersIdx("users",itm.name)}
-                                            getUserLog={(reqUsername,reqArrName,reqMesCountCb) => this.getUserLog(itm.name,"users",null)}
-                                            inxHandler={(arrName,inx) => this.inxHandler("users",i)}
-                                            userData={this.state.users[this.getUsersIdx("users",itm.name)]}
+                                            getUserLog={() => this.getUserLog("users",itm.name,null)}
+                                            inxHandler={() => this.inxHandler("users",i)}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
                                         />)
-                                )
-                            }
+                                )}
                             <div>black list users</div>
-                            {
-                                (this.state.unregisteredContacts.length !== 0)? (
+                            {(this.state.unregisteredContacts.length !== 0)? (
                                     this.state.unregisteredContacts.map((itm,i) =>
                                         <UserBtn
                                             key={i}
                                             itm={itm}
                                             i={i}
-                                            getUserLog={(reqUsername,reqArrName,reqMesCountCb) => this.getUserLog(itm.name,"unregisteredContacts",null)}
-                                            inxHandler={(arrName,inx) => this.inxHandler("unregisteredContacts",i)}
-                                            userData={this.state.unregisteredContacts[this.getUsersIdx("unregisteredContacts",itm.name)]}
+                                            getUserLog={() => this.getUserLog("unregisteredContacts",itm.name,null)}
+                                            inxHandler={() => this.inxHandler("unregisteredContacts",i)}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
                                         />)
-                                ):("")
-                            }
+                                ):("")}
                         </div>
                     </div>
 
                     {
                         ((a,e) => {
-                            console.log('message-block: e:',e,", a:",a);
-                            let eUser = undefined;
-                            if(a !== undefined && e !== undefined) {
-                                eUser = this.state[a][e];
-                                console.log('eUser: ',eUser);
-                            }
-
+                            //console.log('message-block: e:',e,", a:",a);
+                            let eUser = {};
+                            if(a && e !== undefined) {eUser = this.state[a][e]}
+                            else{eUser = undefined}
                             return (
                                 <div className="message-block">
                                     <div name="chatRoom" id="chatDiv">
                                         <ul name="InpUl" className="chat-list" ref="InpUl">
                                             {
-                                                (e === undefined || !eUser) ? (
-                                                    this.state.messages.map((data, i) => {
-                                                        return (
-                                                            <li key={i}
-                                                                className={(data.user === this.state.user.username) ? ("right") : ("")}>{data.user + '>>>' + data.text + '>>>' + data.date}</li>
-                                                        )
-                                                    })
-                                                ) : (
+                                                (eUser) ? (
                                                     eUser.messages.map((data, i) => {
                                                         return (
                                                             <li key={i}
                                                                 className={(data.user === this.state.user.username) ? ("right") : ("")}>{data.user + '>>>' + data.text + '>>>' + data.date}</li>
                                                         )
                                                     })
-                                                )
+                                                ) : ("")
                                             }
                                         </ul>
-                                        <form onSubmit={(ev) => {
-                                                ev.preventDefault();
-                                                ev.stopPropagation();
-                                                this.sendMessage(e)
-                                        }}
-                                              name="chatRoomForm">
-                                            <div className="input-group">
-                                                <input name="formInp" className="form-control" autoComplete="off"
-                                                       autoFocus placeholder="Message..."
-                                                       value={this.state.message}
-                                                       onChange={ev => (eUser) ? (this.typing(eUser.sId, ev)) : (this.typing(null, ev))}
-                                                />
-                                                {
-                                                    (a !== "unregisteredContacts") ? (
-                                                        <span className="input-group-btn">
-                                                            <button onClick={() => this.sendMessage(e)} name="msgBtn" type="button" className="btn">SEND</button>
+                                        {
+                                            (eUser)?(
+                                                <form onSubmit={(ev) => {
+                                                    ev.preventDefault();
+                                                    ev.stopPropagation();
+                                                    this.sendMessage(eUser.name)
+                                                }}
+                                                      name="chatRoomForm">
+                                                    <div className="input-group">
+                                                        <input name="formInp" className="form-control" autoComplete="off"
+                                                               autoFocus placeholder="Message..."
+                                                               value={this.state.message}
+                                                               onChange={ev => (this.typing(eUser.name, ev))}
+                                                        />
+                                                        {
+                                                            (a !== "unregisteredContacts") ? (
+                                                                <span className="input-group-btn">
+                                                            <button onClick={() => this.sendMessage(eUser.name)} name="msgBtn" type="button" className="btn">SEND</button>
                                                         </span>
-                                                    ):(
-                                                        <span className="input-group-btn">
+                                                            ):(
+                                                                <span className="input-group-btn">
                                                             <button onClick={() => this.resAddMe(eUser.name)} name="msgBtn" type="button" className="btn">SEND RESPONSE TO ADD</button>
                                                         </span>
-                                                    )
-                                                }
+                                                            )
+                                                        }
 
-                                            </div>
-                                        </form>
+                                                    </div>
+                                                </form>
+                                            ):("")
+                                        }
+
                                     </div>
                                 </div>
                             );

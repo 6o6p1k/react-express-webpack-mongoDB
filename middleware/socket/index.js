@@ -172,7 +172,7 @@ module.exports = function (server) {
             if(mes.messages.length === 0) {//Save message in DB only one time
                 await Message.messageHandler({members:[username,data.name],message:{user: username, text: "Please add me to you contact list.", status: false, date: data.date}});
                 if(globalChatUsers[data.name]) {//Send message "Add me to you contact list" if user online
-                    socket.broadcast.to(globalChatUsers[data.name].id).emit('updateUsers', userRD.user);
+                    socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('updateUsers', userRD.user);
                 }
                 cb(null,userRG.user);
             }else return cb("Request rejected. You always send request. Await then user response you.",null);
@@ -218,14 +218,16 @@ module.exports = function (server) {
             }
         });
         //chat message typing
-        socket.on('typing', function (id) {
+        socket.on('typing', function (name) {
             //console.log('typing');
-            socket.broadcast.to(id).emit('typing', username);
+            let sid = globalChatUsers[name].sockedId;
+            if(sid) socket.broadcast.to(sid).emit('typing', username);
+
         });
         //chat message receiver
         socket.on('message', async function (text,resToUserName,dateNow, cb) {
-            let sid = globalChatUsers[name].sockedId;
-            console.log('message text: ',text, 'sid: ',sid, 'resToUserName: ',name, 'dateNow: ',dateNow);
+            let sid = globalChatUsers[resToUserName].sockedId;
+            console.log('message text: ',text, 'sid: ',sid, 'resToUserName: ',resToUserName, 'dateNow: ',dateNow);
             if (text.length === 0) return;
             if (text.length >= 60) {return socket.broadcast.emit('message', 'Admin', 'to long message');}
             if (resToUserName) {                //append to individual chat log

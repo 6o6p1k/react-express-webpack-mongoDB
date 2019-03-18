@@ -10,7 +10,6 @@ class UserBtn extends React.Component {
         let itm = this.props.itm;
         let i = this.props.i;
         let messageBlockHandlerId = this.props.messageBlockHandlerId;
-        let userData = this.props.userData;
         const inxHandler = this.props.inxHandler;
         const getUserLog = this.props.getUserLog;
         const addMe = this.props.addMe;
@@ -28,21 +27,18 @@ class UserBtn extends React.Component {
                     type="button"
                     className={(messageBlockHandlerId === i)?"btn clicked":"btn"}>
                 {
-                    userData ? <font color={userData.onLine ? "blue":"red"}>{itm.name}</font> : <font>{itm.name}</font>
+                    itm ? <font color={itm.onLine ? "blue":"red"}>{itm.name}</font> : <font>{itm.name}</font>
                 }
                 {
-                    (userData)?(
+                    (itm)?(
                         <div className="userItm">
-
-                            {
-                                (userData.msgCounter !== 0)?(
+                            {(itm.msgCounter !== 0)?(
                                     <div className="unread-mess">
-                                        {userData[i].msgCounter}
+                                        {itm.msgCounter}
                                     </div>
-                                ):('')
-                            }
+                                ):('')}
                             <div className="typing">
-                                {(userData.typing)?(
+                                {(itm.typing)?(
                                     <div className="loader">
                                         <span/>
                                     </div>
