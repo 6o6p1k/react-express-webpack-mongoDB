@@ -159,22 +159,21 @@ module.exports = function (server) {
         //req to add me to contact list
         socket.on('addMe', async function (data,cb) {
             console.log('addMe: ',data);
-
             let userRG = await User.userATC(username,data.name);//add to contacts
             let userRD = await User.userATBC(data.name,username);//add to blocked contacts
             if(userRG.err) return cb("Request rejected. DB err: "+userRG.err,null);
             if(userRD.err) return cb("Request rejected. DB err: "+userRD.err,null);
             console.log("addMe userRG: ",userRG," ,userRD: ",userRD);
-
-
             let {errMessage,mes} = await Message.messageHandler({members:[username,data.name]});
-            if(errMessage) return cb("Save message filed. DB err: " + errMessage,null);
+            if(errMessage) {
+                console.log("addMe errMessage: ", errMessage);
+                return cb("Send message filed. DB err: " + errMessage,null);
+            }
             if(mes.messages.length === 0) {//Save message in DB only one time
                 await Message.messageHandler({members:[username,data.name],message:{user: username, text: "Please add me to you contact list.", status: false, date: data.date}});
                 if(globalChatUsers[data.name]) {//Send message "Add me to you contact list" if user online
                     socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('updateUsers', userRD.user);
-                }
-                cb(null,userRG.user);
+                } else return cb(null,userRG.user);
             }else return cb("Request rejected. You always send request. Await then user response you.",null);
         });
         //res to add me
@@ -184,9 +183,10 @@ module.exports = function (server) {
             if(userRG.err) return cb("Request rejected. DB err: "+userRG.err,null);
             if(globalChatUsers[data.name]) {//Send message "Add me to you contact list" if user online
                 let {err,mes} = await Message.messageHandler({members:[username,data.name],message:{ user: username, text: "I added you to my contact list.", status: false, date: data.date}});
-                socket.broadcast.to(globalChatUsers[data.name].id).emit('message', { user: username, text: "I added you to my contact list.", status: false, date: data.date});
-            }
-            cb(null,userRG.user);
+                socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('message', { user: username, text: "I added you to my contact list.", status: false, date: data.date});
+                socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('onLine', username);
+            }else return cb(null,userRG.user);
+            if(globalChatUsers[data.name]) socket.emit('onLine', data.name);
         });
 
         //Find contacts
@@ -200,14 +200,9 @@ module.exports = function (server) {
                 return  cb(usersArr);
             }
         });
-        //get history global chat
-        socket.on('getGlobalLog', async function (cb) {
-            let {err,mes} = await Message.messageHandler({members:"GLOBAL"});
-            //console.log("getGlobalLog mes: ",mes,",","err: ",err);
-            return cb(mes.messages);
-        });
         //chat users history cb
         socket.on('getUserLog', async function (reqUsername,reqMesCountCb,cb) {
+            console.log("getUserLog reqUsername: ", reqUsername);
             let {err,mes} = await Message.messageHandler({members:[username,reqUsername]});
             if(err) {
                 console.log("getUserLog err: ", err);

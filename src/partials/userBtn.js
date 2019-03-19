@@ -6,7 +6,7 @@ class UserBtn extends React.Component {
     }
 
     render() {
-        //console.log('UserBtn props: ',this.props);
+        console.log('UserBtn props: ',this.props);
         let itm = this.props.itm;
         let i = this.props.i;
         let messageBlockHandlerId = this.props.messageBlockHandlerId;
@@ -17,22 +17,21 @@ class UserBtn extends React.Component {
             <button key={i}
                     onClick={()=>{
                         if(addMe) {
-                            addMe(itm.name)
+                            addMe()
                         }else {
                             inxHandler();
                             getUserLog();
                         }
                     }}
-                    name={itm.name}
                     type="button"
                     className={(messageBlockHandlerId === i)?"btn clicked":"btn"}>
                 {
-                    itm ? <font color={itm.onLine ? "blue":"red"}>{itm.name}</font> : <font>{itm.name}</font>
+                    this.props.name ? <font>{this.props.name}</font> : <font color={itm.onLine ? "blue":"red"}>{itm.name}</font>
                 }
                 {
                     (itm)?(
                         <div className="userItm">
-                            {(itm.msgCounter !== 0)?(
+                            {(itm.msgCounter !== 0 || itm.msgCounter === undefined)?(
                                     <div className="unread-mess">
                                         {itm.msgCounter}
                                     </div>

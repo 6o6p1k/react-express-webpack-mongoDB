@@ -6,7 +6,7 @@ var DevError = require('./../error/index').DevError;
 
 
 var user = new mongoose.Schema({
-    username: {type: String, unique: true, required: true},
+    username: {type: String, unique: true, required: true},//lowercase: true,
     hashedPassword: {type: String, required: true},
     salt: {type: String, required: true},
     created: {type: Date, default: Date.now},
@@ -20,9 +20,16 @@ var room = new mongoose.Schema({
     created_at: { type: Date, default: Date.now },
 });
 var message = new mongoose.Schema({
-    members:[{type: String, unique: true, required: true}],//["userName1","username2"] || ["roomName"]
+    uniqSig: {type: String, unique: true, required: true},
+    members: [],//["userName1","username2"]
     messages: [],//{ author: John, body: 'Hi what's up', status: true, data: Date.now},{ author: Petr, body: 'Nothing out here :(' , status: false, data: Date.now}
 });
+
+////Internal methods
+function setGetSig(arr) {
+    arr.sort();
+    return arr[0] + '_' + arr[1];
+};
 
 //User methods
 user.virtual('password').set(function (password) {
@@ -43,6 +50,9 @@ user.methods.encryptPassword = function (password) {
 user.methods.checkPassword = function (password) {
     return this.encryptPassword(password) === this.hashedPassword;
 };
+
+
+
 
 user.statics.userMFCTBC = async function (reqUser,contact) {//MoveFromContactsToBlockedContacts
     var User = this;
@@ -240,9 +250,10 @@ message.statics.messageHandler = async function (data) {
     var Message = this;
     let mes = {};
     let err = {};
+    let sig = setGetSig(data.members);
     console.log('DB messageHandler: ',data);
     try {
-        mes = await Message.findOne({members:data.members}) || await Message.findOne({members:[data.members[1],data.members[0]]});
+        mes = await Message.findOne({uniqSig:sig});
         //console.log("message.statics.messageHandlerRoomChat mes: ", mes);
         if(data.message) {//write data
             if(mes){
@@ -250,13 +261,15 @@ message.statics.messageHandler = async function (data) {
                 await mes.save();
                 return {err:null,mes:mes};
             }else {
-                mes = new Message({members:data.members,messages:[data.message]});
+                mes = new Message({uniqSig:sig,messages:[data.message],members:data.members});
                 await mes.save();
                 return {err:null,mes:mes};
             }
         }else {//read data
             if(!mes) {
-                return {err:'History log between members  '+data.members[1]+" & "+data.members[0]+' not found',mes:null};
+                mes = new Message({uniqSig:sig,messages:[],members:data.members});
+                await mes.save();
+                return {err:null,mes:mes};
             }else {
                 return {err:null,mes:mes};
             }

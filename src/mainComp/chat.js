@@ -79,21 +79,35 @@ class Chat extends React.Component {
             .on('updateUsers',(userData)=>{
                 //console.log("updateUsers: ",userData);
                 this.setState({
-                    users:userData.contacts,
-                    unregisteredContacts:userData.blockedContacts,
+                    users:this.addUsers(userData.contacts),
+                    unregisteredContacts:this.addUsers(userData.blockedContacts),
                 });
             })
             .on('onLine', (name)=> {
                 //console.log('receiver user onLine: ',name);
                 let users = this.state.users;
-                if(this.getUsersIdx("users",name) !== -1) users[this.getUsersIdx("users",name)].onLine = true;
-                this.setState({users:users});
+                let usersBC = this.state.blockedContacts;
+                if(this.getUsersIdx("users",name) !== -1) {
+                    users[this.getUsersIdx("users",name)].onLine = true;
+                    this.setState({users:users});
+                }
+/*                if(this.getUsersIdx("blockedContacts",name) !== -1) {
+                    usersBC[this.getUsersIdx("blockedContacts",name)].onLine = true;
+                    this.setState({blockedContacts:usersBC});
+                }*/
             })
             .on('offLine', (name)=> {
                 //console.log('receiver user offLine: ',name);
                 let users = this.state.users;
-                if(this.getUsersIdx("users",name)!== -1) users[this.getUsersIdx("users",name)].onLine = false;
-                this.setState({users:users});
+                let usersBC = this.state.blockedContacts;
+                if(this.getUsersIdx("users",name) !== -1) {
+                    users[this.getUsersIdx("users",name)].onLine = false;
+                    this.setState({users:users});
+                }
+/*                if(this.getUsersIdx("blockedContacts",name) !== -1) {
+                    usersBC[this.getUsersIdx("blockedContacts",name)].onLine = false;
+                    this.setState({blockedContacts:usersBC});
+                }*/
             })
             .on('message', (data)=> {
                 //receiver
@@ -145,7 +159,7 @@ class Chat extends React.Component {
         this.socket.disconnect();
     };
 
-    getUserLog =(reqArrName, reqUsername,reqMesCountCb)=>{
+    getUserLog =(reqArrName,reqUsername,reqMesCountCb)=>{
         let reqUser = this.state[reqArrName][this.getUsersIdx(reqArrName,reqUsername)];
         this.socket.emit('getUserLog',reqUsername,reqMesCountCb,(arr)=>{
             //console.log("getUserLog: ",arr);
@@ -206,11 +220,17 @@ class Chat extends React.Component {
         }
     };
 
+    dateToString =(dateMlS)=> {
+        let currentdate = new Date(dateMlS);
+        return currentdate.getHours() + ":" + currentdate.getMinutes() + "/" + currentdate.getDate() + ":" + (currentdate.getMonth()+1) + ":" + currentdate.getFullYear()// + ":"+ currentdate.getSeconds();
+    };
+
     sendMessage =(name)=> {
         if (name) {
             console.log('this.sendMessage !GC');
-            this.socket.emit('message', this.state.message, name, new Date(), ()=> {
-                this.printMessage({name:this.state.user.username, text:this.state.message, date:new Date(), status:false},this.getUsersIdx("users",name));
+            let date = this.dateToString(Date.now());
+            this.socket.emit('message', this.state.message, name, date, ()=> {
+                this.printMessage({name:this.state.user.username, text:this.state.message, date:date, status:false},this.getUsersIdx("users",name));
                 this.setState({message:''});
             });
             return false;
@@ -223,17 +243,16 @@ class Chat extends React.Component {
 
     printMessage =(data,i)=> {
         console.log("printMessage: ",data);
-        let currentdate = new Date(data.date);
+/*        let currentdate = new Date(data.date);
         let datetime = currentdate.getDate() + "/"
             + (currentdate.getMonth()+1)  + "/"
             + currentdate.getFullYear() + " @ "
             + currentdate.getHours() + ":"
             + currentdate.getMinutes() + ":"
-            + currentdate.getSeconds();
+            + currentdate.getSeconds();*/
         const currentUser = this.state.users[i];
-        currentUser.messages = [...currentUser.messages,{user:data.name, text:data.text, status:data.status, date:datetime}];
+        currentUser.messages = [...currentUser.messages,{user:data.name, text:data.text, status:data.status, date:data.date}];
         this.setState({currentUser});
-
     };
 
     addUsers =(nameArr)=> {
@@ -272,10 +291,10 @@ class Chat extends React.Component {
     };
 
     addMeHandler = (confirmRes) => {
-        //console.log('confirmRes: ',confirmRes);
+        console.log('confirmRes: ',confirmRes);
         if(confirmRes){
             this.socket.emit('addMe', {name:this.state.reqAddMeName,date:Date.now()},(err,userData)=>{
-                //console.log("addMe callback err: ",err," ,userData: ",userData);
+                console.log("addMe callback err: ",err," ,userData: ",userData);
                 if(err) {
                     this.setState({
                         modalWindow:true,
@@ -284,14 +303,15 @@ class Chat extends React.Component {
                         confirmMessage:"",
                         reqAddMeName:"",
                     })
+                }else {
+                    this.setState({
+                        users:this.addUsers(userData.contacts),
+                        unregisteredContacts:this.addUsers(userData.blockedContacts),
+                        addMeHandler: false,
+                        confirmMessage:"",
+                        reqAddMeName:"",
+                    });
                 }
-                this.setState({
-                    users:userData.contacts,
-                    unregisteredContacts:userData.blockedContacts,
-                    addMeHandler: false,
-                    confirmMessage:"",
-                    reqAddMeName:"",
-                });
             })
         }else{
             this.setState({
@@ -315,14 +335,15 @@ class Chat extends React.Component {
                         resAddMeAddMeName:"",
                         confirmMessage:""
                     })
+                }else {
+                    this.setState({
+                        users:this.addUsers(userData.contacts),
+                        unregisteredContacts:this.addUsers(userData.blockedContacts),
+                        resAddMeHandler:false,
+                        resAddMeAddMeName:"",
+                        confirmMessage:""
+                    });
                 }
-                this.setState({
-                    users:userData.contacts,
-                    unregisteredContacts:userData.blockedContacts,
-                    resAddMeHandler:false,
-                    resAddMeAddMeName:"",
-                    confirmMessage:""
-                });
             })
         }else{
             this.setState({
@@ -363,8 +384,8 @@ class Chat extends React.Component {
                                         this.state.foundContacts.map((name,i) =><UserBtn
                                             key={i}
                                             i={i}
-                                            itm={{name:name}}
-                                            addMe={this.addMe}
+                                            name={name}
+                                            addMe={() => this.addMe(name)}
                                         />)
                                     ):(this.state.users.map((itm,i) => <UserBtn
                                             key={i}
