@@ -192,8 +192,9 @@ module.exports = function (server) {
                 let {err,mes} = await Message.messageHandler({members:[username,data.name],message:{ user: username, text: "I added you to my contact list.", status: false, date: data.date}});
                 socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('message', { user: username, text: "I added you to my contact list.", status: false, date: data.date});
                 socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('onLine', username);
+                cb(null,userRG.user);
+                socket.emit('onLine', data.name);
             }else return cb(null,userRG.user);
-            if(globalChatUsers[data.name]) socket.emit('onLine', data.name);
         });
 
         //Find contacts
@@ -213,12 +214,12 @@ module.exports = function (server) {
             let {err,mes} = await Message.messageHandler({members:[username,reqUsername]});
             if(err) {
                 console.log("getUserLog err: ", err);
-                return cb({err:err,arr:null});
+                return cb(err,null);
             }else {
                 console.log("getUserLog mes: ", mes);
                 let messages = mes.messages.map((itm)=> dateToString(itm));
                 console.log("getUserLog messages: ",messages);
-                return cb({err:null,arr:messages});
+                return cb(null,messages);
             }
         });
         //chat message typing
@@ -226,7 +227,7 @@ module.exports = function (server) {
             //console.log('typing');
             if(!globalChatUsers[name]) return;
             let sid = globalChatUsers[name].sockedId;
-            if(sid) socket.broadcast.to(sid).emit('typing', username);
+            socket.broadcast.to(sid).emit('typing', username);
         });
         //chat message receiver
         socket.on('message', async function (text,resToUserName,dateNow, cb) {

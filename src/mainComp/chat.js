@@ -42,20 +42,6 @@ class Chat extends React.Component {
         };
     }
 
-/*    componentDidUpdate(prevProps, prevState){
-        if(prevState.unregisteredContacts.length !== this.state.unregisteredContacts.length || prevState.users.length !== this.state.users.length) {
-            this.setState({
-                arrayBlockHandlerId: undefined,
-                messageBlockHandlerId: undefined,
-            })
-        }
-
-
-        //move scroll bootom
-        //this.scrollToBottom(this.refs.InpUl);
-    }*/
-//TEst when no one users in contact list !!!!!!!!!!!
-
     componentDidMount(){
         //move scroll bootom
         this.scrollToBottom(this.refs.InpUl);
@@ -161,15 +147,15 @@ class Chat extends React.Component {
 
     getUserLog =(reqArrName,reqUsername,reqMesCountCb)=>{
         let reqUser = this.state[reqArrName][this.getUsersIdx(reqArrName,reqUsername)];
-        this.socket.emit('getUserLog',reqUsername,reqMesCountCb,(data)=>{
-            console.log("getUserLog arr: ",data.arr," ,err: ",data.err);
-            if(data.err) {
+        this.socket.emit('getUserLog',reqUsername,reqMesCountCb,(err,arr)=>{
+            console.log("getUserLog arr: ",arr," ,err: ",err);
+            if(err) {
                 this.setState({
                     modalWindow:true,
                     err:{message:err},
                 })
             }else {
-                reqUser.messages = data.arr;
+                reqUser.messages = arr;
                 this.setState({reqUser});
             }
         })
@@ -325,9 +311,8 @@ class Chat extends React.Component {
     resAddMeHandler =(confirmRes)=>{
         //('resAddMeHandler: ',confirmRes);
         if(confirmRes){
-
             this.socket.emit('resAddMe', {name:this.state.resAddMeAddMeName,date:Date.now()},(err,userData)=>{
-                //console.log("resAddMeHandler callback err: ",err," ,userData: ",userData);
+                console.log("resAddMeHandler callback err: ",err," ,userData: ",userData);
                 if(err) {
                     this.setState({
                         modalWindow:true,
