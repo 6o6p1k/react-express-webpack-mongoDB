@@ -111,7 +111,7 @@ class Chat extends React.Component {
             })
             .on('message', (data)=> {
                 //receiver
-                this.printMessage({name:data.user,text:data.text,status:data.status,date:data.date},this.getUsersIdx("users",data.user));
+                this.printMessage({name:data.user,text:data.text,status:data.status,date:this.dateToString(data.date)},this.getUsersIdx("users",data.user));
                 this.msgCounter(this.getUsersIdx("users",data.user));
             })
             .on('typing', (username)=> {
@@ -161,10 +161,17 @@ class Chat extends React.Component {
 
     getUserLog =(reqArrName,reqUsername,reqMesCountCb)=>{
         let reqUser = this.state[reqArrName][this.getUsersIdx(reqArrName,reqUsername)];
-        this.socket.emit('getUserLog',reqUsername,reqMesCountCb,(arr)=>{
-            //console.log("getUserLog: ",arr);
-            reqUser.messages = arr;
-            this.setState({reqUser});
+        this.socket.emit('getUserLog',reqUsername,reqMesCountCb,(data)=>{
+            console.log("getUserLog arr: ",data.arr," ,err: ",data.err);
+            if(data.err) {
+                this.setState({
+                    modalWindow:true,
+                    err:{message:err},
+                })
+            }else {
+                reqUser.messages = data.arr;
+                this.setState({reqUser});
+            }
         })
     };
 
@@ -228,9 +235,9 @@ class Chat extends React.Component {
     sendMessage =(name)=> {
         if (name) {
             console.log('this.sendMessage !GC');
-            let date = this.dateToString(Date.now());
+            let date = Date.now();
             this.socket.emit('message', this.state.message, name, date, ()=> {
-                this.printMessage({name:this.state.user.username, text:this.state.message, date:date, status:false},this.getUsersIdx("users",name));
+                this.printMessage({name:this.state.user.username, text:this.state.message, date:this.dateToString(date), status:false},this.getUsersIdx("users",name));
                 this.setState({message:''});
             });
             return false;
@@ -243,13 +250,6 @@ class Chat extends React.Component {
 
     printMessage =(data,i)=> {
         console.log("printMessage: ",data);
-/*        let currentdate = new Date(data.date);
-        let datetime = currentdate.getDate() + "/"
-            + (currentdate.getMonth()+1)  + "/"
-            + currentdate.getFullYear() + " @ "
-            + currentdate.getHours() + ":"
-            + currentdate.getMinutes() + ":"
-            + currentdate.getSeconds();*/
         const currentUser = this.state.users[i];
         currentUser.messages = [...currentUser.messages,{user:data.name, text:data.text, status:data.status, date:data.date}];
         this.setState({currentUser});
@@ -325,6 +325,7 @@ class Chat extends React.Component {
     resAddMeHandler =(confirmRes)=>{
         //('resAddMeHandler: ',confirmRes);
         if(confirmRes){
+
             this.socket.emit('resAddMe', {name:this.state.resAddMeAddMeName,date:Date.now()},(err,userData)=>{
                 //console.log("resAddMeHandler callback err: ",err," ,userData: ",userData);
                 if(err) {

@@ -44,6 +44,13 @@ function loadUser(session, callback) {
     });
 }
 
+function dateToString(obj){
+    let dateMls = obj.date;
+    let currentdate = new Date(dateMls);
+    obj.date = currentdate.getHours() + ":" + currentdate.getMinutes() + "/" + currentdate.getDate() + ":" + (currentdate.getMonth()+1) + ":" + currentdate.getFullYear();// + ":"+ currentdate.getSeconds();
+    return obj;
+}
+
 
 module.exports = function (server) {
 
@@ -206,39 +213,37 @@ module.exports = function (server) {
             let {err,mes} = await Message.messageHandler({members:[username,reqUsername]});
             if(err) {
                 console.log("getUserLog err: ", err);
-                return cb([{user:"Admin",text:err}]);
+                return cb({err:err,arr:null});
             }else {
                 console.log("getUserLog mes: ", mes);
-                return cb(mes.messages);
+                let messages = mes.messages.map((itm)=> dateToString(itm));
+                console.log("getUserLog messages: ",messages);
+                return cb({err:null,arr:messages});
             }
         });
         //chat message typing
         socket.on('typing', function (name) {
             //console.log('typing');
+            if(!globalChatUsers[name]) return;
             let sid = globalChatUsers[name].sockedId;
             if(sid) socket.broadcast.to(sid).emit('typing', username);
-
         });
         //chat message receiver
         socket.on('message', async function (text,resToUserName,dateNow, cb) {
+            console.log('message text: ',text, 'resToUserName: ',resToUserName, 'dateNow: ',dateNow);
+            if (text.length === 0 || !resToUserName) return;
+            if (text.length >= 60) return socket.emit('message', { user: resToUserName, text: "Admin: To long message!", status: false, date: Date.now()});
+            let resUser = await User.findOne({username:resToUserName});
+            if(!resUser.contacts.includes(username)) {
+                console.log('message cancel');
+                return socket.emit('message', { user: resToUserName, text: "Admin: user "+resToUserName+" do not add you in his white list!", status: false, date: Date.now()});
+            }
+            let {err,mes} = await Message.messageHandler({members:[username,resToUserName],message:{ user: username, text: text, status: false, date: dateNow}});
+            if(!globalChatUsers[resToUserName]) return;
             let sid = globalChatUsers[resToUserName].sockedId;
             console.log('message text: ',text, 'sid: ',sid, 'resToUserName: ',resToUserName, 'dateNow: ',dateNow);
-            if (text.length === 0) return;
-            if (text.length >= 60) {return socket.broadcast.emit('message', 'Admin', 'to long message');}
-            if (resToUserName) {                //append to individual chat log
-                console.log('!GC');
-                let {err,mes} = await Message.messageHandler({members:[username,resToUserName],message:{ user: username, text: text, status: false, date: dateNow}});
-                //console.log("message!GC: ",mes,",","err: ",err);
-                socket.broadcast.to(sid).emit('message', { user: username, text: text, status: false, date: dateNow});
-                cb && cb();
-            } else {                //append global chat log
-                console.log('GC');
-                let {err,mes} = await Message.messageHandler({members:["GLOBAL"],message:{ user: username, text: text, status: false, date: dateNow}});
-                //console.log("messageGC: ",mes,",","err: ",err);
-                socket.broadcast.emit('messageGlobal', { user: username, text: text, status: false, date: dateNow});
-                cb && cb();
-            }
- 
+            socket.broadcast.to(sid).emit('message', { user: username, text: text, status: false, date: dateNow});
+            cb && cb();
         });
         // when the user disconnects perform this
         socket.on('disconnect', async function () {
