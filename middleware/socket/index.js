@@ -149,7 +149,7 @@ module.exports = function (server) {
             console.log("getUsersOnLine, username: ",username,", contacts: ",contacts);
             let usersOnLine = contacts.filter(name => globalChatUsers[name]);
             //res for my contacts what Iam onLine
-            contacts.forEach((name)=>{
+            usersOnLine.forEach((name)=>{
                 if(globalChatUsers[name]) socket.broadcast.to(globalChatUsers[name].sockedId).emit('onLine', username);
             });
             cb(usersOnLine);
@@ -179,9 +179,10 @@ module.exports = function (server) {
             if(mes.messages.length === 0) {//Save message in DB only one time
                 await Message.messageHandler({members:[username,data.name],message:{user: username, text: "Please add me to you contact list.", status: false, date: data.date}});
                 if(globalChatUsers[data.name]) {//Send message "Add me to you contact list" if user online
-                    socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('updateUsers', userRD.user);
-                } else return cb(null,userRG.user);
-            }else return cb("Request rejected. You always send request. Await then user response you.",null);
+                    socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('addToBL', username);//test this tomorrow!!!!!!
+                    cb(null,userRG.user);//need transform array and add data who are online
+                } else cb(null,userRG.user);//need transform array and add data who are online
+            }else cb("Request rejected. You always send request. Await then user response you.",null);
         });
         //res to add me
         socket.on('resAddMe', async function (data,cb) {
@@ -192,9 +193,8 @@ module.exports = function (server) {
                 let {err,mes} = await Message.messageHandler({members:[username,data.name],message:{ user: username, text: "I added you to my contact list.", status: false, date: data.date}});
                 socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('message', { user: username, text: "I added you to my contact list.", status: false, date: data.date});
                 socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('onLine', username);
-                cb(null,userRG.user);
-                socket.emit('onLine', data.name);
-            }else return cb(null,userRG.user);
+                cb(null,userRG.user);//need transform array and add data who are online
+            }else return cb(null,userRG.user);//need transform array and add data who are online
         });
 
         //Find contacts

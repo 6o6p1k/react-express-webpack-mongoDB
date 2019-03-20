@@ -6,7 +6,7 @@ class UserBtn extends React.Component {
     }
 
     render() {
-        console.log('UserBtn props: ',this.props);
+        //console.log('UserBtn props: ',this.props);
         let itm = this.props.itm;
         let i = this.props.i;
         let messageBlockHandlerId = this.props.messageBlockHandlerId;
