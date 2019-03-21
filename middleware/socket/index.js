@@ -142,9 +142,12 @@ module.exports = function (server) {
         };
         //update UserData
         socket.emit('updateUserData',userDB);
-
+        //check user online
+        socket.on('checkOnLine', function (name,cb) {
+            cb(!!globalChatUsers[name]);
+        });
         //req get users from globalChatUsers who online
-        socket.on('getUsersOnLine', async function (cb) {
+        socket.on('getUsersOnLine', function (cb) {
             let contacts = globalChatUsers[username].contacts;
             console.log("getUsersOnLine, username: ",username,", contacts: ",contacts);
             let usersOnLine = contacts.filter(name => globalChatUsers[name]);
@@ -155,14 +158,13 @@ module.exports = function (server) {
             cb(usersOnLine);
         });
         //req send for my contacts what Iam onLine
-        socket.on('onLine', async function () {
+        socket.on('onLine', function () {
             let contacts = globalChatUsers[username].contacts;
             console.log("onLine, username: ",username,", contacts: ",contacts);
             contacts.forEach((name)=>{
                 if(globalChatUsers[name]) socket.broadcast.to(globalChatUsers[name].sockedId).emit('onLine', username);
             })
         });
-
         //req to add me to contact list
         socket.on('addMe', async function (data,cb) {
             console.log('addMe: ',data);
@@ -192,11 +194,10 @@ module.exports = function (server) {
             if(globalChatUsers[data.name]) {//Send message "Add me to you contact list" if user online
                 let {err,mes} = await Message.messageHandler({members:[username,data.name],message:{ user: username, text: "I added you to my contact list.", status: false, date: data.date}});
                 socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('message', { user: username, text: "I added you to my contact list.", status: false, date: data.date});
-                socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('onLine', username);
+                //socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('onLine', username);
                 cb(null,userRG.user);//need transform array and add data who are online
             }else return cb(null,userRG.user);//need transform array and add data who are online
         });
-
         //Find contacts
         socket.on('findContacts', async function (data,cb) {
             console.log('findContacts: ',data);
@@ -247,7 +248,7 @@ module.exports = function (server) {
             cb && cb();
         });
         // when the user disconnects perform this
-        socket.on('disconnect', async function () {
+        socket.on('disconnect', function () {
             let contacts = globalChatUsers[username].contacts;
             console.log("disconnect, username: ",username,", contacts: ",contacts);
             //res for my contacts what Iam offLine

@@ -42,10 +42,6 @@ class Chat extends React.Component {
         };
     }
 
-/*    componentDidUpdate(prevProps, prevState) {
-
-    }*/
-
     componentDidMount(){
         //move scroll bootom
         this.scrollToBottom(this.refs.InpUl);
@@ -70,7 +66,7 @@ class Chat extends React.Component {
             .on('addToBL',(name)=>{
                 //console.log("updateUsers: ",userData);
                 this.setState({
-                    unregisteredContacts:[...this.state.unregisteredContacts,name],
+                    unregisteredContacts:[...this.state.unregisteredContacts,{name:name, messages:[], msgCounter :0, typing:false, onLine:false,}],
                 });
             })
             .on('onLine', (name)=> {
@@ -247,17 +243,25 @@ class Chat extends React.Component {
         this.setState({currentUser});
     };
 
+    moveToBlackList =(name)=> {
+
+    }
+
     addUsers =(nameArr)=> {
         nameArr.map((name,i) =>{
-            nameArr[i] = {
-                name:name,
-                messages:[],
-                msgCounter :0,
-                typing:false,
-                onLine:false,
-            }
+            nameArr[i] = {name:name, messages:[], msgCounter :0, typing:false, onLine:false,}
         });
         return nameArr;
+    };
+
+    checkStatus =(name)=>{
+        let user = this.state.users[this.getUsersIdx("users",name)];
+        this.socket.emit('checkOnLine',name,(status)=>{
+            user.onLine = status;
+            this.setState({user:user})
+        });
+        let sortUsers = this.state.users.sort((a,b)=> b.onLine - a.onLine);
+        this.setState({users:sortUsers})
     };
 
     hideModal =()=> {
@@ -297,13 +301,14 @@ class Chat extends React.Component {
                     })
                 }else {
                     //after this update need update users online or need send date with right data online
+                    let name = this.state.reqAddMeName;
                     this.setState({
-                        users:this.addUsers(userData.contacts),
-                        unregisteredContacts:this.addUsers(userData.blockedContacts),
+                        users:[...this.state.users,{name:name, messages:[], msgCounter :0, typing:false, onLine:false,}],
                         addMeHandler: false,
                         confirmMessage:"",
                         reqAddMeName:"",
-                    });
+                    },()=>this.checkStatus(name));
+
                 }
             })
         }else{
@@ -330,13 +335,15 @@ class Chat extends React.Component {
                     })
                 }else {
                     //after this update need update users online or need send date with right data online
+                    let name = this.state.resAddMeAddMeName;
                     this.setState({
-                        users:this.addUsers(userData.contacts),
-                        unregisteredContacts:this.addUsers(userData.blockedContacts),
+                        users:[...this.state.users,{name:name, messages:[], msgCounter :0, typing:false, onLine:false,}],
+                        unregisteredContacts:[...this.state.unregisteredContacts.filter(name => name === this.state.resAddMeAddMeName)],
                         resAddMeHandler:false,
                         resAddMeAddMeName:"",
                         confirmMessage:""
-                    });
+                    },()=>this.checkStatus(name));
+
                 }
             })
         }else{
@@ -372,7 +379,7 @@ class Chat extends React.Component {
                             <input name="nameSearchInp" className="form-control" autoComplete="off" autoFocus placeholder="Search..."
                                     onChange={ev => this.setFiltered(ev.target.value)}
                             />
-                            <a1>white list users</a1>
+                            <a>white list users</a>
                             {(this.state.filteredUsers.length === 0)?(
                                     (this.state.foundContacts.length !== 0)? (
                                         this.state.foundContacts.map((name,i) =><UserBtn
@@ -401,7 +408,7 @@ class Chat extends React.Component {
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
                                         />)
                                 )}
-                            <a1>black list users</a1>
+                            <a>black list users</a>
                             {(this.state.unregisteredContacts.length !== 0)? (
                                     this.state.unregisteredContacts.map((itm,i) =>
                                         <UserBtn
