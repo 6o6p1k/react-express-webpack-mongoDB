@@ -244,12 +244,32 @@ class Chat extends React.Component {
     };
 
     moveToBlackList =(name)=> {
-
-    }
+        let users = this.state.users;
+        let blockedContacts = this.state.blockedContacts;
+        this.socket.emit('moveToBlackList',(err,userData)=>{
+            console.log("moveToBlackList callback err: ",err," ,userData: ",userData);
+            if(err) {
+                this.setState({
+                    modalWindow:true,
+                    err:{message:err},
+                    addMeHandler: false,
+                    confirmMessage:"",
+                    reqAddMeName:"",
+                })
+            } else {
+                users.filter(itm => itm === name);
+                blockedContacts.push(name);
+                this.setState({
+                    users:users,
+                    blockedContacts:blockedContacts,
+                })
+            }
+        })
+    };
 
     addUsers =(nameArr)=> {
         nameArr.map((name,i) =>{
-            nameArr[i] = {name:name, messages:[], msgCounter :0, typing:false, onLine:false,}
+            nameArr[i] = {name:name, messages:[], msgCounter :0, typing:false, onLine:false, banned:false}
         });
         return nameArr;
     };
