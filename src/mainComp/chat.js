@@ -44,33 +44,22 @@ class Chat extends React.Component {
 
     componentDidMount(){
         //move scroll bootom
+        console.log("CDM");
         this.scrollToBottom(this.refs.InpUl);
 
         let socket = io.connect('', {reconnection: true});
         this.socket = socket
             .on('updateUserData',(userData)=>{
+                console.log("updateUserData: ",userData);
                 this.setState({
                     user:userData,
-                    users:this.addUsers(userData.contacts),
-                    unregisteredContacts:this.addUsers(userData.blockedContacts),
+                    users:userData.contacts,
+                    unregisteredContacts:userData.blockedContacts
                 });
             })
-            .emit('getUsersOnLine', (onLineUsers)=>{
-                //console.log("getUsersOnLine: ",onLineUsers);
-                let users = this.state.users;
-                users.map((itm,i) => onLineUsers.includes(itm.name) ? users[i].onLine = true : users[i].onLine = false);
-                let sortUsers = users.sort((a,b)=> b.onLine - a.onLine);
-                //console.log("getUsersOnLine users: ",sortUsers);
-                this.setState({users:sortUsers})
-            })
-            .on('addToBL',(name)=>{
-                //console.log("updateUsers: ",userData);
-                this.setState({
-                    unregisteredContacts:[...this.state.unregisteredContacts,{name:name, messages:[], msgCounter :0, typing:false, onLine:false,}],
-                });
-            })
+            .emit('sayOnLine')
             .on('onLine', (name)=> {
-                //console.log('receiver user onLine: ',name);
+                console.log('receiver user onLine: ',name);
                 let users = this.state.users;
                 let usersBC = this.state.blockedContacts;
                 if(this.getUsersIdx("users",name) !== -1) {
@@ -84,7 +73,7 @@ class Chat extends React.Component {
                 }*/
             })
             .on('offLine', (name)=> {
-                //console.log('receiver user offLine: ',name);
+                console.log('receiver user offLine: ',name);
                 let users = this.state.users;
                 let usersBC = this.state.blockedContacts;
                 if(this.getUsersIdx("users",name) !== -1) {
@@ -244,9 +233,7 @@ class Chat extends React.Component {
     };
 
     moveToBlackList =(name)=> {
-        let users = this.state.users;
-        let blockedContacts = this.state.blockedContacts;
-        this.socket.emit('moveToBlackList',(err,userData)=>{
+        this.socket.emit('moveToBlackList',name,(err,userData)=>{
             console.log("moveToBlackList callback err: ",err," ,userData: ",userData);
             if(err) {
                 this.setState({
@@ -257,11 +244,29 @@ class Chat extends React.Component {
                     reqAddMeName:"",
                 })
             } else {
-                users.filter(itm => itm === name);
-                blockedContacts.push(name);
                 this.setState({
-                    users:users,
-                    blockedContacts:blockedContacts,
+                    users:userData.users,
+                    blockedContacts:userData.blockedContacts,
+                })
+            }
+        })
+    };
+
+    deleteUser =(name)=> {
+        this.socket.emit('deleteUser',name,(err,userData)=>{
+            console.log("deleteUser callback err: ",err," ,userData: ",userData);
+            if(err) {
+                this.setState({
+                    modalWindow:true,
+                    err:{message:err},
+                    addMeHandler: false,
+                    confirmMessage:"",
+                    reqAddMeName:"",
+                })
+            } else {
+                this.setState({
+                    users:userData.users,
+                    blockedContacts:userData.blockedContacts,
                 })
             }
         })
@@ -272,16 +277,6 @@ class Chat extends React.Component {
             nameArr[i] = {name:name, messages:[], msgCounter :0, typing:false, onLine:false, banned:false}
         });
         return nameArr;
-    };
-
-    checkStatus =(name)=>{
-        let user = this.state.users[this.getUsersIdx("users",name)];
-        this.socket.emit('checkOnLine',name,(status)=>{
-            user.onLine = status;
-            this.setState({user:user})
-        });
-        let sortUsers = this.state.users.sort((a,b)=> b.onLine - a.onLine);
-        this.setState({users:sortUsers})
     };
 
     hideModal =()=> {
@@ -323,11 +318,11 @@ class Chat extends React.Component {
                     //after this update need update users online or need send date with right data online
                     let name = this.state.reqAddMeName;
                     this.setState({
-                        users:[...this.state.users,{name:name, messages:[], msgCounter :0, typing:false, onLine:false,}],
+                        users:userData.contacts,
                         addMeHandler: false,
                         confirmMessage:"",
                         reqAddMeName:"",
-                    },()=>this.checkStatus(name));
+                    });
 
                 }
             })
@@ -357,12 +352,12 @@ class Chat extends React.Component {
                     //after this update need update users online or need send date with right data online
                     let name = this.state.resAddMeAddMeName;
                     this.setState({
-                        users:[...this.state.users,{name:name, messages:[], msgCounter :0, typing:false, onLine:false,}],
-                        unregisteredContacts:[...this.state.unregisteredContacts.filter(name => name === this.state.resAddMeAddMeName)],
+                        users:userData.contacts,
+                        unregisteredContacts:userData.blockedContacts,
                         resAddMeHandler:false,
                         resAddMeAddMeName:"",
                         confirmMessage:""
-                    },()=>this.checkStatus(name));
+                    });
 
                 }
             })

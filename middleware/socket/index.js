@@ -51,7 +51,7 @@ function dateToString(obj){
     return obj;
 }
 
-async function aggregateUserData(username,globalChatUsers) {
+async function aggregateUserData(username) {
     let userData = await User.findOne({username:username});
     let contacts = userData.contacts;
     let blockedContacts = userData.blockedContacts;
@@ -59,14 +59,14 @@ async function aggregateUserData(username,globalChatUsers) {
         let status = !!globalChatUsers[name];
         let nameUserDB = await User.findOne({username:name});
         let banned = !!nameUserDB.blockedContacts[userData.username];
-        let notAuthorized =  !nameUserDB.contacts[userData.username] && !nameUserDB.blockedContacts[userData.username];
+        let notAuthorized =  !!nameUserDB.contacts[userData.username] && !!nameUserDB.blockedContacts[userData.username];
         return contacts[i] = {name:name, messages:[], msgCounter :0, typing:false, onLine:status, banned:banned, notAuthorized:notAuthorized}
     });
     let bL = blockedContacts.map(async (name,i) =>{
         let status = !!globalChatUsers[name];
         let nameUserDB = await User.findOne({username:name});
         let banned = !!nameUserDB.blockedContacts[userData.username];
-        let notAuthorized =  !nameUserDB.contacts[userData.username] && !nameUserDB.blockedContacts[userData.username];
+        let notAuthorized =  !!nameUserDB.contacts[userData.username] && !!nameUserDB.blockedContacts[userData.username];
         return blockedContacts[i] = {name:name, messages:[], msgCounter :0, typing:false, onLine:status, banned:banned, notAuthorized:notAuthorized}
     });
     userData.contacts = await Promise.all(wL);
@@ -162,46 +162,54 @@ module.exports = function (server) {
             sockedId:reqSocketId,
             contacts:userDB.contacts
         };
-        let userDataAgte = await aggregateUserData(username,globalChatUsers);
-        //console.log("aggregateUserData name: " + username + ":" + userDataAgte);
         //update UserData
-        socket.emit('updateUserData',userDB);
+        socket.emit('updateUserData',await aggregateUserData(username));
         //move to black list
         socket.on('moveToBlackList', async function (name,cb) {
             let userRG = await User.userMFCTBC(username,name);//add to black list. remove from contacts
             if(userRG.err) {
-                //console.log("moveToBlackList: ", userRG.err);
-                return cb("Send message filed. DB err: " + userRG.err,null);
+                return cb("Move user to black list filed. DB err: " + userRG.err,null);
             }
-            //send alert to user what hi baned
-
-            //
-            cb(null,userRG.user);
+            if(globalChatUsers[name]) {
+                socket.broadcast.to(globalChatUsers[name].sockedId).emit('updateUserData',await aggregateUserData(name));//update user data, what hi baned
+                cb(null,await aggregateUserData(username));
+            } else cb(null,await aggregateUserData(username));
         });
         //remove completely
         socket.on('deleteUser', async function (name,cb) {
             await User.userMFCTBC(username,name);//move from contacts to blacklist
             let userRG = await User.userRFBC(username,name);//remove from black list
             if(userRG.err) {
-                //console.log("moveToBlackList: ", userRG.err);
-                return cb("Send message filed. DB err: " + userRG.err,null);
+                return cb("Remove user from all list filed. DB err: " + userRG.err,null);
             }
-            cb(null,userRG.user);
+            if(globalChatUsers[name]) {
+                socket.broadcast.to(globalChatUsers[name].sockedId).emit('updateUserData',await aggregateUserData(name));//update user data, what hi baned
+                cb(null,await aggregateUserData(username));
+            } else cb(null,await aggregateUserData(username));
         });
         //check user online
         socket.on('checkOnLine', function (name,cb) {
             cb(!!globalChatUsers[name]);
         });
-        //req get users from globalChatUsers who online
-        socket.on('getUsersOnLine', function (cb) {
+        //req show me online
+        socket.on('sayOnLine', function () {
             let contacts = globalChatUsers[username].contacts;
-            //console.log("getUsersOnLine, username: ",username,", contacts: ",contacts);
+            console.log("getUsersOnLine, username: ",username,", contacts: ",contacts);
             let usersOnLine = contacts.filter(name => globalChatUsers[name]);
             //res for my contacts what Iam onLine
             usersOnLine.forEach((name)=>{
                 if(globalChatUsers[name]) socket.broadcast.to(globalChatUsers[name].sockedId).emit('onLine', username);
             });
-            cb(usersOnLine);
+        });
+        //req show me offLine
+        socket.on('sayOffLine', function () {
+            let contacts = globalChatUsers[username].contacts;
+            console.log("getUsersOnLine, username: ",username,", contacts: ",contacts);
+            let usersOnLine = contacts.filter(name => globalChatUsers[name]);
+            //res for my contacts what Iam onLine
+            usersOnLine.forEach((name)=>{
+                if(globalChatUsers[name]) socket.broadcast.to(globalChatUsers[name].sockedId).emit('offLine', username);
+            });
         });
         //req to add me to contact list
         socket.on('addMe', async function (data,cb) {
@@ -219,9 +227,9 @@ module.exports = function (server) {
             if(mes.messages.length === 0) {//Save message in DB only one time
                 await Message.messageHandler({members:[username,data.name],message:{user: username, text: "Please add me to you contact list.", status: false, date: data.date}});
                 if(globalChatUsers[data.name]) {//Send message "Add me to you contact list" if user online
-                    socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('addToBL', username);
-                    cb(null,userRG.user);
-                } else cb(null,userRG.user);
+                    socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('updateUserData',await aggregateUserData(data.name));
+                    cb(null,await aggregateUserData(username));
+                } else cb(null,await aggregateUserData(username));
             }else cb("Request rejected. You always send request. Await then user response you.",null);
         });
         //res to add me
@@ -233,8 +241,8 @@ module.exports = function (server) {
                 let {err,mes} = await Message.messageHandler({members:[username,data.name],message:{ user: username, text: "I added you to my contact list.", status: false, date: data.date}});
                 socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('message', { user: username, text: "I added you to my contact list.", status: false, date: data.date});
                 //socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('onLine', username);
-                cb(null,userRG.user);//need transform array and add data who are online
-            }else return cb(null,userRG.user);//need transform array and add data who are online
+                cb(null,await aggregateUserData(username));//need transform array and add data who are online
+            }else return cb(null,await aggregateUserData(username));//need transform array and add data who are online
         });
         //Find contacts
         socket.on('findContacts', async function (data,cb) {
