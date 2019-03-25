@@ -13,6 +13,7 @@ class UserBtn extends React.Component {
         const inxHandler = this.props.inxHandler;
         const getUserLog = this.props.getUserLog;
         const addMe = this.props.addMe;
+        const rightClickMenuOn = this.props.rightClickMenuOn;
         return (
             <button key={i}
                     onClick={()=>{
@@ -23,6 +24,7 @@ class UserBtn extends React.Component {
                             getUserLog();
                         }
                     }}
+                    onContextMenu={(e)=>{e.preventDefault();rightClickMenuOn(); return false;}}
                     type="button"
                     className={(messageBlockHandlerId === i)?"btn clicked":"btn"}>
                 {
