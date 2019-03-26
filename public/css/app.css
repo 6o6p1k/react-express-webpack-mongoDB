@@ -113,6 +113,7 @@ ul li{
     background-color: #2da292;
     color: #fff;
     transition: all .3s linear;
+    position: relative;
 }
 
 .btn.clicked{background-color: #2da292;}
@@ -361,11 +362,24 @@ footer a:active{
 }
 
 .userDropDown{
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    top: 25%;
-    left: 0%;
+    position: absolute;
+    top: 0;
+    right: -30%;
     height: auto;
+    background-color: #403b3b;
+    padding-left: 0;
+
 }
 
+.dropDownBtn{
+    color: #fff;
+    text-transform:none;
+    font-size: 12px;
+    padding: 5px 10px;
+    cursor: pointer;
+
+}
+
+.dropDownBtn:hover{
+    background-color: #2da292;
+}

@@ -36,16 +36,15 @@ class UserBtn extends React.Component {
                         if(this.props.addMe) {this.props.addMe()
                         }else {this.props.inxHandler();this.props.getUserLog();}
                     }}
-                    onContextMenu={(e)=>{e.preventDefault();this.rightClickMenuOn(itm.name); return false;}}
-                    onMouseLeave={this.rightClickMenuOnHide}
-                    type="button"
-                    className={(this.props.messageBlockHandlerId === i)?"btn clicked":"btn"}>
+                 /*onContextMenu={()=>{this.rightClickMenuOn(itm.name);}}*/
+                 onContextMenu={(e)=>{e.preventDefault();this.rightClickMenuOn(itm.name); return false;}}
+                 onMouseLeave={this.rightClickMenuOnHide}
+                 type="button"
+                 className={(this.props.messageBlockHandlerId === i)?"btn clicked":"btn"}>
                 {
                     this.props.name ? <font>{this.props.name}</font> : <font color={itm.onLine ? "blue":"red"}>{itm.name}</font>
                 }
-                {(this.state.onContextMenu)?(
-                 <OnContextMenu show={this.state.onContextMenu} rightClickMenuOnHide={this.rightClickMenuOnHide}/>
-                 ):('')}
+
                 {
                     (itm)?(
                         <div className="userItm">
@@ -61,9 +60,13 @@ class UserBtn extends React.Component {
                                     </div>
                                 ):('')}
                             </div>
+
                         </div>
                     ):("")
                 }
+                {(this.state.onContextMenu)?(
+                    <OnContextMenu rightClickMenuOnHide={this.rightClickMenuOnHide}/>
+                ):('')}
             </div>
         )
     }

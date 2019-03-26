@@ -9,7 +9,7 @@ import UserPage from './mainComp/userPage.js'
 import UsersAdm from './mainComp/users.js'
 import { BrowserRouter,Switch, Route, Redirect} from 'react-router-dom'
 import '../public/css/app.css';
-import '../public/css/bootstrap/css/bootstrap.css';
+//import '../public/css/bootstrap/css/bootstrap.css';
 
 
 
