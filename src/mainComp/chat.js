@@ -5,7 +5,7 @@ import {Redirect} from 'react-router-dom'
 import UserBtn from '../partials/userBtn.js'
 import Modal from '../partials/modalWindow.js'
 import Confirm from '../partials/confirmModalWindow.js'
-import OnContextMenu from '../partials/onContextMenuWindow.js'
+
 
 
 class Chat extends React.Component {
@@ -16,9 +16,6 @@ class Chat extends React.Component {
         super(props);
         this.state = {
             modalWindow:false,
-
-            onContextMenu:false,
-            onContextMenuName:"",
 
             errorRedirect: false,
             loginRedirect:false,
@@ -72,10 +69,7 @@ class Chat extends React.Component {
                     let sortUsers = users.sort((a,b)=> b.onLine - a.onLine);
                     this.setState({users:sortUsers});
                 }
-/*                if(this.getUsersIdx("blockedContacts",name) !== -1) {
-                    usersBC[this.getUsersIdx("blockedContacts",name)].onLine = true;
-                    this.setState({blockedContacts:usersBC});
-                }*/
+
             })
             .on('offLine', (name)=> {
                 console.log('receiver user offLine: ',name);
@@ -86,10 +80,7 @@ class Chat extends React.Component {
                     let sortUsers = users.sort((a,b)=> b.onLine - a.onLine);
                     this.setState({users:sortUsers});
                 }
-/*                if(this.getUsersIdx("blockedContacts",name) !== -1) {
-                    usersBC[this.getUsersIdx("blockedContacts",name)].onLine = false;
-                    this.setState({blockedContacts:usersBC});
-                }*/
+
             })
             .on('message', (data)=> {
                 //receiver
@@ -375,22 +366,6 @@ class Chat extends React.Component {
         }
     };
 
-    rightClickMenuOn =(name)=> {
-        console.log("rightClickMenuOn name: ",name);
-        this.setState({
-            onContextMenu:true,
-            onContextMenuName:name,
-        })
-    };
-
-    rightClickMenuOnHide =()=> {
-        console.log("rightClickMenuOnHide");
-        this.setState({
-            onContextMenu: false,
-            onContextMenuName:"",
-        });
-    };
-
 
 
     render() {
@@ -408,9 +383,6 @@ class Chat extends React.Component {
                 ):('')}
                 {(this.state.resAddMeHandler)?(
                     <Confirm confirmHandler={this.resAddMeHandler} show={this.state.resAddMeHandler} message={this.state.confirmMessage}/>
-                ):('')}
-                {(this.state.onContextMenu)?(
-                    <OnContextMenu show={this.state.onContextMenu} rightClickMenuOnHide={()=>this.rightClickMenuOnHide()}/>
                 ):('')}
                 <div className="chat-room">
                     <div className="chat-users">
@@ -434,7 +406,6 @@ class Chat extends React.Component {
                                             getUserLog={() => this.getUserLog("users",itm.name,null)}
                                             inxHandler={()=> this.inxHandler("users",i)}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
-                                            rightClickMenuOn={()=>this.rightClickMenuOn(itm.name)}
                                         />))
                                 ):(this.state.users.filter(items => this.state.filteredUsers
                                         .map(i => i.name)
@@ -446,7 +417,6 @@ class Chat extends React.Component {
                                             getUserLog={() => this.getUserLog("users",itm.name,null)}
                                             inxHandler={() => this.inxHandler("users",i)}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
-                                            rightClickMenuOn={()=>this.rightClickMenuOn(itm.name)}
                                         />)
                                 )}
                             <a>black list users</a>

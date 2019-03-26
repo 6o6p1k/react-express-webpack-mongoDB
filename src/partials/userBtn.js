@@ -1,35 +1,51 @@
 import React from 'react';
+import OnContextMenu from './onContextMenuWindow.js'
 
 class UserBtn extends React.Component {
     constructor(props){
         super(props);
+        this.state = {
+            onContextMenu: false,
+            onContextMenuName:"",
+        }
     }
+
+    rightClickMenuOn =(name)=> {
+        console.log("rightClickMenuOn name: ",name);
+        this.setState({
+            onContextMenu:true,
+            onContextMenuName:name,
+        })
+    };
+
+    rightClickMenuOnHide =()=> {
+        console.log("rightClickMenuOnHide");
+        this.setState({
+            onContextMenu: false,
+            onContextMenuName:"",
+        });
+    };
 
     render() {
         //console.log('UserBtn props: ',this.props);
         let itm = this.props.itm;
         let i = this.props.i;
-        let messageBlockHandlerId = this.props.messageBlockHandlerId;
-        const inxHandler = this.props.inxHandler;
-        const getUserLog = this.props.getUserLog;
-        const addMe = this.props.addMe;
-        const rightClickMenuOn = this.props.rightClickMenuOn;
         return (
-            <button key={i}
+            <div key={i}
                     onClick={()=>{
-                        if(addMe) {
-                            addMe()
-                        }else {
-                            inxHandler();
-                            getUserLog();
-                        }
+                        if(this.props.addMe) {this.props.addMe()
+                        }else {this.props.inxHandler();this.props.getUserLog();}
                     }}
-                    onContextMenu={(e)=>{e.preventDefault();rightClickMenuOn(); return false;}}
+                    onContextMenu={(e)=>{e.preventDefault();this.rightClickMenuOn(itm.name); return false;}}
+                    onMouseLeave={this.rightClickMenuOnHide}
                     type="button"
-                    className={(messageBlockHandlerId === i)?"btn clicked":"btn"}>
+                    className={(this.props.messageBlockHandlerId === i)?"btn clicked":"btn"}>
                 {
                     this.props.name ? <font>{this.props.name}</font> : <font color={itm.onLine ? "blue":"red"}>{itm.name}</font>
                 }
+                {(this.state.onContextMenu)?(
+                 <OnContextMenu show={this.state.onContextMenu} rightClickMenuOnHide={this.rightClickMenuOnHide}/>
+                 ):('')}
                 {
                     (itm)?(
                         <div className="userItm">
@@ -48,7 +64,7 @@ class UserBtn extends React.Component {
                         </div>
                     ):("")
                 }
-            </button>
+            </div>
         )
     }
 }

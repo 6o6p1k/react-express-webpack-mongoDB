@@ -8,6 +8,9 @@ import Chat from './mainComp/chat.js'
 import UserPage from './mainComp/userPage.js'
 import UsersAdm from './mainComp/users.js'
 import { BrowserRouter,Switch, Route, Redirect} from 'react-router-dom'
+import '../public/css/app.css';
+import '../public/css/bootstrap/css/bootstrap.css';
+
 
 
 //Check ? LogIn
@@ -47,8 +50,6 @@ const Main = () => (
 
 ReactDOM.render(<Main />,document.getElementById('root'));
 
-if(module.hot) {
-    module.hot.accept();
-}
+if(module.hot) {module.hot.accept();}
 
 

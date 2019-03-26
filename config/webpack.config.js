@@ -37,13 +37,20 @@ module.exports = {
                 test: /\.css$/,
                 use: [ 'style-loader', 'css-loader' ]
             },
+            {
+                test: /.(ttf|otf|eot|svg|woff(2)?)(\?[a-z0-9]+)?$/,
+                use: [{loader: 'file-loader'}]
+            }
 
         ]
     },
     plugins: [
         new WriteFilePlugin({
             // exclude hot-update files
-            test: /^(?!.*(hot)).*/,
+            //test: /^(?!.*(hot)).*/,
+            //OR
+            // Write only files that have ".js", ".html" extension.
+            test: /.(js|html?)$^(?!.*(hot)).*/,
         }),
         new HtmlWebpackPlugin({
             template: path.resolve(__dirname, '../public/htmlTemp/index.html')
