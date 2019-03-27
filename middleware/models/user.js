@@ -61,8 +61,8 @@ user.statics.userMFCTBC = async function (reqUser,contact) {//MoveFromContactsTo
     try {
         user = await User.findOne({username:reqUser});
         if(user){
-            let filteredArr = user.contacts.filter(itm => itm !== contact);//remuve users from blockedContacts using names from incoming arr
-            if(user.blockedContacts.includes(contact)) return {err:"You always send request",user:null};
+            let filteredArr = user.contacts.filter(itm => itm !== contact);//remuve users from Contacts using names from incoming arr
+            if(user.blockedContacts.includes(contact)) return {err:"You always moved contact.",user:null};
             user.contacts = filteredArr;//update arr
             user.blockedContacts.push(contact);//add from incoming arr to user contacts
             await user.save();
@@ -81,7 +81,7 @@ user.statics.userMFBCTC = async function (reqUser,contact) {//MoveFromBlockedCon
     try {
         user = await User.findOne({username:reqUser});
         if(user){
-            let filteredArr = user.blockedContacts.filter(itm=> itm !== contact);//remuve users from blockedContacts using names from incoming arr
+            let filteredArr = user.blockedContacts.filter(itm=> itm !== contact);//remuve contact
             if(user.contacts.includes(contact)) return {err:"You always send request",user:null};
             user.blockedContacts = filteredArr;//update arr
             user.contacts.push(contact);//add from incoming arr to user contacts
@@ -130,15 +130,17 @@ user.statics.userATBC = async function (reqUser,contact) {//AddToBlockedContacts
     }
 };
 
-user.statics.userRFBC = async function (reqUser,contact) {//RemoveFromBlockedContacts
+user.statics.userRFAL = async function (reqUser,contact) {//RemoveFromAllList
     var User = this;
     let user = {};
     console.log('userATBC userReq: ',reqUser,",","moving contact: ",contact);
     try {
         user = await User.findOne({username:reqUser});
         if(user){
-            let filter = user.blockedContacts.filter(itm => itm !== contact);//remove from user blockedContacts using names from incoming arr
-            user.blockedContacts = filter;
+            let filterBC = user.blockedContacts.filter(itm => itm !== contact);//remove from blockedContacts
+            let filterC = user.contacts.filter(itm => itm !== contact);//remove from blockedContacts
+            user.blockedContacts = filterBC;
+            user.contacts = filterC;
             await user.save();
             return {err:null,user:user};
         }

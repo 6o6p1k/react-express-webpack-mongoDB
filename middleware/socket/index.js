@@ -166,7 +166,7 @@ module.exports = function (server) {
         socket.emit('updateUserData',await aggregateUserData(username));
         //move to black list
         socket.on('moveToBlackList', async function (name,cb) {
-            let userRG = await User.userMFCTBC(username,name);//add to black list. remove from contacts
+            let userRG = await User.userRFAL(username,name);//remove from contacts & blockedContacts
             if(userRG.err) {
                 return cb("Move user to black list filed. DB err: " + userRG.err,null);
             }
@@ -177,10 +177,9 @@ module.exports = function (server) {
         });
         //remove completely
         socket.on('deleteUser', async function (name,cb) {
-            await User.userMFCTBC(username,name);//move from contacts to blacklist
-            let userRG = await User.userRFBC(username,name);//remove from black list
+            let userRG = await User.userRFAL(username,name);//remove from contacts & blockedContacts
             if(userRG.err) {
-                return cb("Remove user from all list filed. DB err: " + userRG.err,null);
+                return cb("Move user to black list filed. DB err: " + userRG.err,null);
             }
             if(globalChatUsers[name]) {
                 socket.broadcast.to(globalChatUsers[name].sockedId).emit('updateUserData',await aggregateUserData(name));//update user data, what hi baned

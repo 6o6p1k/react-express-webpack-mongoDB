@@ -40,6 +40,8 @@ class Chat extends React.Component {
             resAddMeAddMeName:"",
             addMeHandler:false,
             reqAddMeName:"",
+
+            confirmState:false,
             confirmMessage:"",
         };
     }
@@ -187,7 +189,7 @@ class Chat extends React.Component {
     };
 
     inxHandler =(arrName,inx)=> {
-        //console.log('inxHandler arrName: ',arrName,", arrName inx: ", inx);
+        console.log('inxHandler arrName: ',arrName,", arrName inx: ", inx);
         this.setState({
             messageBlockHandlerId: inx,
             arrayBlockHandlerId: arrName
@@ -311,8 +313,6 @@ class Chat extends React.Component {
                         reqAddMeName:"",
                     })
                 }else {
-                    //after this update need update users online or need send date with right data online
-                    let name = this.state.reqAddMeName;
                     this.setState({
                         users:userData.contacts,
                         addMeHandler: false,
@@ -345,8 +345,6 @@ class Chat extends React.Component {
                         confirmMessage:""
                     })
                 }else {
-                    //after this update need update users online or need send date with right data online
-                    let name = this.state.resAddMeAddMeName;
                     this.setState({
                         users:userData.contacts,
                         unregisteredContacts:userData.blockedContacts,
@@ -363,6 +361,28 @@ class Chat extends React.Component {
                 resAddMeAddMeName:"",
                 confirmMessage:""
             });
+        }
+    };
+
+    onContextMenuHandler =(res)=>{
+        switch (res) {
+            case "deleteUser":
+                console.log("onContextMenuHandler deleteUser");
+                break;
+            case "banUser":
+                console.log("onContextMenuHandler banUser");
+                break;
+            case "clearChatWindow":
+                console.log("onContextMenuHandler clearChatWindow");
+                break;
+            case "viewUserData":
+                console.log("onContextMenuHandler viewUserData");
+                break;
+            case "moveOnTop":
+                console.log("onContextMenuHandler moveOnTop");
+                break;
+            default:
+                console.log("onContextMenuHandler Sorry, we are out of " + res + ".");
         }
     };
 
@@ -406,6 +426,7 @@ class Chat extends React.Component {
                                             getUserLog={() => this.getUserLog("users",itm.name,null)}
                                             inxHandler={()=> this.inxHandler("users",i)}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
+                                            onContextMenuHandler={this.onContextMenuHandler}
                                         />))
                                 ):(this.state.users.filter(items => this.state.filteredUsers
                                         .map(i => i.name)
@@ -417,6 +438,7 @@ class Chat extends React.Component {
                                             getUserLog={() => this.getUserLog("users",itm.name,null)}
                                             inxHandler={() => this.inxHandler("users",i)}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
+                                            onContextMenuHandler={this.onContextMenuHandler}
                                         />)
                                 )}
                             <a>black list users</a>
@@ -429,6 +451,7 @@ class Chat extends React.Component {
                                             getUserLog={() => this.getUserLog("unregisteredContacts",itm.name,null)}
                                             inxHandler={() => this.inxHandler("unregisteredContacts",i)}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
+                                            onContextMenuHandler={this.onContextMenuHandler}
                                         />)
                                 ):("")}
                         </div>
