@@ -368,6 +368,7 @@ footer a:active{
     height: auto;
     background-color: #403b3b;
     padding-left: 0;
+    z-index: 100;
 
 }
 
