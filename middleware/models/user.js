@@ -101,7 +101,7 @@ user.statics.userATC = async function (reqUser,contact) {//AddToContacts
     try {
         user = await User.findOne({username:reqUser});
         if(user){
-            if(user.contacts.includes(contact)) return {err:"This user aways in you contact list.",user:null};
+            if(user.contacts.includes(contact)) return ({err:null,user:user});
             user.contacts.push(contact);//add users from incoming arr
             await user.save();
             return ({err:null,user:user});
@@ -119,7 +119,7 @@ user.statics.userATBC = async function (reqUser,contact) {//AddToBlockedContacts
     try {
         user = await User.findOne({username:reqUser});
         if(user){
-            if(user.blockedContacts.includes(contact)) return {err:"You always send request",user:null};
+            if(user.blockedContacts.includes(contact)) return ({err:null,user:user});
             user.blockedContacts.push(contact);//add users from incoming arr
             await user.save();
             return ({err:null,user:user});
@@ -133,7 +133,7 @@ user.statics.userATBC = async function (reqUser,contact) {//AddToBlockedContacts
 user.statics.userRFAL = async function (reqUser,contact) {//RemoveFromAllList
     var User = this;
     let user = {};
-    console.log('userATBC userReq: ',reqUser,",","moving contact: ",contact);
+    console.log('userRFAL userReq: ',reqUser,",","moving contact: ",contact);
     try {
         user = await User.findOne({username:reqUser});
         if(user){

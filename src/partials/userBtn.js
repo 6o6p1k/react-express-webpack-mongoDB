@@ -7,6 +7,7 @@ class UserBtn extends React.Component {
         this.state = {
             onContextMenu: false,
             onContextMenuUserName:"",
+            authorizedStatus:undefined,
         }
     }
 
@@ -14,11 +15,12 @@ class UserBtn extends React.Component {
 
     }
 
-    rightClickMenuOn =(name)=> {
-        console.log("rightClickMenuOn username: ",name);
+    rightClickMenuOn =(itm)=> {
+        console.log("rightClickMenuOn username: ",itm.name);
         this.setState({
             onContextMenu:true,
-            onContextMenuUserName:name,
+            onContextMenuUserName:itm.name,
+            authorizedStatus:itm.authorized
         })
     };
 
@@ -27,12 +29,13 @@ class UserBtn extends React.Component {
         this.setState({
             onContextMenu: false,
             onContextMenuUserName:"",
+            authorizedStatus:undefined,
         });
     };
 
     onContextMenuResponse =(res)=> {
         //console.log("onContextMenuResponse res: ", res);
-        (()=>{this.props.onContextMenuHandler(res)})()
+        (()=>{this.props.onContextMenuHandler(res,this.state.onContextMenuUserName)})()
     };
 
     render() {
@@ -48,7 +51,7 @@ class UserBtn extends React.Component {
                          this.props.inxHandler();
                          this.props.getUserLog();
                  }}}
-                 onContextMenu={(e)=>{e.preventDefault();this.rightClickMenuOn(itm.name); return false;}}
+                 onContextMenu={(e)=>{e.preventDefault();this.rightClickMenuOn(itm); return false;}}
                  onMouseLeave={this.rightClickMenuOnHide}
                  type="button"
                  className={(this.props.messageBlockHandlerId === i)?"btn clicked":"btn"}>
@@ -69,7 +72,9 @@ class UserBtn extends React.Component {
                             </div>
                         </div>
                 ):("")}
-                {(this.state.onContextMenu)?(<OnContextMenu rightClickMenuOnHide={this.rightClickMenuOnHide} onContextMenuResponse={this.onContextMenuResponse}/>):('')}
+                {(this.state.onContextMenu)?(<OnContextMenu authorizedStatus={this.state.authorizedStatus}
+                                                            rightClickMenuOnHide={this.rightClickMenuOnHide}
+                                                            onContextMenuResponse={this.onContextMenuResponse}/>):('')}
             </div>
         )
     }

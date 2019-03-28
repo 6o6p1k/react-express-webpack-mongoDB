@@ -41,6 +41,10 @@ class Chat extends React.Component {
             addMeHandler:false,
             reqAddMeName:"",
 
+            changeStatusHandler:false,
+            changeStatusName:"",
+            changeStatusAct:"",
+
             confirmState:false,
             confirmMessage:"",
         };
@@ -364,13 +368,61 @@ class Chat extends React.Component {
         }
     };
 
-    onContextMenuHandler =(res)=>{
+    userStatusHandler =(confirmRes)=> {
+        console.log('userStatusHandler: ',confirmRes,' ,this.state.changeStatusAct: ',this.state.changeStatusAct,', this.state.changeStatusName: ',this.state.changeStatusName);
+        if(confirmRes){
+            this.socket.emit(this.state.changeStatusAct, {name:this.state.changeStatusName,date:Date.now()},(err,userData)=>{
+                console.log("userStatusHandler callback err: ",err," ,userData: ",userData);
+                if(err) {
+                    this.setState({
+                        modalWindow:true,
+                        err:{message:err},
+                        changeStatusHandler:false,
+                        changeStatusName:"",
+                        changeStatusAct:"",
+                        confirmMessage:""
+                    })
+                }else {
+                    this.setState({
+                        users:userData.contacts,
+                        unregisteredContacts:userData.blockedContacts,
+                        changeStatusHandler:false,
+                        changeStatusName:"",
+                        changeStatusAct:"",
+                        confirmMessage:""
+                    });
+
+                }
+            })
+        }else{
+            this.setState({
+                changeStatusHandler:false,
+                changeStatusName:"",
+                changeStatusAct:"",
+                confirmMessage:""
+            });
+        }
+    };
+
+    onContextMenuHandler =(res,username)=>{
         switch (res) {
             case "deleteUser":
                 console.log("onContextMenuHandler deleteUser");
+                this.setState({
+                    changeStatusHandler:true,
+                    confirmMessage:"Are you sure you want to delete a user "+username+"?",
+                    changeStatusName:username,
+                    changeStatusAct:"deleteUser",
+                });
                 break;
             case "banUser":
                 console.log("onContextMenuHandler banUser");
+                this.setState({
+                    changeStatusHandler:true,
+                    confirmMessage:"Are you sure you want to ban a user "+username+"?",
+                    changeStatusName:username,
+                    changeStatusAct:"banUser",
+                });
                 break;
             case "clearChatWindow":
                 console.log("onContextMenuHandler clearChatWindow");
@@ -380,6 +432,10 @@ class Chat extends React.Component {
                 break;
             case "moveOnTop":
                 console.log("onContextMenuHandler moveOnTop");
+                break;
+            case "reqAuth":
+                console.log("onContextMenuHandler reqAuth");
+                this.setState({reqAddMeName:username},()=>this.addMeHandler(true));
                 break;
             default:
                 console.log("onContextMenuHandler Sorry, we are out of " + res + ".");
@@ -403,6 +459,9 @@ class Chat extends React.Component {
                 ):('')}
                 {(this.state.resAddMeHandler)?(
                     <Confirm confirmHandler={this.resAddMeHandler} show={this.state.resAddMeHandler} message={this.state.confirmMessage}/>
+                ):('')}
+                {(this.state.changeStatusHandler)?(
+                    <Confirm confirmHandler={this.userStatusHandler} show={this.state.changeStatusHandler} message={this.state.confirmMessage}/>
                 ):('')}
                 <div className="chat-room">
                     <div className="chat-users">

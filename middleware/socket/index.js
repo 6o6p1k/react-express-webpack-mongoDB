@@ -58,16 +58,16 @@ async function aggregateUserData(username) {
     let wL = contacts.map(async (name,i) =>{
         let status = !!globalChatUsers[name];
         let nameUserDB = await User.findOne({username:name});
-        let banned = !!nameUserDB.blockedContacts[userData.username];
-        let notAuthorized =  !!nameUserDB.contacts[userData.username] && !!nameUserDB.blockedContacts[userData.username];
-        return contacts[i] = {name:name, messages:[], msgCounter :0, typing:false, onLine:status, banned:banned, notAuthorized:notAuthorized}
+        let banned = nameUserDB.blockedContacts.includes(username);
+        let authorized =  !(!nameUserDB.contacts.includes(username) && !nameUserDB.blockedContacts.includes(username));
+        return contacts[i] = {name:name, messages:[], msgCounter :0, typing:false, onLine:status, banned:banned, authorized:authorized}
     });
     let bL = blockedContacts.map(async (name,i) =>{
         let status = !!globalChatUsers[name];
         let nameUserDB = await User.findOne({username:name});
-        let banned = !!nameUserDB.blockedContacts[userData.username];
-        let notAuthorized =  !!nameUserDB.contacts[userData.username] && !!nameUserDB.blockedContacts[userData.username];
-        return blockedContacts[i] = {name:name, messages:[], msgCounter :0, typing:false, onLine:status, banned:banned, notAuthorized:notAuthorized}
+        let banned = nameUserDB.blockedContacts.includes(username);
+        let authorized =  !(!nameUserDB.contacts.includes(username) && !nameUserDB.blockedContacts.includes(username));
+        return blockedContacts[i] = {name:name, messages:[], msgCounter :0, typing:false, onLine:status, banned:banned, authorized:authorized}
     });
     userData.contacts = await Promise.all(wL);
     userData.blockedContacts = await Promise.all(bL);
@@ -165,24 +165,27 @@ module.exports = function (server) {
         //update UserData
         socket.emit('updateUserData',await aggregateUserData(username));
         //move to black list
-        socket.on('moveToBlackList', async function (name,cb) {
-            let userRG = await User.userRFAL(username,name);//remove from contacts & blockedContacts
+        socket.on('banUser', async function (data,cb) {
+            console.log("banUser name:" ,data.name);
+            let userRG = await User.userMFCTBC(username,data.name);//move to blockedContacts
             if(userRG.err) {
                 return cb("Move user to black list filed. DB err: " + userRG.err,null);
             }
-            if(globalChatUsers[name]) {
-                socket.broadcast.to(globalChatUsers[name].sockedId).emit('updateUserData',await aggregateUserData(name));//update user data, what hi baned
+            if(globalChatUsers[data.name]) {
+                socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('updateUserData',await aggregateUserData(data.name));//update user data
                 cb(null,await aggregateUserData(username));
             } else cb(null,await aggregateUserData(username));
         });
         //remove completely
-        socket.on('deleteUser', async function (name,cb) {
-            let userRG = await User.userRFAL(username,name);//remove from contacts & blockedContacts
+        socket.on('deleteUser', async function (data,cb) {
+            console.log("deleteUser name:" ,data);
+            let userRG = await User.userRFAL(username,data.name);//remove from contacts & blockedContact
+            console.log("deleteUser userRG.user:" ,userRG.user);
             if(userRG.err) {
                 return cb("Move user to black list filed. DB err: " + userRG.err,null);
             }
-            if(globalChatUsers[name]) {
-                socket.broadcast.to(globalChatUsers[name].sockedId).emit('updateUserData',await aggregateUserData(name));//update user data, what hi baned
+            if(globalChatUsers[data.name]) {
+                socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('updateUserData',await aggregateUserData(data.name));//update user data
                 cb(null,await aggregateUserData(username));
             } else cb(null,await aggregateUserData(username));
         });
@@ -193,7 +196,7 @@ module.exports = function (server) {
         //req show me online
         socket.on('sayOnLine', function () {
             let contacts = globalChatUsers[username].contacts;
-            console.log("getUsersOnLine, username: ",username,", contacts: ",contacts);
+            console.log("sayOnLine, username: ",username,", contacts: ",contacts);
             let usersOnLine = contacts.filter(name => globalChatUsers[name]);
             //res for my contacts what Iam onLine
             usersOnLine.forEach((name)=>{
@@ -203,7 +206,7 @@ module.exports = function (server) {
         //req show me offLine
         socket.on('sayOffLine', function () {
             let contacts = globalChatUsers[username].contacts;
-            console.log("getUsersOnLine, username: ",username,", contacts: ",contacts);
+            console.log("sayOffLine, username: ",username,", contacts: ",contacts);
             let usersOnLine = contacts.filter(name => globalChatUsers[name]);
             //res for my contacts what Iam onLine
             usersOnLine.forEach((name)=>{
@@ -223,7 +226,8 @@ module.exports = function (server) {
                 //console.log("addMe errMessage: ", errMessage);
                 return cb("Send message filed. DB err: " + errMessage,null);
             }
-            if(mes.messages.length === 0) {//Save message in DB only one time
+            //console.log("addMe mes: ",mes," , len: ",mes.messages.length);
+            if(mes.messages[mes.messages.length-1] !== "Please add me to you contact list." || mes.messages.length === 0) {//Save message in DB if last !== "Please add me to you contact list." || len == 0
                 await Message.messageHandler({members:[username,data.name],message:{user: username, text: "Please add me to you contact list.", status: false, date: data.date}});
                 if(globalChatUsers[data.name]) {//Send message "Add me to you contact list" if user online
                     socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('updateUserData',await aggregateUserData(data.name));
@@ -295,7 +299,7 @@ module.exports = function (server) {
         // when the user disconnects perform this
         socket.on('disconnect', function () {
             let contacts = globalChatUsers[username].contacts;
-            //console.log("disconnect, username: ",username,", contacts: ",contacts);
+            console.log("disconnect, username: ",username,", contacts: ",contacts);
             //res for my contacts what Iam offLine
             contacts.forEach((name)=>{
                 if(globalChatUsers[name]) socket.broadcast.to(globalChatUsers[name].sockedId).emit('offLine', username);
