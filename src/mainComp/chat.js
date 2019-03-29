@@ -31,7 +31,7 @@ class Chat extends React.Component {
             users: this.addUsers(user.contacts) || [],
             filteredUsers: [],
             foundContacts: [],
-            unregisteredContacts: this.addUsers(user.blockedContacts) || [],
+            blockedContacts: this.addUsers(user.blockedContacts) || [],
 
             arrayBlockHandlerId: undefined,
             messageBlockHandlerId: undefined,
@@ -45,7 +45,6 @@ class Chat extends React.Component {
             changeStatusName:"",
             changeStatusAct:"",
 
-            confirmState:false,
             confirmMessage:"",
         };
     }
@@ -59,15 +58,17 @@ class Chat extends React.Component {
         this.socket = socket
             .on('updateUserData',(userData)=>{
                 console.log("updateUserData: ",userData);
+                let sortUsers = userData.contacts.sort((a,b)=> b.onLine - a.onLine);
+                let sortBlockedUsers = userData.blockedContacts.sort((a,b)=> b.onLine - a.onLine);
                 this.setState({
                     user:userData,
-                    users:userData.contacts,
-                    unregisteredContacts:userData.blockedContacts
+                    users:sortUsers,
+                    blockedContacts:sortBlockedUsers
                 });
             })
             .emit('sayOnLine')
             .on('onLine', (name)=> {
-                console.log('receiver user onLine: ',name);
+                //console.log('receiver user offLine: ',name," ,this.getUsersIdx: ", this.getUsersIdx("users",name));
                 let users = this.state.users;
                 let usersBC = this.state.blockedContacts;
                 if(this.getUsersIdx("users",name) !== -1) {
@@ -75,10 +76,14 @@ class Chat extends React.Component {
                     let sortUsers = users.sort((a,b)=> b.onLine - a.onLine);
                     this.setState({users:sortUsers});
                 }
-
+                if(this.getUsersIdx("blockedContacts",name) !== -1) {
+                    usersBC[this.getUsersIdx("blockedContacts",name)].onLine = true;
+                    let sortUsers = usersBC.sort((a,b)=> b.onLine - a.onLine);
+                    this.setState({blockedContacts:sortUsers});
+                }
             })
             .on('offLine', (name)=> {
-                console.log('receiver user offLine: ',name);
+                //console.log('receiver user offLine: ',name," ,this.getUsersIdx: ", this.getUsersIdx("users",name));
                 let users = this.state.users;
                 let usersBC = this.state.blockedContacts;
                 if(this.getUsersIdx("users",name) !== -1) {
@@ -86,7 +91,11 @@ class Chat extends React.Component {
                     let sortUsers = users.sort((a,b)=> b.onLine - a.onLine);
                     this.setState({users:sortUsers});
                 }
-
+                if(this.getUsersIdx("blockedContacts",name) !== -1) {
+                    usersBC[this.getUsersIdx("blockedContacts",name)].onLine = false;
+                    let sortUsers = usersBC.sort((a,b)=> b.onLine - a.onLine);
+                    this.setState({blockedContacts:sortUsers});
+                }
             })
             .on('message', (data)=> {
                 //receiver
@@ -351,7 +360,7 @@ class Chat extends React.Component {
                 }else {
                     this.setState({
                         users:userData.contacts,
-                        unregisteredContacts:userData.blockedContacts,
+                        blockedContacts:userData.blockedContacts,
                         resAddMeHandler:false,
                         resAddMeAddMeName:"",
                         confirmMessage:""
@@ -385,7 +394,7 @@ class Chat extends React.Component {
                 }else {
                     this.setState({
                         users:userData.contacts,
-                        unregisteredContacts:userData.blockedContacts,
+                        blockedContacts:userData.blockedContacts,
                         changeStatusHandler:false,
                         changeStatusName:"",
                         changeStatusAct:"",
@@ -440,7 +449,7 @@ class Chat extends React.Component {
                     }else {
                         this.setState({
                             users:userData.contacts,
-                            unregisteredContacts:userData.blockedContacts,
+                            blockedContacts:userData.blockedContacts,
                         });
                     }
                 });
@@ -524,14 +533,14 @@ class Chat extends React.Component {
                                         />)
                                 )}
                             <a>black list users</a>
-                            {(this.state.unregisteredContacts.length !== 0)? (
-                                    this.state.unregisteredContacts.map((itm,i) =>
+                            {(this.state.blockedContacts.length !== 0)? (
+                                    this.state.blockedContacts.map((itm,i) =>
                                         <UserBtn
                                             key={i}
                                             itm={itm}
                                             i={i}
-                                            getUserLog={() => this.getUserLog("unregisteredContacts",itm.name,null)}
-                                            inxHandler={() => this.inxHandler("unregisteredContacts",i)}
+                                            getUserLog={() => this.getUserLog("blockedContacts",itm.name,null)}
+                                            inxHandler={() => this.inxHandler("blockedContacts",i)}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
                                             onContextMenuHandler={this.onContextMenuHandler}
                                             banList={true}
@@ -576,7 +585,7 @@ class Chat extends React.Component {
                                                                onChange={ev => (this.typing(eUser.name, ev))}
                                                         />
                                                         {
-                                                            (a !== "unregisteredContacts") ? (
+                                                            (a !== "blockedContacts") ? (
                                                                 <span className="input-group-btn">
                                                             <button onClick={() => this.sendMessage(eUser.name)} name="msgBtn" type="button" className="btn">SEND</button>
                                                         </span>
