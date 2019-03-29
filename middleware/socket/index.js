@@ -176,6 +176,18 @@ module.exports = function (server) {
                 cb(null,await aggregateUserData(username));
             } else cb(null,await aggregateUserData(username));
         });
+        //move to white list
+        socket.on('unBanUser', async function (data,cb) {
+            console.log("unBanUser name:" ,data.name);
+            let userRG = await User.userMFBCTC(username,data.name);//move to Contacts
+            if(userRG.err) {
+                return cb("Move user to black list filed. DB err: " + userRG.err,null);
+            }
+            if(globalChatUsers[data.name]) {
+                socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('updateUserData',await aggregateUserData(data.name));//update user data
+                cb(null,await aggregateUserData(username));
+            } else cb(null,await aggregateUserData(username));
+        });
         //remove completely
         socket.on('deleteUser', async function (data,cb) {
             console.log("deleteUser name:" ,data);

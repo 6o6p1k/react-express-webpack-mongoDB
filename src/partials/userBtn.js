@@ -8,6 +8,7 @@ class UserBtn extends React.Component {
             onContextMenu: false,
             onContextMenuUserName:"",
             authorizedStatus:undefined,
+            banStatus:undefined,
         }
     }
 
@@ -16,11 +17,12 @@ class UserBtn extends React.Component {
     }
 
     rightClickMenuOn =(itm)=> {
-        console.log("rightClickMenuOn username: ",itm.name);
+        console.log("rightClickMenuOn itm: ",itm);
         this.setState({
             onContextMenu:true,
             onContextMenuUserName:itm.name,
-            authorizedStatus:itm.authorized
+            authorizedStatus:itm.authorized,
+            banStatus:itm.banned
         })
     };
 
@@ -30,6 +32,7 @@ class UserBtn extends React.Component {
             onContextMenu: false,
             onContextMenuUserName:"",
             authorizedStatus:undefined,
+            banStatus:undefined,
         });
     };
 
@@ -73,6 +76,7 @@ class UserBtn extends React.Component {
                         </div>
                 ):("")}
                 {(this.state.onContextMenu)?(<OnContextMenu authorizedStatus={this.state.authorizedStatus}
+                                                            banList={this.props.banList}
                                                             rightClickMenuOnHide={this.rightClickMenuOnHide}
                                                             onContextMenuResponse={this.onContextMenuResponse}/>):('')}
             </div>

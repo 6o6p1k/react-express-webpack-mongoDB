@@ -424,6 +424,27 @@ class Chat extends React.Component {
                     changeStatusAct:"banUser",
                 });
                 break;
+            case "unBanUser":
+                console.log("onContextMenuHandler unBanUser");
+                this.socket.emit('unBanUser', {name:username,date:Date.now()},(err,userData)=>{
+                    console.log("unBanUser callback err: ",err," ,userData: ",userData);
+                    if(err) {
+                        this.setState({
+                            modalWindow:true,
+                            err:{message:err},
+                            changeStatusHandler:false,
+                            changeStatusName:"",
+                            changeStatusAct:"",
+                            confirmMessage:""
+                        })
+                    }else {
+                        this.setState({
+                            users:userData.contacts,
+                            unregisteredContacts:userData.blockedContacts,
+                        });
+                    }
+                });
+                break;
             case "clearChatWindow":
                 console.log("onContextMenuHandler clearChatWindow");
                 break;
@@ -486,6 +507,7 @@ class Chat extends React.Component {
                                             inxHandler={()=> this.inxHandler("users",i)}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
                                             onContextMenuHandler={this.onContextMenuHandler}
+                                            banList={false}
                                         />))
                                 ):(this.state.users.filter(items => this.state.filteredUsers
                                         .map(i => i.name)
@@ -498,6 +520,7 @@ class Chat extends React.Component {
                                             inxHandler={() => this.inxHandler("users",i)}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
                                             onContextMenuHandler={this.onContextMenuHandler}
+                                            banList={false}
                                         />)
                                 )}
                             <a>black list users</a>
@@ -511,6 +534,7 @@ class Chat extends React.Component {
                                             inxHandler={() => this.inxHandler("unregisteredContacts",i)}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
                                             onContextMenuHandler={this.onContextMenuHandler}
+                                            banList={true}
                                         />)
                                 ):("")}
                         </div>
