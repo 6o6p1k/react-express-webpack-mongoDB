@@ -57,8 +57,8 @@ class UserBtn extends React.Component {
                  onContextMenu={(e)=>{e.preventDefault();this.rightClickMenuOn(itm); return false;}}
                  onMouseLeave={this.rightClickMenuOnHide}
                  type="button"
-                 className={(this.props.messageBlockHandlerId === i)?"btn clicked":"btn"}>
-                {this.props.name ? <font>{this.props.name}</font> : <font color={itm.onLine ? "blue":"red"}>{itm.name}</font>}
+                 className={(this.props.messageBlockHandlerId === i)?"btn clicked":"btn user"}>
+                {this.props.name ? <font>{this.props.name}</font> : <font color={itm.onLine ? "#fff":"#da3a2f"}>{itm.name}</font>}
                 {(itm)?(
                         <div className="userItm">
                             {(itm.msgCounter !== 0 || itm.msgCounter === undefined)?(

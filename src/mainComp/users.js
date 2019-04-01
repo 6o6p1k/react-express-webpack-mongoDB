@@ -214,8 +214,8 @@ class UsersAdm extends React.Component {
                 ):(
                     <div>
                         {/*<h1>USERS TABLE:</h1>*/}
-                        <div className="form-group">
-                            <div className="wrapper" >
+                        <div className="form-group w100">
+                            <div className="wrapper modal-btn" >
                                 <button onClick={getUsers} className="btn" data-loading-text="Sending...">UPDATE TABLE</button>
                                 <button onClick={delUsers} className="btn" >DELETE SELECTED FROM DB</button>
                             </div>

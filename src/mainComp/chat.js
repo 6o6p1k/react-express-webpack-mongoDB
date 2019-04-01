@@ -476,31 +476,31 @@ class Chat extends React.Component {
 
     render() {
 
-        //console.log('/chat user:', this.state);
+        console.log('/chat user:', this.state);
         if(this.state.errorRedirect) {return <Redirect to='/error'/>}//passing props in Redirect to={{pathname:'/error',state:{error:this.state.err}}} get props: this.props.location.state.error
         if(this.state.loginRedirect) {return <Redirect to='/login'/>}
         return (
             <Page user={this.state.user} title="CHAT PAGE" className="container">
-                {(this.state.modalWindow)?(
+                {this.state.modalWindow ?
                     <Modal show={this.state.modalWindow} handleClose={this.hideModal} err={this.state.err}/>
-                ):('')}
-                {(this.state.addMeHandler)?(
+                :""}
+                {this.state.addMeHandler ?
                     <Confirm confirmHandler={this.addMeHandler} show={this.state.addMeHandler} message={this.state.confirmMessage}/>
-                ):('')}
-                {(this.state.resAddMeHandler)?(
+                :""}
+                {this.state.resAddMeHandler ?
                     <Confirm confirmHandler={this.resAddMeHandler} show={this.state.resAddMeHandler} message={this.state.confirmMessage}/>
-                ):('')}
-                {(this.state.changeStatusHandler)?(
+                :""}
+                {this.state.changeStatusHandler ?
                     <Confirm confirmHandler={this.userStatusHandler} show={this.state.changeStatusHandler} message={this.state.confirmMessage}/>
-                ):('')}
+                :""}
                 <div className="chat-room">
                     <div className="chat-users">
                         <div className="login-form">
-                            <input name="nameSearchInp" className="form-control" autoComplete="off" autoFocus placeholder="Search..."
+                            <input name="nameSearchInp" className="form-control searchInChat" autoComplete="off" autoFocus placeholder="Search..."
                                     onChange={ev => this.setFiltered(ev.target.value)}
                             />
-                            <a>white list users</a>
-                            {(this.state.filteredUsers.length === 0)?(
+                            <div className="userList white">white list users</div>
+                            {this.state.filteredUsers.length === 0?
                                     (this.state.foundContacts.length !== 0)? (
                                         this.state.foundContacts.map((name,i) =><UserBtn
                                             key={i}
@@ -508,7 +508,7 @@ class Chat extends React.Component {
                                             name={name}
                                             addMe={() => this.addMe(name)}
                                         />)
-                                    ):(this.state.users.map((itm,i) => <UserBtn
+                                    ):this.state.users.map((itm,i) => <UserBtn
                                             key={i}
                                             itm={itm}
                                             i={i}
@@ -517,8 +517,8 @@ class Chat extends React.Component {
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
                                             onContextMenuHandler={this.onContextMenuHandler}
                                             banList={false}
-                                        />))
-                                ):(this.state.users.filter(items => this.state.filteredUsers
+                                        />)
+                                : this.state.users.filter(items => this.state.filteredUsers
                                         .map(i => i.name)
                                         .includes(items.name))
                                         .map((itm,i) => <UserBtn
@@ -530,10 +530,10 @@ class Chat extends React.Component {
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
                                             onContextMenuHandler={this.onContextMenuHandler}
                                             banList={false}
-                                        />)
+                                        />
                                 )}
-                            <a>black list users</a>
-                            {(this.state.blockedContacts.length !== 0)? (
+                            <div className="userList black">black list users</div>
+                            {this.state.blockedContacts.length !== 0 ?
                                     this.state.blockedContacts.map((itm,i) =>
                                         <UserBtn
                                             key={i}
@@ -545,7 +545,7 @@ class Chat extends React.Component {
                                             onContextMenuHandler={this.onContextMenuHandler}
                                             banList={true}
                                         />)
-                                ):("")}
+                                :""}
                         </div>
                     </div>
 
@@ -578,8 +578,8 @@ class Chat extends React.Component {
                                                     this.sendMessage(eUser.name)
                                                 }}
                                                       name="chatRoomForm">
-                                                    <div className="input-group">
-                                                        <input name="formInp" className="form-control" autoComplete="off"
+                                                    <div className="input-group writeMess">
+                                                        <textarea name="formInp" className="form-control" autoComplete="off"
                                                                autoFocus placeholder="Message..."
                                                                value={this.state.message}
                                                                onChange={ev => (this.typing(eUser.name, ev))}

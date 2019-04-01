@@ -1,6 +1,5 @@
 import React from 'react'
 import ReactDOM from 'react-dom';
-import Frontpage from './mainComp/frontpage.js'
 import Login from './mainComp/login.js'
 import Register from './mainComp/register.js'
 import Error from './mainComp/error.js'
@@ -9,6 +8,7 @@ import UserPage from './mainComp/userPage.js'
 import UsersAdm from './mainComp/users.js'
 import { BrowserRouter,Switch, Route, Redirect} from 'react-router-dom'
 import '../public/css/app.css';
+import FrontP from "./mainComp/frontpage";
 //import '../public/css/bootstrap/css/bootstrap.css';
 
 
@@ -32,16 +32,32 @@ function isAdministrator() {
 const Main = () => (
     <BrowserRouter>
         <Switch>
-            <Route exact path="/" component={Frontpage} />
-            <Route path="/register" render={() => (isLoggedIn() ? (
-                <Error error={{message:'You are always login in. Pres SIGN OUT to create new account',status:'403 Forbidden'}} />):
-                (<Register/>))}/>
-            <Route path="/login" render={() => (isLoggedIn() ? (
-                <Error error={{message:'You are always login in. Pres SIGN OUT to change account',status:'403 Forbidden'}} />):
-                (<Login/>))}/>
-            <Route path="/chat"  render={() => (isLoggedIn() ? (<Chat />):(<Redirect to="/login"/>))}/>
-            <Route path="/userPage" render={() => (isLoggedIn() ? (<UserPage />):(<Redirect to="/login"/>))}/>
-            <Route path="/users" render={() => (isAdministrator() ? (<UsersAdm />):(<Redirect to="/login"/>))}/>
+            <Route exact path="/" render={() => <FrontP/>} />
+            <Route path="/register" render={() => isLoggedIn() ?
+                <Error error={{message:'You are always login in. Press SIGN OUT to create new account',status:'403 Forbidden'}} />
+                :
+                <Register/>}
+            />
+            <Route path="/login" render={() => isLoggedIn() ? (
+                <Error error={{message:'You are always login in. Press SIGN OUT to change account',status:'403 Forbidden'}} />)
+                :
+                <Login/>}
+            />
+            <Route path="/chat"  render={() => isLoggedIn() ?
+                <Chat />
+                :
+                <Redirect to="/login"/>}
+            />
+            <Route path="/userPage" render={() => isLoggedIn() ?
+                <UserPage />
+                :
+                <Redirect to="/login"/>}
+            />
+            <Route path="/users" render={() => isAdministrator() ?
+                <UsersAdm />
+                :
+                <Redirect to="/login"/>}
+            />
             <Route path="/error" component={Error}/>
             <Route path="*" render={(props) => (<Error error={{message:'We are sorry but the page you are looking for does not exist.',status:'404 page not found'}} />)} />
         </Switch>

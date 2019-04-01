@@ -11,9 +11,12 @@ class ConfirmWindow extends React.Component {
         return (
             <div className={showHideClassName}>
                 <section className='modal-main'>
-                    {(this.props.message)?(<p>{this.props.message} </p>):('')}
-                    <button className='modal-main-btnRight btn' onClick={()=>handle(true)}>OK</button>
-                    <button className='modal-main-btnLeft btn' onClick={()=>handle(false)}>CANCEL</button>
+                    {(this.props.message)?(<p className="text-description">{this.props.message} </p>):""}
+                    <div className="modal-btn wrapper">
+                        <button className=' btn' onClick={()=>handle(true)}>OK</button>
+                        <button className=' btn' onClick={()=>handle(false)}>CANCEL</button>
+                    </div>
+
                 </section>
             </div>
 

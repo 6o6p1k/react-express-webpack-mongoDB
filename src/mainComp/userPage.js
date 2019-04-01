@@ -44,7 +44,8 @@ class UserP extends React.Component {
         this.setState({promptRes: promptRes,PromptModalWindow: false});
         if(this.state.promptMessage === "Confirm You Password:") {
             this.setState({promptPass: promptRes,PromptModalWindow: false});
-            this.setState({confirmMessage: "Are You ready to delete your account? Pres Ok to delete or Cancel to regect",ConfirmModalWindow: true});
+            this.setState({confirmMessage: "Are You ready to delete your account? " +
+            "Pres Ok to delete or Cancel to regect",ConfirmModalWindow: true});
         }
 
     };
@@ -267,7 +268,7 @@ class UserP extends React.Component {
                 <form onSubmit={(ev)=>{
                     ev.preventDefault();
                     ev.stopPropagation();
-                    this.sendAuth()}} className="form-horizontal login-formbv user-page" name="loginform" id="form">
+                    this.sendAuth()}} className="user-page" name="loginform" id="form">
 
                     <div className="form-group">
                         <label htmlFor="input-username" className="control-label">New Name {(this.state.newNameStatus)?(this.state.newNameStatus):('')}</label>

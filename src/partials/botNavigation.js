@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from "react-router-dom/es/Link";
 
 
 
@@ -6,7 +7,7 @@ class BottomNav extends React.Component {
     render() {
 
         return (
-            <a href="https://github.com/6o6p1k/react-express-webpack-Example">myGitHub</a>
+            <Link to="https://github.com/6o6p1k/react-express-webpack-Example">myGitHub</Link>
         )
 
     }

@@ -23,14 +23,16 @@ class PromptWindow extends React.Component {
         return (
             <div className={showHideClassName}>
                 <section className='modal-main'>
-                    {(this.props.message)?(<p>{this.props.message} </p>):('')}
+                    {(this.props.message)?(<p className="text-description">{this.props.message} </p>):('')}
                     <div className="form-group">
                         <label htmlFor="input-password" className="control-label">Password</label>
                         <input name="Password"  type="password" className="form-control" placeholder="Password" onChange={this.handleChange}/>
                     </div>
-                    {(this.state.Password)?(<p><button className='modal-main-btnRight btn' onClick={()=>{
+                    {this.state.Password ?
+                        <p><button className='btn' onClick={()=>{
                         handle(this.state.Password);
-                    }}>OK</button> </p>):('')}
+                    }}>OK</button> </p>
+                        :""}
 
                 </section>
             </div>
