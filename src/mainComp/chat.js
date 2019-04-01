@@ -564,7 +564,7 @@ class Chat extends React.Component {
                                                     eUser.messages.map((data, i) => {
                                                         return (
                                                             <li key={i}
-                                                                className={(data.user === this.state.user.username) ? ("right") : ("")}>{data.user + '>>>' + data.text + '>>>' + data.date}</li>
+                                                                className={(data.user === this.state.user.username) ? ("right") : ("")}>{data.user + '>>>' + data.text + '>>>'} <span className="messageTime">{data.date}</span></li>
                                                         )
                                                     })
                                                 ) : ("")

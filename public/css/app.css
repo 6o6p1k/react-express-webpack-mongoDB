@@ -484,6 +484,12 @@ footer a:active{
 .frontTitle{
     text-align: center;
 }
+.messageTime{
+    color: #bbb;
+    font-size: 10px;
+    position: relative;
+    top: 5px;
+}
 textarea{
     width: 100%;
     border: none;
