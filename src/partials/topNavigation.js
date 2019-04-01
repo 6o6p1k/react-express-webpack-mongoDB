@@ -35,20 +35,11 @@ class TopNav extends React.Component {
                 </ul>
                 <ul className="nav-list">
                     {!this.props.user ?
-                        this.props.title === "REGISTRATION PAGE"?
+
                             <li>
-                                <Link to="/login">LOGIN</Link>
+                                <Link to="/login" className={`${this.props.title === "REGISTRATION PAGE" ? "active" :""}`}>LOGIN</Link>
+                                <Link to="/register" className={`${this.props.title === "LOGIN PAGE" ? "active" :""}`}>JOIN</Link>
                             </li>
-                        :
-                            this.props.title === "LOGIN PAGE"?
-                                <li>
-                                    <Link to="/register">JOIN</Link>
-                                </li>
-                            :
-                                    <li>
-                                        <Link to="/register">JOIN</Link>
-                                        <Link to="/login">LOGIN</Link>
-                                    </li>
 
 
                      :

@@ -11,11 +11,21 @@ class ModalWindow extends React.Component {
         return (
             <div className={showHideClassName}>
                 <section className='modal-main'>
-                    {(this.props.err.status)?(<h1>ERROR:  {this.props.err.status} </h1>):('')}
-                    {(this.props.err.message)?(<p>MESSAGE: {this.props.err.message} </p>):('')}
-                    {(this.props.message)?(<p>{this.props.message} </p>):('')}
+                    <div className='modal-main-btnRight' onClick={handleClose}>X</div>
+                    {this.props.err.status ?
+                        <h1 className="titleError">ERROR:  <span className="errorNumber">{this.props.err.status}</span> </h1>
+                        :""
+                    }
+                    {this.props.err.message ?
+                        <p className="errorDescription">{this.props.err.message} </p>
+                        :""
+                    }
+                    {this.props.message ?
+                        <p>{this.props.message} </p>
+                        :""
+                    }
                     {this.props.children}
-                    <button className='modal-main-btnRight btn' onClick={handleClose}>CLOSE</button>
+
                 </section>
             </div>
 

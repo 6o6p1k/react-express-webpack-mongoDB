@@ -72,20 +72,19 @@ class LoginP extends React.Component {
         if(this.state.errorRedirect) {return <Redirect to='/error' />};
         return (
             <Page user={this.state.user} title="LOGIN PAGE" className="container">
-                {(this.state.modalWindow)?(
+                {this.state.modalWindow ?
                     <Modal show={this.state.modalWindow} handleClose={this.hideModal} err={this.state.err}/>
-                ):('')}
-{/*                <div className="wrapper" >
-                    <button onClick={this.showModal} className="btn">MODAL TEST BTN</button>
-                </div>*/}
-                <form onSubmit={this.sendAuth} className="login-form page-login" name="loginform" id="form">
+                :''
+                }
+
+                <form onSubmit={this.sendAuth} className="page-login" name="loginform" id="form">
                     <div className="form-group">
                         <label htmlFor="input-username" className=" control-label">Name</label>
-                        <input name="username"  type="text" className="form-control" id="input-username" placeholder="Name" onChange={this.handleChange}/>
+                        <input name="username"  type="text" className="form-input" id="input-username" placeholder="Name" onChange={this.handleChange}/>
                     </div>
                     <div className="form-group">
                         <label htmlFor="input-password" className="control-label">Password</label>
-                        <input name="password"  type="password" className="form-control" id="input-password" placeholder="Password" onChange={this.handleChange}/>
+                        <input name="password"  type="password" className="form-input" id="input-password" placeholder="Password" onChange={this.handleChange}/>
 
                     </div>
                     <div className="form-group">

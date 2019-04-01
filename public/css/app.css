@@ -8,6 +8,23 @@ a {
 }
 .wrapper{
     display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+.titleError{
+    text-align: center;
+    color: #821010;
+    font-size: 21px;
+    font-weight: bold;
+}
+.errorDescription{
+    text-align: center;
+    color: #2da292;
+    font-size: 18px;
+}
+.errorNumber{
+    color: #000;
 }
 .btn-primary{
     color: #fff;
@@ -24,24 +41,8 @@ a {
     background-color: #204d74 !important;
     border-color: #122b40 !important;
 }
-.login-form .btn{
-    display: flex;
-    width: 100%;
-    border-radius:0;
-    background-color: #666666;
-    color: #fff;
-    transition: all .3s linear;
-    border: 1px solid transparent;
-    margin-bottom:1px;
-    text-transform: uppercase;
-    align-items: center;
-    justify-content: space-between;
-}
-.login-form .btn:hover,
-.login-form .btn:active{
-    background-color: #2da292;
-    border: 1px solid #2da292;
-}
+
+
 .navbar-header{
     background-color: #4c4c4c;
     border-color: #4c4c4c;
@@ -61,7 +62,8 @@ a {
 }
 .nav-list li a:focus,
 .nav-list li a:hover,
-.nav-list li a:active{
+.nav-list li a:active,
+.nav-list li a.active{
     color: #2da292;
     outline: none;
 }
@@ -100,20 +102,37 @@ ul li{
     border-left: 1px solid #fff;
 
 }
-.form-control{
+input{
     border-radius: 0;
-    background-color: #000000b3;
+    background-color: transparent!important;
     border: none;
     outline: 0;
     box-shadow: none;
-    color: #fff;
+    color: #fff!important;
+    height: 100%;
+    padding: 0 5px;
+    border-bottom: 1px solid #fff;
 }
-.form-control:focus,
-.form-control:hover,
-.form-control:active{
+
+input:focus,
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
     outline: 0;
-    box-shadow: none;
+    border-bottom: 1px solid #2da292;
+    -webkit-text-fill-color: #fff;
+    -webkit-box-shadow: none;
+    transition: background-color 5000s ease-in-out 0s;
+    color: #fff!important;
+    background-color: transparent!important;
 }
+
 .btn{
     -webkit-border-radius:0;
     -moz-border-radius:0;
@@ -122,6 +141,9 @@ ul li{
     color: #fff;
     transition: all .3s linear;
     position: relative;
+    border: none;
+    cursor: pointer;
+    padding: 10px 20px;
 }
 
 .btn.clicked{background-color: #2da292;}
@@ -143,19 +165,21 @@ ul li{
     /*flex-direction: column;*/
     /*position: relative;*/
 }
-.login-form.page-login{
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+.page-login .form-group{
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    height: 35px;
+}
+.page-login .form-group:last-of-type{
+    margin-top:20px;
 }
 .form-group .control-label{
     color: #fff;
-    margin-bottom:7px;
+    padding-right: 10px;
 }
-.form-group{
-    position: relative;
-}
+
 .form-group .btn-check{
     position: absolute;
     right: -76px;
@@ -336,6 +360,7 @@ footer a:active{
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.6);
+    z-index: 1;
 }
 
 .modal-main {
@@ -346,14 +371,20 @@ footer a:active{
     top:50%;
     left:50%;
     transform: translate(-50%,-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
 }
 .modal-main-btnRight {
     position: absolute;
-    right: 0;
-    bottom: 0;
-    background: rgb(76, 76, 76);
-    width: auto;
-    height: auto;
+    right: 10px;
+    top: 5px;
+    color: #fff;
+    cursor: pointer;
+}
+.modal-main-btnRight:hover{
+    color: #2da292;
 }
 .modal-main-btnLeft {
     position: absolute;
