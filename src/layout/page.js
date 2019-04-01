@@ -17,7 +17,10 @@ class Page extends React.Component {
                     <TopNav user={this.props.user} title={this.props.title} className="container"/>
                     {this.props.headers}
                 </header>
-                {this.props.children}
+                <div className="main-body">
+                    {this.props.children}
+                </div>
+
                 <footer>
                     <BottomNav className="container"/>
                     {this.props.footer}

@@ -42,27 +42,26 @@ a {
     background-color: #2da292;
     border: 1px solid #2da292;
 }
-.navbar{
-    margin-bottom:0;
+.navbar-header{
     background-color: #4c4c4c;
     border-color: #4c4c4c;
-    border-radius: 0;
-}
-.navbar-right{
-    margin-right: 0;
-}
-.navbar-nav > li {
     display: flex;
-    flex-direction: row;
-    justify-content:flex-start;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+
 }
-.navbar-default .navbar-nav > li > a{
+.nav-list{
+    padding: 0;
+}
+.nav-list li a{
     color: #fff;
     transition: all .3s linear;
+    padding-right: 10px;
 }
-.navbar-default .navbar-nav > li > a:focus,
-.navbar-default .navbar-nav > li > a:hover,
-.navbar-default .navbar-nav > li > a:active{
+.nav-list li a:focus,
+.nav-list li a:hover,
+.nav-list li a:active{
     color: #2da292;
     outline: none;
 }
@@ -73,7 +72,16 @@ a {
     background-color: #666666;
     margin-bottom: 1px;
 }
-
+.main-body{
+    min-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.main-body .logo{
+    font-size: 30px;
+    font-weight: bold;
+}
 ul li{
     list-style: none;
     margin-bottom:0;
@@ -131,10 +139,9 @@ ul li{
     min-width: 180px;
 }
 #bodyContent{
-    height: 100vh;
     background-color: #666666;
-    flex-direction: column;
-    position: relative;
+    /*flex-direction: column;*/
+    /*position: relative;*/
 }
 .login-form.page-login{
     position: absolute;
@@ -157,11 +164,16 @@ ul li{
 .form-group .btn-check .btn{
     border: none;
 }
+footer{
+    height: 5vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 footer a{
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 40px;
     text-transform: uppercase;
     color: #fff;
     transition: all .3s linear;

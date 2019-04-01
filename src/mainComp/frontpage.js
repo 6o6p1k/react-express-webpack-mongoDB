@@ -16,7 +16,7 @@ class FrontP extends React.Component {
         //console.log('/FP user:',this.state.user);
         return (
             <Page user={this.state.user} title="Hello ≥︺‿︺≤">
-                <h1>Hello ≥︺‿︺≤</h1>
+                <p className="logo">Hello ≥︺‿︺≤</p>
 
 
             </Page>

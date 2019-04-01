@@ -15,38 +15,47 @@ class TopNav extends React.Component {
     render() {
         //console.log('topNav props:',this.props.title);
         return (
-            <nav className="navbar navbar-default">
-                <ul className="nav navbar-nav">
-                    {(!this.props.user) ? (<li><Link to="/">MAIN</Link></li>) : (<li/>)}
-                    {(this.props.user) ? (
+            <nav className="navbar-header">
+                <ul className="nav-list">
+                    {!this.props.user ?
+                        <li><Link to="/">MAIN</Link></li>
+                        : ""
+                    }
+                    {this.props.user ?
                     <li>
                         <Link to="/chat">CHAT</Link>
                         <Link to="/userPage">MY PROFILE</Link>
                     </li>
-                    ) : (<li/>)}
-                    {(this.props.user && this.props.user.username === 'Administrator') ? (
-                        <li><Link to="/users">ADMIN PAGE</Link></li>) : (<li/>)}
+                     : ""
+                    }
+                    {this.props.user && this.props.user.username === 'Administrator' ?
+                        <li><Link to="/users">ADMIN PAGE</Link></li>
+                        : ""
+                    }
                 </ul>
-                <ul className="nav navbar-nav navbar-right">
-                    {(!this.props.user) ? (
-                        (this.props.title === "REGISTRATION PAGE")?(
+                <ul className="nav-list">
+                    {!this.props.user ?
+                        this.props.title === "REGISTRATION PAGE"?
                             <li>
                                 <Link to="/login">LOGIN</Link>
                             </li>
-                        ):(
-                            (this.props.title === "LOGIN PAGE")?(
+                        :
+                            this.props.title === "LOGIN PAGE"?
                                 <li>
                                     <Link to="/register">JOIN</Link>
                                 </li>
-                            ):(
+                            :
                                     <li>
                                         <Link to="/register">JOIN</Link>
                                         <Link to="/login">LOGIN</Link>
                                     </li>
-                                )
-                        )
-                    ) : (
-                        <li><Link to="/" onClick={this.logOut}>SIGN OUT</Link></li>)}
+
+
+                     :
+                        <li>
+                            <Link to="/" onClick={this.logOut}>SIGN OUT</Link>
+                        </li>
+                    }
                 </ul>
             </nav>
         )
