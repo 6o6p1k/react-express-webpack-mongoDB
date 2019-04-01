@@ -570,14 +570,13 @@ class Chat extends React.Component {
                                                 ) : ("")
                                             }
                                         </ul>
-                                        {
-                                            (eUser)?(
+
                                                 <form onSubmit={(ev) => {
                                                     ev.preventDefault();
                                                     ev.stopPropagation();
                                                     this.sendMessage(eUser.name)
                                                 }}
-                                                      name="chatRoomForm">
+                                                      name="chatRoomForm" className="writeMessWrapp">
                                                     <div className="input-group writeMess">
                                                         <textarea name="formInp" className="form-control" autoComplete="off"
                                                                autoFocus placeholder="Message..."
@@ -585,21 +584,20 @@ class Chat extends React.Component {
                                                                onChange={ev => (this.typing(eUser.name, ev))}
                                                         />
                                                         {
-                                                            (a !== "blockedContacts") ? (
-                                                                <span className="input-group-btn">
+                                                            (a !== "blockedContacts") ?
+
                                                             <button onClick={() => this.sendMessage(eUser.name)} name="msgBtn" type="button" className="btn">SEND</button>
-                                                        </span>
-                                                            ):(
-                                                                <span className="input-group-btn">
+
+                                                            :
+
                                                             <button onClick={() => this.resAddMe(eUser.name)} name="msgBtn" type="button" className="btn">SEND RESPONSE TO ADD</button>
-                                                        </span>
-                                                            )
+
+
                                                         }
 
                                                     </div>
                                                 </form>
-                                            ):("")
-                                        }
+
 
                                     </div>
                                 </div>
