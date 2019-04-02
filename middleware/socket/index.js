@@ -209,9 +209,8 @@ module.exports = function (server) {
         socket.on('sayOnLine', function () {
             let contacts = globalChatUsers[username].contacts;
             console.log("sayOnLine, username: ",username,", contacts: ",contacts);
-            let usersOnLine = contacts.filter(name => globalChatUsers[name]);
             //res for my contacts what Iam onLine
-            usersOnLine.forEach((name)=>{
+            contacts.forEach((name)=>{
                 if(globalChatUsers[name]) socket.broadcast.to(globalChatUsers[name].sockedId).emit('onLine', username);
             });
         });
@@ -219,9 +218,8 @@ module.exports = function (server) {
         socket.on('sayOffLine', function () {
             let contacts = globalChatUsers[username].contacts;
             console.log("sayOffLine, username: ",username,", contacts: ",contacts);
-            let usersOnLine = contacts.filter(name => globalChatUsers[name]);
             //res for my contacts what Iam onLine
-            usersOnLine.forEach((name)=>{
+            contacts.forEach((name)=>{
                 if(globalChatUsers[name]) socket.broadcast.to(globalChatUsers[name].sockedId).emit('offLine', username);
             });
         });
@@ -302,7 +300,7 @@ module.exports = function (server) {
                 return socket.emit('message', { user: resToUserName, text: "Admin: user "+resToUserName+" do not add you in his white list!", status: false, date: Date.now()});
             }
             let {err,mes} = await Message.messageHandler({members:[username,resToUserName],message:{ user: username, text: text, status: false, date: dateNow}});
-            if(!globalChatUsers[resToUserName]) return;
+            if(!globalChatUsers[resToUserName]) return cb && cb();
             let sid = globalChatUsers[resToUserName].sockedId;
             //console.log('message text: ',text, 'sid: ',sid, 'resToUserName: ',resToUserName, 'dateNow: ',dateNow);
             socket.broadcast.to(sid).emit('message', { user: username, text: text, status: false, date: dateNow});
@@ -320,6 +318,5 @@ module.exports = function (server) {
             delete globalChatUsers[username];
         });
     });
-
     return io;
 };
