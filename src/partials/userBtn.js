@@ -1,7 +1,13 @@
 import React from 'react';
 import OnContextMenu from './onContextMenuWindow.js'
-
+let contentMenuStyle = {
+    display: location ? 'block' : 'none',
+    position: 'absolute',
+    left: location ? location.x : 0,
+    top: location ? location.y : 0
+};
 class UserBtn extends React.Component {
+
     constructor(props){
         super(props);
         this.state = {
@@ -9,6 +15,7 @@ class UserBtn extends React.Component {
             onContextMenuUserName:"",
             authorizedStatus:undefined,
             banStatus:undefined,
+            contextMenuLocation: contentMenuStyle
         }
     }
 
@@ -16,23 +23,26 @@ class UserBtn extends React.Component {
 
     }
 
-    rightClickMenuOn =(itm)=> {
-        console.log("rightClickMenuOn itm: ",itm);
+    rightClickMenuOn =(itm,e)=> {
+        //console.log("rightClickMenuOn itm: ",itm);
+        //console.log("rightClickMenuOn e.pageX: ",e.pageX," ,e.pageY",e.pageY);
         this.setState({
             onContextMenu:true,
             onContextMenuUserName:itm.name,
             authorizedStatus:itm.authorized,
-            banStatus:itm.banned
+            banStatus:itm.banned,
+            contextMenuLocation: {left: e.pageX, top:e.pageY}
         })
     };
 
     rightClickMenuOnHide =()=> {
-        console.log("rightClickMenuOnHide");
+        //console.log("rightClickMenuOnHide");
         this.setState({
             onContextMenu: false,
             onContextMenuUserName:"",
             authorizedStatus:undefined,
             banStatus:undefined,
+            contextMenuLocation: contentMenuStyle
         });
     };
 
@@ -54,31 +64,42 @@ class UserBtn extends React.Component {
                          this.props.inxHandler();
                          this.props.getUserLog();
                  }}}
-                 onContextMenu={(e)=>{e.preventDefault();this.rightClickMenuOn(itm); return false;}}
+                 onContextMenu={(e)=>{e.preventDefault();this.rightClickMenuOn(itm,e); return false;}}
                  onMouseLeave={this.rightClickMenuOnHide}
                  type="button"
                  className={`btn user ${this.props.messageBlockHandlerId === i ?"clicked ":""}`}>
+                <div className="userStatus">
+                    <ul>
+                        <li className={`${itm.onLine ? "onLine":"offLine"}`}/>
+                    </ul>
+                </div>
                 {this.props.name ? <font>{this.props.name}</font> : <font color={itm.onLine ? "#fff":"#da3a2f"}>{itm.name}</font>}
-                {(itm)?(
+                {itm ?
                         <div className="userItm">
-                            {(itm.msgCounter !== 0 || itm.msgCounter === undefined)?(
+                            {itm.msgCounter !== 0 || itm.msgCounter === undefined ?
                                     <div className="unread-mess">
                                         {itm.msgCounter}
                                     </div>
-                                ):('')}
+                                :""}
                             <div className="typing">
-                                {(itm.typing)?(
+                                {itm.typing?
                                     <div className="loader">
                                         <span/>
                                     </div>
-                                ):('')}
+                                :""}
                             </div>
                         </div>
-                ):("")}
-                {(this.state.onContextMenu)?(<OnContextMenu authorizedStatus={this.state.authorizedStatus}
-                                                            banList={this.props.banList}
-                                                            rightClickMenuOnHide={this.rightClickMenuOnHide}
-                                                            onContextMenuResponse={this.onContextMenuResponse}/>):('')}
+
+                    :""}
+                {this.state.onContextMenu ?
+                    <OnContextMenu
+                        authorizedStatus={this.state.authorizedStatus}
+                        banList={this.props.banList}
+                        rightClickMenuOnHide={this.rightClickMenuOnHide}
+                        onContextMenuResponse={this.onContextMenuResponse}
+                        contextMenuLocation={this.state.contextMenuLocation}
+                    />
+                    :''}
             </div>
         )
     }

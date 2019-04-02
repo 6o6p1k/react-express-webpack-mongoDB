@@ -173,6 +173,7 @@ select:-webkit-autofill:focus {
 .btn.user{
     margin-bottom: 2px;
     cursor: pointer;
+    background-color: transparent;
 }
 #changeData{
     min-width: 180px;
@@ -252,12 +253,17 @@ footer a:active{
     border-right: 20px solid #2da292;
     border-bottom: 0 solid transparent;
     position: absolute;
-    right: 99%;
+    right: 98%;
     bottom: 0;
     outline: none;
 }
 .chat-list li.right{
-    left: 50%;
+    left: 46%;
+}
+.chat-list li.right:before{
+    right: -9px;
+    transform: rotate(90deg);
+    bottom: 1px;
 }
 .btn-unread{
     position: relative;
@@ -432,12 +438,13 @@ footer a:active{
 
 .userDropDown{
     position: absolute;
-    top: 0;
-    right: -30%;
+    top: 0!important;
+    /*right: -30%;*/
     height: auto;
     background-color: #403b3b;
     padding-left: 0;
     z-index: 100;
+
 
 }
 
@@ -484,26 +491,51 @@ footer a:active{
 .frontTitle{
     text-align: center;
 }
-.messageTime{
+.messageData{
     color: #bbb;
     font-size: 10px;
-    position: relative;
-    top: 5px;
+    position: absolute;
+    top: -14px;
+    left: 0;
+}
+.messageData .messageTime{
+    padding-left: 7px;
+    display: inline-block;
 }
 textarea{
     width: 100%;
     border: none;
-    color: #000!important;
+    color: #fff!important;
     outline: none;
     resize: none;
     box-shadow: none;
     height:100%;
+    background-color: #4c4c4c;
+    padding:0 15px;
 }
 .ReactTable.-striped .rt-tr.-even{
     background-color: rgba(5, 0, 5, 0.11) !important;
 }
 .form-group.w100{
     width: 100%;
+}
+.userStatus{
+    position: absolute;
+    right: 7px;
+    top: -3px;
+}
+.userStatus ul{
+    display: flex;
+}
+.userStatus ul li{
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    border: 1px solid #ddd;
+    margin: 3px;
+}
+.userStatus ul li.onLine{
+    background-color: #29962e;
 }
 /*~~~~~~~~~~~~~~~~~~~~~STYLE CAT~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 @keyframes tail {
