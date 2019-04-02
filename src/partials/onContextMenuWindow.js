@@ -2,11 +2,9 @@ import React from 'react';
 
 class OnContextMenu extends React.Component {
 
-
     render() {
-        console.log("OnContextMenu props: ",this.props);
         return (
-            <ul className="userDropDown" onMouseLeave={this.props.rightClickMenuOnHide}>
+            <ul className="userDropDown" onMouseLeave={this.props.rightClickMenuOnHide} style={this.props.contextMenuLocation}>
                 <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("moveOnTop")}}>Move on top</li>
                 <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("viewUserData")}}>View user data</li>
                 <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("clearChatWindow")}}>Clear chat window</li>
