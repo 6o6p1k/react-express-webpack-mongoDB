@@ -44,12 +44,12 @@ function loadUser(session, callback) {
     });
 }
 
-function dateToString(obj){
+/*function dateToString(obj){
     let dateMls = obj.date;
     let currentdate = new Date(dateMls);
     obj.date = currentdate.getHours() + ":" + currentdate.getMinutes() + "/" + currentdate.getDate() + ":" + (currentdate.getMonth()+1) + ":" + currentdate.getFullYear();// + ":"+ currentdate.getSeconds();
     return obj;
-}
+}*/
 
 async function aggregateUserData(username) {
     let userData = await User.findOne({username:username});
@@ -277,9 +277,9 @@ module.exports = function (server) {
                 return cb(err,null);
             }else {
                 //console.log("getUserLog mes: ", mes);
-                let messages = mes.messages.map((itm)=> dateToString(itm));
-                //console.log("getUserLog messages: ",messages);
-                return cb(null,messages);
+                //let messages = mes.messages.map((itm)=> dateToString(itm));
+                //console.log("getUserLog messages: ",mes.messages);
+                return cb(null,mes.messages);
             }
         });
         //chat message typing
