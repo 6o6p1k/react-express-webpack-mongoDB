@@ -157,6 +157,8 @@ class Chat extends React.Component {
                     err:{message:err},
                 })
             }else {
+                arr.map(itm => itm.date = this.dateToString(itm.date));
+                console.log("getUserLog arrModDate: ",arr);
                 reqUser.messages = arr;
                 this.setState({reqUser});
             }
