@@ -592,7 +592,7 @@ class Chat extends React.Component {
 
                                                             :
 
-                                                            <button onClick={() => this.resAddMe(eUser.name)} name="msgBtn" type="button" className="btn">SEND RESPONSE TO ADD</button>
+                                                            <button onClick={() => this.resAddMe(eUser.name)} name="msgBtn" type="button" className="btn">ALLOW USER</button>
 
 
                                                         }

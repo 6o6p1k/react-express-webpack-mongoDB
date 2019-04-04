@@ -70,24 +70,29 @@ class UserBtn extends React.Component {
                  className={`btn user ${this.props.messageBlockHandlerId === i ?"clicked ":""}`}>
                 <div className="userStatus">
                     <ul>
-                        <li className={`${itm.onLine ? "onLine":"offLine"}`}/>
+
+                        <li>
+                            {itm.msgCounter !== 0 || itm.msgCounter === undefined ?
+                                <div className="unread-mess">
+                                   {itm.msgCounter}
+                                </div>
+                                :""}
+                        </li>
+                        <li className={` statusNet ${itm.onLine ? "onLine":"offLine"}`}/>
                     </ul>
                 </div>
-                {this.props.name ? <font>{this.props.name}</font> : <font color={itm.onLine ? "#fff":"#da3a2f"}>{itm.name}</font>}
+                {this.props.name ? <font>{this.props.name}</font> : <font color={itm.onLine ? "#fff":"#a09b9b"}>{itm.name}</font>}
                 {itm ?
                         <div className="userItm">
-                            {itm.msgCounter !== 0 || itm.msgCounter === undefined ?
-                                    <div className="unread-mess">
-                                        {itm.msgCounter}
-                                    </div>
-                                :""}
                             <div className="typing">
-                                {itm.typing?
+                                {itm.typing ?
                                     <div className="loader">
                                         <span/>
                                     </div>
-                                :""}
+                                    :""}
                             </div>
+
+
                         </div>
 
                     :""}

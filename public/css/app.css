@@ -284,17 +284,22 @@ footer a:active{
     right: 5%;
 }
 .unread-mess{
-    min-width: 26px;
+    min-width: 10px;
     min-height: 10px;
+    height: 10px;
     border-radius: 50%;
     background-color: #2d80a2;
     padding: 2px;
     display: flex;
     justify-content: center;
     align-items: center;
+    font-size: 10px;
+    margin-top: -5px;
 }
+
 .typing{
     width: 20px;
+    margin-top:5px;
 }
 .loader{
     width: 20px;
@@ -344,6 +349,7 @@ footer a:active{
 .btn.clicked .loader:after{
     color: #fff;
 }
+
 @-webkit-keyframes lightUp {
     0% {
         opacity: 0.2;
@@ -526,19 +532,23 @@ textarea{
 }
 .userStatus{
     position: absolute;
-    right: 7px;
+    right: 20px;
     top: -3px;
 }
 .userStatus ul{
     display: flex;
+    align-items: flex-start;
 }
 .userStatus ul li{
+    margin: 0 3px;
+}
+.userStatus ul li.statusNet{
     width: 5px;
     height: 5px;
     border-radius: 50%;
     border: 1px solid #ddd;
-    margin: 3px;
 }
+
 .userStatus ul li.onLine{
     background-color: #29962e;
 }
