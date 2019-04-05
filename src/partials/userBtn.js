@@ -81,7 +81,7 @@ class UserBtn extends React.Component {
                         <li className={` statusNet ${itm.onLine ? "onLine":"offLine"}`}/>
                     </ul>
                 </div>
-                {this.props.name ? <font>{this.props.name}</font> : <font color={itm.onLine ? "#fff":"#a09b9b"}>{itm.name}</font>}
+                {this.props.name ? <font>{this.props.name}</font> : <font color={itm.onLine ? "#fff": itm.banned ? "#c33131": itm.authorized ? "#a2a215" :"#a09b9b"}>{itm.name}</font>}
                 {itm ?
                         <div className="userItm">
                             <div className="typing">
