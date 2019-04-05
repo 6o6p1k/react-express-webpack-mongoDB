@@ -115,7 +115,11 @@ module.exports = function (server) {
                 if(err) return callback(JSON.stringify(new DevError(500, 'DB err: ' + err)));
                 //console.log('loadUser userId: ',user);
                 if(!user) return callback(JSON.stringify(new  HttpError(401, 'Anonymous session may not connect')));
-                if(globalChatUsers[user.username]) return callback(JSON.stringify(new HttpError(423, 'Locked! You tried to open Chat Page in another tab.')));
+                if(globalChatUsers[user.username]) {
+                    console.log("multiChatConnection");
+                    delete globalChatUsers[user.username];
+                    return callback(JSON.stringify(new HttpError(423, 'Locked! You tried to open Chat Page in another tab.')));
+                }
                 handshake.user = user;
                 return callback(null, true);
             });
@@ -307,8 +311,8 @@ module.exports = function (server) {
             cb && cb();
         });
         // when the user disconnects perform this
-        socket.on('disconnect', function () {
-            let contacts = globalChatUsers[username].contacts;
+        socket.on('disconnect', async function () {
+            let contacts = globalChatUsers[username].contacts || await User.findOne({username:username}).contacts;
             console.log("disconnect, username: ",username,", contacts: ",contacts);
             //res for my contacts what Iam offLine
             contacts.forEach((name)=>{
