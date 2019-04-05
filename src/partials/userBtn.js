@@ -68,33 +68,31 @@ class UserBtn extends React.Component {
                  onMouseLeave={this.rightClickMenuOnHide}
                  type="button"
                  className={`btn user ${this.props.messageBlockHandlerId === i ?"clicked ":""}`}>
-                <div className="userStatus">
-                    <ul>
-
-                        <li>
-                            {itm.msgCounter !== 0 || itm.msgCounter === undefined ?
-                                <div className="unread-mess">
-                                   {itm.msgCounter}
-                                </div>
-                                :""}
-                        </li>
-                        <li className={` statusNet ${itm.onLine ? "onLine":"offLine"}`}/>
-                    </ul>
-                </div>
-                {this.props.name ? <font>{this.props.name}</font> : <font color={itm.onLine ? "#fff": itm.banned ? "#c33131": itm.authorized ? "#a2a215" :"#a09b9b"}>{itm.name}</font>}
                 {itm ?
-                        <div className="userItm">
-                            <div className="typing">
-                                {itm.typing ?
-                                    <div className="loader">
-                                        <span/>
+                    <div className="userStatus">
+                        <ul>
+                            <li>
+                                {itm.msgCounter !== 0 || itm.msgCounter === undefined ?
+                                    <div className="unread-mess">
+                                        {itm.msgCounter}
                                     </div>
                                     :""}
-                            </div>
-
-
+                            </li>
+                            <li className={` statusNet ${itm.onLine ? "onLine":"offLine"}`}/>
+                        </ul>
+                    </div>
+                    :""}
+                {this.props.name ? <font>{this.props.name}</font> : <font color={itm.onLine ? "#fff":"#a09b9b"}>{itm.name}</font>}
+                {itm ?
+                    <div className="userItm">
+                        <div className="typing">
+                            {itm.typing ?
+                                <div className="loader">
+                                    <span/>
+                                </div>
+                                :""}
                         </div>
-
+                    </div>
                     :""}
                 {this.state.onContextMenu ?
                     <OnContextMenu
