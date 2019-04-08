@@ -48,7 +48,8 @@ class UserBtn extends React.Component {
 
     onContextMenuResponse =(res)=> {
         //console.log("onContextMenuResponse res: ", res);
-        (()=>{this.props.onContextMenuHandler(res,this.state.onContextMenuUserName)})()
+        (()=>{this.props.onContextMenuHandler(res,this.state.onContextMenuUserName)})();
+        this.setState({onContextMenu:false});
     };
 
     render() {

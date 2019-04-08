@@ -164,7 +164,8 @@ module.exports = function (server) {
         //update global chat users obj
         globalChatUsers[username] = {
             sockedId:reqSocketId,
-            contacts:userDB.contacts
+            contacts:userDB.contacts, //use only for username otherwise the data may not be updated.
+            blockedContacts:userDB.blockedContacts, //use only for username otherwise the data may not be updated.
         };
         //update UserData
         socket.emit('updateUserData',await aggregateUserData(username));
@@ -212,18 +213,20 @@ module.exports = function (server) {
         //req show me online
         socket.on('sayOnLine', function () {
             let contacts = globalChatUsers[username].contacts;
-            console.log("sayOnLine, username: ",username,", contacts: ",contacts);
+            let blockedContacts = globalChatUsers[username].blockedContacts;
+            console.log("sayOnLine, username: ",username,", contacts: ",contacts,", blockedContacts: ",blockedContacts);
             //res for my contacts what Iam onLine
-            contacts.forEach((name)=>{
+            contacts.concat(blockedContacts).forEach((name)=>{
                 if(globalChatUsers[name]) socket.broadcast.to(globalChatUsers[name].sockedId).emit('onLine', username);
             });
         });
         //req show me offLine
         socket.on('sayOffLine', function () {
             let contacts = globalChatUsers[username].contacts;
-            console.log("sayOffLine, username: ",username,", contacts: ",contacts);
+            let blockedContacts = globalChatUsers[username].blockedContacts;
+            console.log("sayOffLine, username: ",username,", contacts: ",contacts,", blockedContacts: ",blockedContacts);
             //res for my contacts what Iam onLine
-            contacts.forEach((name)=>{
+            contacts.concat(blockedContacts).forEach((name)=>{
                 if(globalChatUsers[name]) socket.broadcast.to(globalChatUsers[name].sockedId).emit('offLine', username);
             });
         });
@@ -257,9 +260,8 @@ module.exports = function (server) {
             if(globalChatUsers[data.name]) {//Send message "Add me to you contact list" if user online
                 let {err,mes} = await Message.messageHandler({members:[username,data.name],message:{ user: username, text: "I added you to my contact list.", status: false, date: data.date}});
                 socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('message', { user: username, text: "I added you to my contact list.", status: false, date: data.date});
-                //socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('onLine', username);
-                cb(null,await aggregateUserData(username));//need transform array and add data who are online
-            }else return cb(null,await aggregateUserData(username));//need transform array and add data who are online
+                cb(null,await aggregateUserData(username));
+            }else return cb(null,await aggregateUserData(username));
         });
         //Find contacts
         socket.on('findContacts', async function (data,cb) {
@@ -313,9 +315,10 @@ module.exports = function (server) {
         // when the user disconnects perform this
         socket.on('disconnect', async function () {
             let contacts = globalChatUsers[username].contacts || await User.findOne({username:username}).contacts;
+            let blockedContacts = globalChatUsers[username].blockedContacts || await User.findOne({username:username}).blockedContacts;
             console.log("disconnect, username: ",username,", contacts: ",contacts);
             //res for my contacts what Iam offLine
-            contacts.forEach((name)=>{
+            contacts.concat(blockedContacts).forEach((name)=>{
                 if(globalChatUsers[name]) socket.broadcast.to(globalChatUsers[name].sockedId).emit('offLine', username);
             });
             //del user from globalUsers
