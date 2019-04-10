@@ -69,19 +69,21 @@ class UserBtn extends React.Component {
                  onMouseLeave={this.rightClickMenuOnHide}
                  type="button"
                  className={`btn user ${this.props.messageBlockHandlerId === i ?"clicked ":""}`}>
-                <div className="userStatus">
-                    <ul>
+                {itm ?
+                    <div className="userStatus">
+                        <ul>
 
-                        <li>
-                            {itm.msgCounter !== 0 || itm.msgCounter === undefined ?
-                                <div className="unread-mess">
-                                   {itm.msgCounter}
-                                </div>
-                                :""}
-                        </li>
-                        <li className={` statusNet ${itm.onLine ? "onLine":"offLine"}`}/>
-                    </ul>
-                </div>
+                            <li>
+                                {itm.msgCounter !== 0 || itm.msgCounter === undefined ?
+                                    <div className="unread-mess">
+                                       {itm.msgCounter}
+                                    </div>
+                                    :""}
+                            </li>
+                            <li className={` statusNet ${itm.onLine ? "onLine":"offLine"}`}/>
+                        </ul>
+                    </div>
+                    :""}
                 {this.props.name ? <font>{this.props.name}</font> : <font color={!itm.authorized ? "#a2a215" : itm.banned ? "#c33131": itm.onLine ? "#fff" :"#a09b9b"}>{itm.name}</font>}
                 {itm ?
                         <div className="userItm">
@@ -92,10 +94,7 @@ class UserBtn extends React.Component {
                                     </div>
                                     :""}
                             </div>
-
-
                         </div>
-
                     :""}
                 {this.state.onContextMenu ?
                     <OnContextMenu
