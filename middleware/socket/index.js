@@ -6,6 +6,7 @@ var HttpError = require('./../error/index').HttpError;
 var DevError = require('./../error/index').DevError;
 var User = require('../models/user').User;
 var Message = require('../models/user').Message;
+var Room = require('../models/user').Room;
 var globalChatUsers = {};
 var common = require('../common').commonEmitter;
 
@@ -43,13 +44,6 @@ function loadUser(session, callback) {
         callback(null, user);
     });
 }
-
-/*function dateToString(obj){
-    let dateMls = obj.date;
-    let currentdate = new Date(dateMls);
-    obj.date = currentdate.getHours() + ":" + currentdate.getMinutes() + "/" + currentdate.getDate() + ":" + (currentdate.getMonth()+1) + ":" + currentdate.getFullYear();// + ":"+ currentdate.getSeconds();
-    return obj;
-}*/
 
 async function aggregateUserData(username) {
     let userData = await User.findOne({username:username});
@@ -268,7 +262,7 @@ module.exports = function (server) {
             //console.log('findContacts: ',data);
             let {err,users} = await User.userFindContacts(data);
             //console.log('findContacts users: ',users);
-            if(err) return //console.log("findContacts err:",err);
+            if(err) return console.log("findContacts err:",err);
             if(users) {
                 let usersArr = users.map(itm=>itm.username);
                 return  cb(usersArr);
@@ -296,15 +290,13 @@ module.exports = function (server) {
             socket.broadcast.to(sid).emit('typing', username);
         });
         //chat message receiver
-        socket.on('message', async function (text,resToUserName,dateNow, cb) {
+        socket.on('message', async function (text,resToUserName,dateNow,cb) {
             //console.log('message text: ',text, 'resToUserName: ',resToUserName, 'dateNow: ',dateNow);
             if (text.length === 0 || !resToUserName) return;
-            if (text.length >= 60) return socket.emit('message', { user: resToUserName, text: "Admin: To long message!", status: false, date: Date.now()});
+            if (text.length >= 60) return socket.emit('message', { user: "Admin", text: "To long message!", status: false, date: Date.now()});
             let resUser = await User.findOne({username:resToUserName});
-            if(!resUser.contacts.includes(username)) {
-                //console.log('message cancel');
-                return socket.emit('message', { user: resToUserName, text: "Admin: user "+resToUserName+" do not add you in his white list!", status: false, date: Date.now()});
-            }
+            if(globalChatUsers[username].blockedContacts.includes(resToUserName)) return socket.emit('message', { user: resToUserName, text: "Admin: You can not write to baned users.", status: false, date: Date.now()});
+            if(!resUser.contacts.includes(username)) return socket.emit('message', { user: resToUserName, text: "Admin: user "+resToUserName+" do not add you in his white list!", status: false, date: Date.now()});
             let {err,mes} = await Message.messageHandler({members:[username,resToUserName],message:{ user: username, text: text, status: false, date: dateNow}});
             if(!globalChatUsers[resToUserName]) return cb && cb();
             let sid = globalChatUsers[resToUserName].sockedId;
@@ -312,6 +304,87 @@ module.exports = function (server) {
             socket.broadcast.to(sid).emit('message', { user: username, text: text, status: false, date: dateNow});
             cb && cb();
         });
+        //room events
+        //create new room
+        socket.on('addRoom', async function  (roomName,dateNow,cb) {
+            let {err,room} = await Room.createRoom(roomName,username);
+            if(err) {
+                return cb(err)
+            } else {
+                let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: username+" created the group "+roomName+".", status: false, date: dateNow}});
+                return cb(null)
+            }
+        });
+        //invite users to room
+        socket.on('inviteUserToRoom', async function  (roomName,invitedUser,dateNow,cb) {
+            let {err,room} = await Room.inviteUserToRoom(roomName,invitedUser);
+            if(err) {
+                return cb(err)
+            } else {
+                let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: username+" added "+invitedUser+".", status: false, date: dateNow}});
+                if(globalChatUsers[invitedUser]) socket.broadcast.to(globalChatUsers[invitedUser].sockedId).emit('updateUserData',await aggregateUserData(invitedUser));
+                room.members.forEach((name) => {
+                    if(globalChatUsers[name] && name !== username) socket.broadcast.to(globalChatUsers[name].sockedId).emit('message',{
+                        room:roomName,
+                        user:username,
+                        text: username+" added "+invitedUser+".",
+                        status: false,
+                        date: dateNow,
+                        addUser:invitedUser
+                    });
+                });
+                cb(null)
+            }
+        });
+        //leave room
+        socket.on('leaveRoom', async function  (roomName,dateNow,cb) {
+            let {err,room} = await Room.leaveRoom(roomName,username);
+            if(err) {
+                return cb(err)
+            } else {
+                let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: username+" leaved the group.", status: false, date: dateNow}});
+                room.members.forEach((name) => {
+                    if(globalChatUsers[name] && name !== username) socket.broadcast.to(globalChatUsers[name].sockedId).emit('message',{
+                        room:roomName,
+                        user:username,
+                        text: username+" leaved the group.",
+                        status: false,
+                        date: dateNow,
+                        remuveUser:username
+                    });
+                });
+                cb(null)
+            }
+        });
+        //get room log
+        socket.on('getRoomLog', async function  (roomName,reqMesCountCb,cb) {
+            let {err,mes} = await Message.roomMessageHandler({roomName:roomName});
+            if(err) {
+                return cb(err,null);
+            }else {
+                return cb(null,mes.messages);
+            }
+        });
+        //room message handler
+        socket.on('message', async function  (text,roomName,dateNow,cb) {
+            //console.log('messageRoom text: ',text, 'resToUserName: ',resToUserName, 'dateNow: ',dateNow);
+            if (text.length === 0) return;
+            if (text.length >= 60) return socket.emit('message', { room:roomName,user: "Admin", text: "To long message.", status: false, date: Date.now()});
+            let room = await Room.findOne({name:roomName});
+            if(!room.members.includes(username)) return socket.emit('message', {room:roomName, user: "Admin", text: "You does not room member.", status: false, date: Date.now()});
+            let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: text, status: false, date: dateNow}});
+            room.members.forEach(name =>{
+                if(globalChatUsers[name] && name !== username) socket.broadcast.to(globalChatUsers[name].sockedId).emit('message',{
+                    room:roomName,
+                    user:username,
+                    text: text,
+                    status: false,
+                    date: dateNow,
+                });
+            });
+            cb && cb();
+        });
+        //
         // when the user disconnects perform this
         socket.on('disconnect', async function () {
             let contacts = globalChatUsers[username].contacts || await User.findOne({username:username}).contacts;

@@ -2,7 +2,6 @@ var AuthError = require('./../error').AuthError;
 var crypto = require('crypto');
 var mongoose = require(".././libs/mongoose");
 var util = require('util');
-var DevError = require('./../error/index').DevError;
 
 
 var user = new mongoose.Schema({
@@ -13,10 +12,11 @@ var user = new mongoose.Schema({
     //email: { type: String, lowercase: true, unique: true },
     contacts: [],
     blockedContacts: [],
+    rooms:[]
 });
 var room = new mongoose.Schema({
     name: { type: String, lowercase: true, unique: true },
-    users: [],
+    members: [],
     created_at: { type: Date, default: Date.now },
 });
 var message = new mongoose.Schema({
@@ -43,8 +43,7 @@ user.virtual('password').get(function () {
     });
 
 user.methods.encryptPassword = function (password) {
-    var pass = crypto.createHmac('sha1', this.salt).update(password).digest('hex');
-    return pass;
+    return crypto.createHmac('sha1', this.salt).update(password).digest('hex');
 };
 
 user.methods.checkPassword = function (password) {
@@ -52,10 +51,8 @@ user.methods.checkPassword = function (password) {
 };
 
 
-
-
 user.statics.userMFCTBC = async function (reqUser,contact) {//MoveFromContactsToBlockedContacts
-    var User = this;
+    let User = this;
     let user = {};
     //console.log('userMFBCTC userReq: ',reqUser,",","moving contact: ",contact);
     try {
@@ -67,7 +64,7 @@ user.statics.userMFCTBC = async function (reqUser,contact) {//MoveFromContactsTo
             user.blockedContacts.push(contact);//add from incoming arr to user contacts
             await user.save();
             return {err:null,user:user};
-        }
+        }else return ({err:"No user name "+reqUser+" found.",user:null});
     } catch(err) {
         console.log('userMFBCTC err: ',err);
         return {err:err,user:null};
@@ -75,7 +72,7 @@ user.statics.userMFCTBC = async function (reqUser,contact) {//MoveFromContactsTo
 };
 
 user.statics.userMFBCTC = async function (reqUser,contact) {//MoveFromBlockedContactsToContacts
-    var User = this;
+    let User = this;
     let user = {};
     //console.log('userMFBCTC userReq: ',reqUser,",","moving contact: ",contact);
     try {
@@ -87,7 +84,7 @@ user.statics.userMFBCTC = async function (reqUser,contact) {//MoveFromBlockedCon
             user.contacts.push(contact);//add from incoming arr to user contacts
             await user.save();
             return {err:null,user:user};
-        }
+        }else return ({err:"No user name "+reqUser+" found.",user:null});
     } catch(err) {
         console.log('userMFBCTC err: ',err);
         return {err:err,user:null};
@@ -95,7 +92,7 @@ user.statics.userMFBCTC = async function (reqUser,contact) {//MoveFromBlockedCon
 };
 
 user.statics.userATC = async function (reqUser,contact) {//AddToContacts
-    var User = this;
+    let User = this;
     let user = {};
     console.log('userATC userReq: ',reqUser,",","moving contact: ",contact);
     try {
@@ -105,7 +102,7 @@ user.statics.userATC = async function (reqUser,contact) {//AddToContacts
             user.contacts.push(contact);//add users from incoming arr
             await user.save();
             return ({err:null,user:user});
-        }
+        }else return ({err:"No user name "+reqUser+" found.",user:null});
     } catch(err) {
         console.log('userATC err: ',err);
         return {err:err,user:null};
@@ -113,7 +110,7 @@ user.statics.userATC = async function (reqUser,contact) {//AddToContacts
 };
 
 user.statics.userATBC = async function (reqUser,contact) {//AddToBlockedContacts
-    var User = this;
+    let User = this;
     let user = {};
     console.log('userATBC userReq: ',reqUser,",","moving contact: ",contact);
     try {
@@ -123,7 +120,7 @@ user.statics.userATBC = async function (reqUser,contact) {//AddToBlockedContacts
             user.blockedContacts.push(contact);//add users from incoming arr
             await user.save();
             return ({err:null,user:user});
-        }
+        }else return ({err:"No user name "+reqUser+" found.",user:null});
     } catch(err) {
         console.log('userATBC err: ',err);
         return {err:err,user:null};
@@ -131,7 +128,7 @@ user.statics.userATBC = async function (reqUser,contact) {//AddToBlockedContacts
 };
 
 user.statics.userRFAL = async function (reqUser,contact) {//RemoveFromAllList
-    var User = this;
+    let User = this;
     let user = {};
     console.log('userRFAL userReq: ',reqUser,",","moving contact: ",contact);
     try {
@@ -143,7 +140,7 @@ user.statics.userRFAL = async function (reqUser,contact) {//RemoveFromAllList
             user.contacts = filterC;
             await user.save();
             return {err:null,user:user};
-        }
+        }else return ({err:"No user name "+reqUser+" found.",user:null});
     } catch(err) {
         console.log('userATBC err: ',err);
         return {err:err,user:null};
@@ -151,19 +148,14 @@ user.statics.userRFAL = async function (reqUser,contact) {//RemoveFromAllList
 };
 
 user.statics.userFindContacts = async function (nameString) {
-    var User = this;
+    let User = this;
     let users = [];
     let err = {};
     console.log('userFindContacts data: ',nameString);
     try {
         users = await User.find( { "username": { "$regex": nameString, "$options": "i" } } );
-        //users = await User.find({username:nameString});
-        //users = await User.aggregate([{ $match: {username:nameString}}]);
-
-        if(users){
-            console.log('userFindContacts data users: ',users);
-            return {err:null,users:users};
-        }
+        console.log('userFindContacts data users: ',users);
+        return {err:null,users:users};
     } catch(err) {
         console.log('userFindContacts err: ',err);
         return {err:err,user:null};
@@ -171,7 +163,7 @@ user.statics.userFindContacts = async function (nameString) {
 };
 
 user.statics.findOneAndCheckPass = async function (data) {
-    var User = this;
+    let User = this;
     let user = {};
     let err = {};
     console.log('findOneAndCheckPass data: ',data);
@@ -193,7 +185,7 @@ user.statics.findOneAndCheckPass = async function (data) {
 };
 
 user.statics.authorize = async function(paramAuth) {
-    var User = this;
+    let User = this;
     let user = {};
     let err = {};
     try {
@@ -219,7 +211,7 @@ user.statics.authorize = async function(paramAuth) {
 };
 
 user.statics.changeData = async function(paramAuth) {
-    var User = this;
+    let User = this;
     let user = {};
     let err = {};
     try {
@@ -281,8 +273,109 @@ message.statics.messageHandler = async function (data) {
         return {err:err,user:null};
     }
 };
-//
 
+message.statics.roomMessageHandler = async function (data) {
+    var Message = this;
+    let mes = {};
+    let err = {};
+
+    console.log('DB roomMessageHandler: ',data);
+    try {
+        mes = await Message.findOne({uniqSig:data.roomName});
+        //console.log("message.statics.messageHandlerRoomChat mes: ", mes);
+        if(data.message) {//write data
+            if(mes){
+                mes.messages.push(data.message);
+                if(!mes.members.includes(data.message.user)) mes.members.push(data.message.user);
+                await mes.save();
+                return {err:null,mes:mes};
+            }else {
+                mes = new Message({uniqSig:data.roomName,messages:[data.message]});
+                mes.members.push(data.message.user);
+                await mes.save();
+                return {err:null,mes:mes};
+            }
+        }else {//read data
+            if(!mes) {
+                mes = new Message({uniqSig:data.roomName,messages:[]});
+                mes.members.push(data.message.user);
+                await mes.save();
+                return {err:null,mes:mes};
+            }else {
+                return {err:null,mes:mes};
+            }
+        }
+    } catch(err) {
+        console.log('messageHandlerGlobalChat err: ',err);
+        return {err:err,user:null};
+    }
+};
+//
+//room methods
+var User = mongoose.model('User', user);
+
+room.statics.createRoom = async function(roomName,username) {//create new room and push roomName to user room list
+    let Room = this;
+    let room = {};
+    let err = {};
+    try {
+        let user = await User.findOne({username:username});
+        room = await Room.findOne({name:roomName});
+        if(!room){
+            room = new Room({name:roomName});
+            user.rooms.push({roomName:roomName,enable:true,messages:[]});
+            room.members.push(username);
+            await room.save();
+            await user.save();
+            return {err:null,room:user}
+        }else{
+            return {err:"Room name: "+roomName+" always exist. Choose another room name!",room:null};
+        }
+    } catch (err) {
+        console.log('Create room err: ',err);
+        return {err:err,room:null};
+    }
+};
+//invite user to room
+room.statics.inviteUserToRoom = async function(roomName,invited) {
+    let Room = this;
+    let err = {};
+    try {
+        let user = await User.findOne({username:invited});
+        if(!user) return {err:"No user name "+invited+" found.",room:null};
+        let room = await Room.findOne({name:roomName});
+        if(!room) return {err:"No room name "+roomName+" found.",room:null};
+        if(room.members.includes(invited)) return {err:"User name "+invited+" always included in room.",room:null};
+        user.rooms.push({roomName:roomName,enable:false,messages:[]});
+        room.members.push(invited);
+        await user.save();
+        await room.save();
+        return {err:null,room:room};
+    } catch (err) {
+        console.log('Create room err: ',err);
+        return {err:err,room:null};
+    }
+};
+//leave  room
+room.statics.leaveRoom = async function(roomName,name) {
+    let Room = this;
+    let err = {};
+    try {
+        let user = await User.findOne({username:name});
+        let room = await Room.findOne({name:roomName});
+        let filterUserRooms = user.rooms.filter(itm => itm.roomName !== roomName);
+        let filterMemberRoom = room.members.filter(itm => itm !== name);
+        user.rooms = filterUserRooms;
+        room.members = filterMemberRoom;
+        await user.save();
+        await room.save();
+        return {err:null,room:room};
+    } catch (err) {
+        console.log('Create room err: ',err);
+        return {err:err,room:null};
+    }
+};
+//
 module.exports.User = mongoose.model('User', user);
 module.exports.Room = mongoose.model('Room', room);
 module.exports.Message = mongoose.model('Message', message);
