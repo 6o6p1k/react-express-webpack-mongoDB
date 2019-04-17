@@ -323,7 +323,7 @@ room.statics.createRoom = async function(roomName,username) {//create new room a
         room = await Room.findOne({name:roomName});
         if(!room){
             room = new Room({name:roomName});
-            user.rooms.push({roomName:roomName,enable:true,messages:[]});
+            user.rooms.push({name:roomName,enable:true,messages:[]});
             room.members.push(username);
             await room.save();
             await user.save();
@@ -346,7 +346,7 @@ room.statics.inviteUserToRoom = async function(roomName,invited) {
         let room = await Room.findOne({name:roomName});
         if(!room) return {err:"No room name "+roomName+" found.",room:null};
         if(room.members.includes(invited)) return {err:"User name "+invited+" always included in room.",room:null};
-        user.rooms.push({roomName:roomName,enable:false,messages:[]});
+        user.rooms.push({name:roomName,enable:false,messages:[]});
         room.members.push(invited);
         await user.save();
         await room.save();
@@ -363,7 +363,7 @@ room.statics.leaveRoom = async function(roomName,name) {
     try {
         let user = await User.findOne({username:name});
         let room = await Room.findOne({name:roomName});
-        let filterUserRooms = user.rooms.filter(itm => itm.roomName !== roomName);
+        let filterUserRooms = user.rooms.filter(itm => itm.name !== roomName);
         let filterMemberRoom = room.members.filter(itm => itm !== name);
         user.rooms = filterUserRooms;
         room.members = filterMemberRoom;

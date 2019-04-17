@@ -32,6 +32,7 @@ class Chat extends React.Component {
             filteredUsers: [],
             foundContacts: [],
             blockedContacts: this.addUsers(user.blockedContacts) || [],
+            rooms: [],
 
             arrayBlockHandlerId: undefined,
             messageBlockHandlerId: undefined,
@@ -63,7 +64,8 @@ class Chat extends React.Component {
                 this.setState({
                     user:userData,
                     users:sortUsers,
-                    blockedContacts:sortBlockedUsers
+                    blockedContacts:sortBlockedUsers,
+                    rooms:userData.rooms,
                 });
             })
             .emit('sayOnLine')
@@ -98,9 +100,24 @@ class Chat extends React.Component {
                 }
             })
             .on('message', (data)=> {
-                //receiver
-                this.printMessage({name:data.user,text:data.text,status:data.status,date:this.dateToString(data.date)},this.getUsersIdx("users",data.user));
-                this.msgCounter(this.getUsersIdx("users",data.user));
+                if(data.room) {
+                    //group message receiver
+                    if(data.addUser) {
+                        let room = this.state.rooms[this.getUsersIdx("rooms",data.room)];
+                        room.members.push(data.addUser);
+                        this.setState({room});
+                    }
+                    if(data.remuveUser) {
+                        let room = this.state.rooms[this.getUsersIdx("rooms",data.room)];
+                        room.members.filter(itm => itm.name !== data.remuveUser);
+                        this.setState({room});
+                    }
+                    this.printMessage({name:data.user,text:data.text,status:data.status,date:this.dateToString(data.date)},this.getUsersIdx("rooms",data.room));
+                } else {
+                    //message receiver
+                    this.printMessage({name:data.user,text:data.text,status:data.status,date:this.dateToString(data.date)},this.getUsersIdx("users",data.user));
+                    this.msgCounter(this.getUsersIdx("users",data.user));
+                }
             })
             .on('typing', (username)=> {
                 //receiver
@@ -150,7 +167,7 @@ class Chat extends React.Component {
     getUserLog =(reqArrName,reqUsername,reqMesCountCb)=>{
         let reqUser = this.state[reqArrName][this.getUsersIdx(reqArrName,reqUsername)];
         this.socket.emit('getUserLog',reqUsername,reqMesCountCb,(err,arr)=>{
-            console.log("getUserLog arr: ",arr," ,err: ",err);
+            //console.log("getUserLog arr: ",arr," ,err: ",err);
             if(err) {
                 this.setState({
                     modalWindow:true,
@@ -158,7 +175,7 @@ class Chat extends React.Component {
                 })
             }else {
                 arr.map(itm => itm.date = this.dateToString(itm.date));
-                console.log("getUserLog arrModDate: ",arr);
+                //console.log("getUserLog arrModDate: ",arr);
                 reqUser.messages = arr;
                 this.setState({reqUser});
             }
@@ -195,7 +212,7 @@ class Chat extends React.Component {
 
     msgCounter =(i)=> {
         //console.log('msgCounter i : ', i);
-        if(this.state.messageBlockHandlerId === "users") return;
+        //if(this.state.messageBlockHandlerId === "users") return;
         if(this.state.messageBlockHandlerId !== i) {
             const currentUser = this.state.users[i];
             currentUser.msgCounter = currentUser.msgCounter + 1;
@@ -474,6 +491,44 @@ class Chat extends React.Component {
         }
     };
 
+    //Group functional
+    createRoom =(roomName)=>{
+        this.socket.emit('createRoom',roomName,(err)=>{
+            if(err){
+                this.setState({
+                    modalWindow:true,
+                    err:{message:err},
+                })
+            }else {
+                this.setState({rooms:[...this.state.rooms,{name:roomName,enable:true,messages:[]}]})
+            }
+        })
+    };
+
+    inviteUserToRoom =(roomName,invitedUser)=>{
+
+    };
+
+    leaveRoom =(roomName)=>{
+
+    };
+
+    getRoomLog =(reqRoomName,reqMesCountCb)=>{
+        let reqRoom = this.state.rooms[this.getUsersIdx("rooms",reqRoomName)];
+        this.socket.emit('getUserLog',reqRoomName,reqMesCountCb,(err,room)=>{
+            if(err) {
+                this.setState({
+                    modalWindow:true,
+                    err:{message:err},
+                })
+            }else {
+                room.messages.map(itm => itm.date = this.dateToString(itm.date));
+                reqRoom = room;
+                this.setState({reqRoom});
+            }
+        })
+    };
+
 
 
     render() {
@@ -534,19 +589,41 @@ class Chat extends React.Component {
                                             banList={false}
                                         />
                                 )}
-                            <div className="userList black">black list users</div>
+
                             {this.state.blockedContacts.length !== 0 ?
-                                    this.state.blockedContacts.map((itm,i) =>
-                                        <UserBtn
-                                            key={i}
-                                            itm={itm}
-                                            i={i}
-                                            getUserLog={() => this.getUserLog("blockedContacts",itm.name,null)}
-                                            inxHandler={() => this.inxHandler("blockedContacts",i)}
-                                            messageBlockHandlerId={this.state.messageBlockHandlerId}
-                                            onContextMenuHandler={this.onContextMenuHandler}
-                                            banList={true}
-                                        />)
+                                    <div>
+                                        <div className="userList black">black list users</div>
+                                        {
+                                            this.state.blockedContacts.map((itm,i) =>
+                                                <UserBtn
+                                                    key={i}
+                                                    itm={itm}
+                                                    i={i}
+                                                    getUserLog={() => this.getUserLog("blockedContacts",itm.name,null)}
+                                                    inxHandler={() => this.inxHandler("blockedContacts",i)}
+                                                    messageBlockHandlerId={this.state.messageBlockHandlerId}
+                                                    onContextMenuHandler={this.onContextMenuHandler}
+                                                    banList={true}
+                                                />)
+                                        }
+                                    </div>
+                                :""}
+                            {this.state.rooms.length !== 0 ?
+                                    <div>
+                                        <div className="userList white">group list</div>
+                                        {
+                                            this.state.rooms.map((itm,i) =>
+                                                <UserBtn
+                                                    key={i}
+                                                    itm={itm}
+                                                    i={i}
+                                                    getUserLog={() => this.getRoomLog("rooms",itm.name,null)}
+                                                    inxHandler={() => this.inxHandler("rooms",i)}
+                                                    messageBlockHandlerId={this.state.messageBlockHandlerId}
+                                                    //onContextMenuHandler={this.onContextMenuHandler}
+                                                />)
+                                        }
+                                    </div>
                                 :""}
                         </div>
                     </div>

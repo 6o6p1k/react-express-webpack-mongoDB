@@ -306,7 +306,7 @@ module.exports = function (server) {
         });
         //room events
         //create new room
-        socket.on('addRoom', async function  (roomName,dateNow,cb) {
+        socket.on('createRoom', async function  (roomName,dateNow,cb) {
             let {err,room} = await Room.createRoom(roomName,username);
             if(err) {
                 return cb(err)
@@ -358,20 +358,44 @@ module.exports = function (server) {
         });
         //get room log
         socket.on('getRoomLog', async function  (roomName,reqMesCountCb,cb) {
-            let {err,mes} = await Message.roomMessageHandler({roomName:roomName});
-            if(err) {
+            try {
+                let room = await Room.findOne({name:roomName});
+                if(!room.members.includes(username)) return cb("You do not member of this group.",null);
+                let {err,mes} = await Message.roomMessageHandler({roomName:roomName});
+                let user = await User.findOne({name:username});
+                let status = user.rooms.find(itm => itm.name === roomName)[enable];
+                room.messages = mes.messages;
+                room[enable] = status;
+                if(err) {
+                    cb(err,null)
+                } else cb(null,room);
+            }catch (err){
                 return cb(err,null);
-            }else {
-                return cb(null,mes.messages);
             }
         });
+        //enable group
+        socket.on('enableRoom', async function  (roomName,cb) {
+            let user = await User.findOne({name:username});
+            if(user.rooms.find(itm => itm.name === roomName) === undefined) return cb("You do not member of group name "+roomName);
+            user.rooms.find(itm => itm.name === roomName).enable = true;
+            await user.save();
+            return cb(null);
+        });
+        //disable group
+        socket.on('disableRoom', async function  (roomName,cb) {
+            let user = await User.findOne({name:username});
+            if(user.rooms.find(itm => itm.name === roomName) === undefined) return cb("You do not member of group name "+roomName);
+            user.rooms.find(itm => itm.name === roomName).enable = false;
+            await user.save();
+            return cb(null);
+        });
         //room message handler
-        socket.on('message', async function  (text,roomName,dateNow,cb) {
+        socket.on('messageRoom', async function  (text,roomName,dateNow,cb) {
             //console.log('messageRoom text: ',text, 'resToUserName: ',resToUserName, 'dateNow: ',dateNow);
             if (text.length === 0) return;
             if (text.length >= 60) return socket.emit('message', { room:roomName,user: "Admin", text: "To long message.", status: false, date: Date.now()});
             let room = await Room.findOne({name:roomName});
-            if(!room.members.includes(username)) return socket.emit('message', {room:roomName, user: "Admin", text: "You does not room member.", status: false, date: Date.now()});
+            if(!room.members.includes(username)) return socket.emit('message', {room:roomName, user: "Admin", text: "You do not room member.", status: false, date: Date.now()});
             let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: text, status: false, date: dateNow}});
             room.members.forEach(name =>{
                 if(globalChatUsers[name] && name !== username) socket.broadcast.to(globalChatUsers[name].sockedId).emit('message',{
