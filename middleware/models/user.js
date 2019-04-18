@@ -17,6 +17,7 @@ var user = new mongoose.Schema({
 var room = new mongoose.Schema({
     name: { type: String, lowercase: true, unique: true },
     members: [],
+    blockedContacts: [],
     created_at: { type: Date, default: Date.now },
 });
 var message = new mongoose.Schema({
@@ -323,17 +324,17 @@ room.statics.createRoom = async function(roomName,username) {//create new room a
         room = await Room.findOne({name:roomName});
         if(!room){
             room = new Room({name:roomName});
-            user.rooms.push({name:roomName,enable:true,messages:[]});
-            room.members.push(username);
+            user.rooms.push(roomName);//
+            room.members.push({name:username,enable:true,admin:true});
             await room.save();
             await user.save();
-            return {err:null,room:user}
+            return {err:null,room:room,user:user}
         }else{
-            return {err:"Room name: "+roomName+" always exist. Choose another room name!",room:null};
+            return {err:"Room name: "+roomName+" always exist. Choose another room name.",room:null,user:null};
         }
     } catch (err) {
         console.log('Create room err: ',err);
-        return {err:err,room:null};
+        return {err:err,room:null,user:null};
     }
 };
 //invite user to room
@@ -342,18 +343,18 @@ room.statics.inviteUserToRoom = async function(roomName,invited) {
     let err = {};
     try {
         let user = await User.findOne({username:invited});
-        if(!user) return {err:"No user name "+invited+" found.",room:null};
         let room = await Room.findOne({name:roomName});
-        if(!room) return {err:"No room name "+roomName+" found.",room:null};
-        if(room.members.includes(invited)) return {err:"User name "+invited+" always included in room.",room:null};
-        user.rooms.push({name:roomName,enable:false,messages:[]});
-        room.members.push(invited);
+        if(room.members.find(itm => itm.name === invited) === undefined) return {err:"User name "+invited+" always included in room.",room:null,user:null};
+        if(room.blockedContacts.find(itm => itm.name === invited) === undefined) return {err:"User name "+invited+" included in ban list.",room:null,user:null};
+        if(user.blockedContacts.includes(roomName)) return {err:"Group name "+roomName+" included in ban list.",room:null,user:null};
+        user.rooms.push(roomName);
+        room.members.push({name:invited,enable:true,admin:false});
         await user.save();
         await room.save();
-        return {err:null,room:room};
+        return {err:null,room:room,user:user};
     } catch (err) {
         console.log('Create room err: ',err);
-        return {err:err,room:null};
+        return {err:err,room:null,user:null};
     }
 };
 //leave  room
@@ -363,16 +364,35 @@ room.statics.leaveRoom = async function(roomName,name) {
     try {
         let user = await User.findOne({username:name});
         let room = await Room.findOne({name:roomName});
-        let filterUserRooms = user.rooms.filter(itm => itm.name !== roomName);
-        let filterMemberRoom = room.members.filter(itm => itm !== name);
+        if(room.members.find(itm => itm.name === name).admin === true) return {err:"You can not leave the group. You are is admin.",room:null,user:null};
+        let filterUserRooms = user.rooms.filter(itm => itm !== roomName);
+        let filterMemberRoom = room.members.filter(itm => itm.name !== name);
         user.rooms = filterUserRooms;
         room.members = filterMemberRoom;
         await user.save();
         await room.save();
-        return {err:null,room:room};
+        return {err:null,room:room,user:user};
     } catch (err) {
         console.log('Create room err: ',err);
-        return {err:err,room:null};
+        return {err:err,room:null,user:user};
+    }
+};
+//delete  room
+room.statics.deleteRoom = async function(roomName,name) {
+    let Room = this;
+    let err = {};
+    try {
+        let user = await User.findOne({username:name});
+        let room = await Room.findOne({name:roomName});
+        if(room.members.find(itm => itm.name === name).admin === false) return {err:"You can not delete the group. You are is not admin.",user:null};
+        let filterUserRooms = user.rooms.filter(itm => itm !== roomName);
+        user.rooms = filterUserRooms;
+        await Room.deleteOne({name:roomName});
+        await user.save();
+        return {err:null,user:user};
+    } catch (err) {
+        console.log('Create room err: ',err);
+        return {err:err,user:null};
     }
 };
 //

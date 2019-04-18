@@ -100,24 +100,9 @@ class Chat extends React.Component {
                 }
             })
             .on('message', (data)=> {
-                if(data.room) {
-                    //group message receiver
-                    if(data.addUser) {
-                        let room = this.state.rooms[this.getUsersIdx("rooms",data.room)];
-                        room.members.push(data.addUser);
-                        this.setState({room});
-                    }
-                    if(data.remuveUser) {
-                        let room = this.state.rooms[this.getUsersIdx("rooms",data.room)];
-                        room.members.filter(itm => itm.name !== data.remuveUser);
-                        this.setState({room});
-                    }
-                    this.printMessage({name:data.user,text:data.text,status:data.status,date:this.dateToString(data.date)},this.getUsersIdx("rooms",data.room));
-                } else {
-                    //message receiver
-                    this.printMessage({name:data.user,text:data.text,status:data.status,date:this.dateToString(data.date)},this.getUsersIdx("users",data.user));
-                    this.msgCounter(this.getUsersIdx("users",data.user));
-                }
+                //message receiver
+                this.printMessage({name:data.user,text:data.text,status:data.status,date:this.dateToString(data.date)},this.getUsersIdx("users",data.user));
+                this.msgCounter(this.getUsersIdx("users",data.user));
             })
             .on('typing', (username)=> {
                 //receiver
@@ -165,6 +150,7 @@ class Chat extends React.Component {
     };
 
     getUserLog =(reqArrName,reqUsername,reqMesCountCb)=>{
+        if(reqArrName === this.state.arrayBlockHandlerId && this.getUsersIdx(reqArrName,reqUsername) === this.state.messageBlockHandlerId) return;
         let reqUser = this.state[reqArrName][this.getUsersIdx(reqArrName,reqUsername)];
         this.socket.emit('getUserLog',reqUsername,reqMesCountCb,(err,arr)=>{
             //console.log("getUserLog arr: ",arr," ,err: ",err);
@@ -493,14 +479,14 @@ class Chat extends React.Component {
 
     //Group functional
     createRoom =(roomName)=>{
-        this.socket.emit('createRoom',roomName,(err)=>{
+        this.socket.emit('createRoom',roomName,(err,userData)=>{
             if(err){
                 this.setState({
                     modalWindow:true,
                     err:{message:err},
                 })
             }else {
-                this.setState({rooms:[...this.state.rooms,{name:roomName,enable:true,messages:[]}]})
+                this.setState({rooms:userData.rooms})
             }
         })
     };
@@ -514,8 +500,9 @@ class Chat extends React.Component {
     };
 
     getRoomLog =(reqRoomName,reqMesCountCb)=>{
+        if(this.getUsersIdx("rooms",reqRoomName) === this.state.messageBlockHandlerId) return;
         let reqRoom = this.state.rooms[this.getUsersIdx("rooms",reqRoomName)];
-        this.socket.emit('getUserLog',reqRoomName,reqMesCountCb,(err,room)=>{
+        this.socket.emit('getRoomLog',reqRoomName,reqMesCountCb,(err,room)=>{
             if(err) {
                 this.setState({
                     modalWindow:true,
@@ -532,7 +519,6 @@ class Chat extends React.Component {
 
 
     render() {
-
         console.log('/chat user:', this.state);
         if(this.state.errorRedirect) {return <Redirect to='/error'/>}//passing props in Redirect to={{pathname:'/error',state:{error:this.state.err}}} get props: this.props.location.state.error
         if(this.state.loginRedirect) {return <Redirect to='/login'/>}
@@ -556,9 +542,17 @@ class Chat extends React.Component {
                             <input name="nameSearchInp" className="form-control searchInChat" autoComplete="off" autoFocus placeholder="Search..."
                                     onChange={ev => this.setFiltered(ev.target.value)}
                             />
+                            <div className="userList">
+                                <button  name="msgBtn" type="button" className="btn">AR</button>
+                                <button  name="msgBtn" type="button" className="btn">AU</button>
+                                <button  name="msgBtn" type="button" className="btn">SS</button>
+                                <button  name="msgBtn" type="button" className="btn">SN</button>
+                            </div>
+
+
                             <div className="userList white">white list users</div>
                             {this.state.filteredUsers.length === 0?
-                                    (this.state.foundContacts.length !== 0)? (
+                                (this.state.foundContacts.length !== 0)? (
                                         this.state.foundContacts.map((name,i) =><UserBtn
                                             key={i}
                                             i={i}
@@ -649,13 +643,11 @@ class Chat extends React.Component {
                                                 ) : ("")
                                             }
                                         </ul>
-
-                                                <form onSubmit={(ev) => {
-                                                    ev.preventDefault();
-                                                    ev.stopPropagation();
-                                                    this.sendMessage(eUser.name)
-                                                }}
-                                                      name="chatRoomForm" className="writeMessWrapp">
+                                        <form onSubmit={(ev) => {
+                                            ev.preventDefault();
+                                            ev.stopPropagation();
+                                            this.sendMessage(eUser.name)
+                                        }} name="chatRoomForm" className="writeMessWrapp">
                                                     <div className="input-group writeMess">
                                                         <textarea name="formInp" className="form-control" autoComplete="off"
                                                                autoFocus placeholder="Message..."
@@ -664,20 +656,11 @@ class Chat extends React.Component {
                                                         />
                                                         {
                                                             (a !== "blockedContacts") ?
-
-                                                            <button onClick={() => this.sendMessage(eUser.name)} name="msgBtn" type="button" className="btn">SEND</button>
-
-                                                            :
-
-                                                            <button onClick={() => this.resAddMe(eUser.name)} name="msgBtn" type="button" className="btn">ALLOW USER</button>
-
-
+                                                                <button onClick={() => this.sendMessage(eUser.name)} name="msgBtn" type="button" className="btn">SEND</button> :
+                                                                <button onClick={() => this.resAddMe(eUser.name)} name="msgBtn" type="button" className="btn">ALLOW USER</button>
                                                         }
-
                                                     </div>
                                                 </form>
-
-
                                     </div>
                                 </div>
                             );

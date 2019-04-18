@@ -25,13 +25,13 @@ class UserP extends React.Component {
             confirmRes:undefined,
         };
     };
-    //modal window show
-    showModal = () => {
-        this.setState({modalWindow: true});
-    };
     //modal window handler
     hideModal = () => {
         this.setState({modalWindow: false});
+    };
+    //prompt window handler
+    hidePrompt = () => {
+        this.setState({PromptModalWindow: false});
     };
     //prompt window show
     showPrompt = (promptMessage) => {
@@ -47,12 +47,6 @@ class UserP extends React.Component {
             this.setState({confirmMessage: "Are You ready to delete your account? " +
             "Pres Ok to delete or Cancel to regect",ConfirmModalWindow: true});
         }
-
-    };
-    //confirm window show
-    showConfirm = (showMessage) => {
-        console.log('showMessage: ',showMessage);
-        this.setState({confirmMessage: showMessage,ConfirmModalWindow: true});
     };
     //confirm window handler
     confirmHandler = (confirmRes) => {
@@ -252,23 +246,18 @@ class UserP extends React.Component {
                 ):('')}
 
                 {(this.state.PromptModalWindow)?(
-                    <Prompt promptHandler={this.promptHandler} show={this.state.PromptModalWindow} message={this.state.promptMessage}/>
+                    <Prompt promptHandler={this.promptHandler} show={this.state.PromptModalWindow} handleClose={this.hidePrompt} message={this.state.promptMessage}/>
                 ):('')}
 
                 {(this.state.ConfirmModalWindow)?(
                     <Confirm confirmHandler={this.confirmHandler} show={this.state.ConfirmModalWindow} message={this.state.confirmMessage}/>
                 ):('')}
 
-{/*                <div className="wrapper" >
-                    <button onClick={()=>this.showConfirm("TestConfirmMessage")} className="btn">Confirm TEST BTN</button>
-                    <button onClick={()=>this.showPrompt("TestPromptMessage")} className="btn">PROMPT TEST BTN</button>
-                    <button onClick={()=>this.showModal("TestModal")} className="btn">MODAL TEST BTN</button>
-                </div>*/}
-
                 <form onSubmit={(ev)=>{
                     ev.preventDefault();
                     ev.stopPropagation();
-                    this.sendAuth()}} className="user-page" name="loginform" id="form">
+                    this.sendAuth();
+                }} className="user-page" name="loginform" id="form">
 
                     <div className="form-group">
                         <label htmlFor="input-username" className="control-label">New Name {(this.state.newNameStatus)?(this.state.newNameStatus):('')}</label>
@@ -301,7 +290,9 @@ class UserP extends React.Component {
 
                     <div className="form-group">
                         <div className="wrapper" >
-                            <button onClick={()=>this.showPrompt("Confirm You Password:")} id= "deleteData" type="submit" className="btn" data-loading-text="Sending...">DELETE MY ACCOUNT</button>
+                            <button onClick={(ev)=>{
+                                ev.preventDefault();ev.stopPropagation();this.showPrompt("Confirm You Password:")}
+                            } id= "deleteData" type="submit" className="btn" data-loading-text="Sending...">DELETE MY ACCOUNT</button>
                         </div>
                     </div>
 

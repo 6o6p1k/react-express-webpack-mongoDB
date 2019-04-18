@@ -307,24 +307,24 @@ module.exports = function (server) {
         //room events
         //create new room
         socket.on('createRoom', async function  (roomName,dateNow,cb) {
-            let {err,room} = await Room.createRoom(roomName,username);
+            let {err,room,user} = await Room.createRoom(roomName,username);
             if(err) {
-                return cb(err)
+                return cb(err,null)
             } else {
                 let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: username+" created the group "+roomName+".", status: false, date: dateNow}});
-                return cb(null)
+                return cb(null,user.rooms)
             }
         });
         //invite users to room
         socket.on('inviteUserToRoom', async function  (roomName,invitedUser,dateNow,cb) {
-            let {err,room} = await Room.inviteUserToRoom(roomName,invitedUser);
+            let {err,room,user} = await Room.inviteUserToRoom(roomName,invitedUser);
             if(err) {
-                return cb(err)
+                return cb(err,null)
             } else {
                 let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: username+" added "+invitedUser+".", status: false, date: dateNow}});
                 if(globalChatUsers[invitedUser]) socket.broadcast.to(globalChatUsers[invitedUser].sockedId).emit('updateUserData',await aggregateUserData(invitedUser));
                 room.members.forEach((name) => {
-                    if(globalChatUsers[name] && name !== username) socket.broadcast.to(globalChatUsers[name].sockedId).emit('message',{
+                    if(globalChatUsers[name] && name !== username) socket.broadcast.to(globalChatUsers[name].sockedId).emit('messageRoom',{
                         room:roomName,
                         user:username,
                         text: username+" added "+invitedUser+".",
@@ -333,18 +333,18 @@ module.exports = function (server) {
                         addUser:invitedUser
                     });
                 });
-                cb(null)
+                cb(null,user.rooms)
             }
         });
         //leave room
         socket.on('leaveRoom', async function  (roomName,dateNow,cb) {
-            let {err,room} = await Room.leaveRoom(roomName,username);
+            let {err,room,user} = await Room.leaveRoom(roomName,username);
             if(err) {
-                return cb(err)
+                return cb(err,null)
             } else {
                 let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: username+" leaved the group.", status: false, date: dateNow}});
                 room.members.forEach((name) => {
-                    if(globalChatUsers[name] && name !== username) socket.broadcast.to(globalChatUsers[name].sockedId).emit('message',{
+                    if(globalChatUsers[name]) socket.broadcast.to(globalChatUsers[name].sockedId).emit('message',{
                         room:roomName,
                         user:username,
                         text: username+" leaved the group.",
@@ -353,7 +353,7 @@ module.exports = function (server) {
                         remuveUser:username
                     });
                 });
-                cb(null)
+                cb(null,user.rooms)
             }
         });
         //get room log
@@ -362,10 +362,7 @@ module.exports = function (server) {
                 let room = await Room.findOne({name:roomName});
                 if(!room.members.includes(username)) return cb("You do not member of this group.",null);
                 let {err,mes} = await Message.roomMessageHandler({roomName:roomName});
-                let user = await User.findOne({name:username});
-                let status = user.rooms.find(itm => itm.name === roomName)[enable];
                 room.messages = mes.messages;
-                room[enable] = status;
                 if(err) {
                     cb(err,null)
                 } else cb(null,room);
@@ -373,29 +370,14 @@ module.exports = function (server) {
                 return cb(err,null);
             }
         });
-        //enable group
-        socket.on('enableRoom', async function  (roomName,cb) {
-            let user = await User.findOne({name:username});
-            if(user.rooms.find(itm => itm.name === roomName) === undefined) return cb("You do not member of group name "+roomName);
-            user.rooms.find(itm => itm.name === roomName).enable = true;
-            await user.save();
-            return cb(null);
-        });
-        //disable group
-        socket.on('disableRoom', async function  (roomName,cb) {
-            let user = await User.findOne({name:username});
-            if(user.rooms.find(itm => itm.name === roomName) === undefined) return cb("You do not member of group name "+roomName);
-            user.rooms.find(itm => itm.name === roomName).enable = false;
-            await user.save();
-            return cb(null);
-        });
         //room message handler
         socket.on('messageRoom', async function  (text,roomName,dateNow,cb) {
             //console.log('messageRoom text: ',text, 'resToUserName: ',resToUserName, 'dateNow: ',dateNow);
             if (text.length === 0) return;
-            if (text.length >= 60) return socket.emit('message', { room:roomName,user: "Admin", text: "To long message.", status: false, date: Date.now()});
+            if (text.length >= 60) return socket.emit('messageRoom', { room:roomName,user: "Admin", text: "To long message.", status: false, date: Date.now()});
             let room = await Room.findOne({name:roomName});
-            if(!room.members.includes(username)) return socket.emit('message', {room:roomName, user: "Admin", text: "You do not room member.", status: false, date: Date.now()});
+            if(!room.members.includes(username)) return socket.emit('messageRoom', {room:roomName, user: "Admin", text: "You do not room member.", status: false, date: Date.now()});
+            if(room.blockedContacts.includes(username)) return socket.emit('messageRoom', {room:roomName, user: "Admin", text: "You baned.", status: false, date: Date.now()});
             let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: text, status: false, date: dateNow}});
             room.members.forEach(name =>{
                 if(globalChatUsers[name] && name !== username) socket.broadcast.to(globalChatUsers[name].sockedId).emit('message',{
