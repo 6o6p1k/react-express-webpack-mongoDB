@@ -21,7 +21,7 @@ class ModalWindow extends React.Component {
                         :""
                     }
                     {this.props.message ?
-                        <p>{this.props.message} </p>
+                        <p className="errorDescription">{this.props.message} </p>
                         :""
                     }
                     {this.props.children}

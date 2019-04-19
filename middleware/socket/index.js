@@ -49,6 +49,7 @@ async function aggregateUserData(username) {
     let userData = await User.findOne({username:username});
     let contacts = userData.contacts;
     let blockedContacts = userData.blockedContacts;
+    let rooms = userData.rooms;
     let wL = contacts.map(async (name,i) =>{
         let status = !!globalChatUsers[name];
         let nameUserDB = await User.findOne({username:name});
@@ -63,8 +64,13 @@ async function aggregateUserData(username) {
         let authorized =  !(!nameUserDB.contacts.includes(username) && !nameUserDB.blockedContacts.includes(username));
         return blockedContacts[i] = {name:name, messages:[], msgCounter :0, typing:false, onLine:status, banned:banned, authorized:authorized}
     });
+    let rL = rooms.map(async (name,i) =>{
+        let room = await Room.findOne({name:name});
+        return rooms[i] = {name:name, messages:[],msgCounter :0,members:room.members,blockedContacts:room.blockedContacts,created_at:room.created_at}
+    });
     userData.contacts = await Promise.all(wL);
     userData.blockedContacts = await Promise.all(bL);
+    userData.rooms = await Promise.all(rL);
     return userData;
 }
 
@@ -312,7 +318,7 @@ module.exports = function (server) {
                 return cb(err,null)
             } else {
                 let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: username+" created the group "+roomName+".", status: false, date: dateNow}});
-                return cb(null,user.rooms)
+                return cb(null,await aggregateUserData(username))
             }
         });
         //invite users to room
@@ -333,7 +339,7 @@ module.exports = function (server) {
                         addUser:invitedUser
                     });
                 });
-                cb(null,user.rooms)
+                return cb(null,user.rooms)
             }
         });
         //leave room
@@ -353,19 +359,20 @@ module.exports = function (server) {
                         remuveUser:username
                     });
                 });
-                cb(null,user.rooms)
+                return cb(null,user.rooms)
             }
         });
         //get room log
         socket.on('getRoomLog', async function  (roomName,reqMesCountCb,cb) {
+            console.log("getRoomLog: ",roomName);
             try {
                 let room = await Room.findOne({name:roomName});
-                if(!room.members.includes(username)) return cb("You do not member of this group.",null);
+                if(room.members.find(itm => itm.name === username) === undefined) return cb("You do not member of this group.",null);
                 let {err,mes} = await Message.roomMessageHandler({roomName:roomName});
-                room.messages = mes.messages;
+                console.log("getRoomLog mes: ",mes,", err: ",err);
                 if(err) {
-                    cb(err,null)
-                } else cb(null,room);
+                    return cb(err,null)
+                } else cb(null,mes.messages);
             }catch (err){
                 return cb(err,null);
             }

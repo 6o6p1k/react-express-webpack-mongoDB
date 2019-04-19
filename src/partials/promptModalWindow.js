@@ -15,21 +15,23 @@ class PromptWindow extends React.Component {
 
     render() {
         //console.log('Modal props: ',this.props);
-        const handle = this.props.promptHandler;
-        const handleClose = this.props.handleClose;
-        const show = this.props.show;
-        const showHideClassName = show ? 'modal display-block' : 'modal display-none';
+        const showHideClassName = this.props.show ? 'modal display-block' : 'modal display-none';
 
         return (
             <div className={showHideClassName}>
                 <section className='modal-main'>
-                    <div className='modal-main-btnRight' onClick={handleClose}>X</div>
+                    <div className='modal-main-btnRight' onClick={this.props.handleClose}>X</div>
                     {(this.props.message)?(<p className="text-description">{this.props.message}</p>):('')}
                     <div className="form-group">
-                        <label htmlFor="input-password" className="control-label">Password</label>
-                        <input name="Password"  type="password" className="form-control" placeholder="Password" onChange={this.handleChange}/>
+                        <label htmlFor={`input-${this.props.name}`} className="control-label">{this.props.name}</label>
+                        <input
+                            name={this.props.name}
+                            type={this.props.type ? this.props.type:""}
+                            className="form-control"
+                            placeholder={this.props.placeholder ? this.props.placeholder:""}
+                            onChange={this.handleChange}/>
                     </div>
-                    {this.state.Password ? <p><button className='btn' onClick={()=>{handle(this.state.Password);}}>OK</button> </p> :""}
+                    {this.state[this.props.name] ? <p><button className='btn' onClick={()=>{this.props.promptHandler(this.state[this.props.name]);this.props.handleClose()}}>OK</button> </p> :""}
                 </section>
             </div>
 

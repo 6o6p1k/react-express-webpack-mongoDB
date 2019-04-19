@@ -5,6 +5,7 @@ import {Redirect} from 'react-router-dom'
 import UserBtn from '../partials/userBtn.js'
 import Modal from '../partials/modalWindow.js'
 import Confirm from '../partials/confirmModalWindow.js'
+import Prompt from '../partials/promptModalWindow.js'
 
 
 
@@ -16,6 +17,7 @@ class Chat extends React.Component {
         super(props);
         this.state = {
             modalWindow:false,
+            modalWindowMessage:"",
 
             errorRedirect: false,
             loginRedirect:false,
@@ -47,6 +49,9 @@ class Chat extends React.Component {
             changeStatusAct:"",
 
             confirmMessage:"",
+
+            promptModalWindow:false,
+            promptRes:"",
         };
     }
 
@@ -59,12 +64,12 @@ class Chat extends React.Component {
         this.socket = socket
             .on('updateUserData',(userData)=>{
                 console.log("updateUserData: ",userData);
-                let sortUsers = userData.contacts.sort((a,b)=> b.onLine - a.onLine);
-                let sortBlockedUsers = userData.blockedContacts.sort((a,b)=> b.onLine - a.onLine);
+                //let sortUsers = userData.contacts.sort((a,b)=> b.onLine - a.onLine);
+                //let sortBlockedUsers = userData.blockedContacts.sort((a,b)=> b.onLine - a.onLine);
                 this.setState({
                     user:userData,
-                    users:sortUsers,
-                    blockedContacts:sortBlockedUsers,
+                    users:userData.contacts,
+                    blockedContacts:userData.blockedContacts,
                     rooms:userData.rooms,
                 });
             })
@@ -75,13 +80,13 @@ class Chat extends React.Component {
                 let usersBC = this.state.blockedContacts;
                 if(this.getUsersIdx("users",name) !== -1) {
                     users[this.getUsersIdx("users",name)].onLine = true;
-                    let sortUsers = users.sort((a,b)=> b.onLine - a.onLine);
-                    this.setState({users:sortUsers});
+                    //let sortUsers = users.sort((a,b)=> b.onLine - a.onLine);
+                    this.setState({users:users});
                 }
                 if(this.getUsersIdx("blockedContacts",name) !== -1) {
                     usersBC[this.getUsersIdx("blockedContacts",name)].onLine = true;
-                    let sortUsers = usersBC.sort((a,b)=> b.onLine - a.onLine);
-                    this.setState({blockedContacts:sortUsers});
+                    //let sortUsers = usersBC.sort((a,b)=> b.onLine - a.onLine);
+                    this.setState({blockedContacts:usersBC});
                 }
             })
             .on('offLine', (name)=> {
@@ -90,13 +95,13 @@ class Chat extends React.Component {
                 let usersBC = this.state.blockedContacts;
                 if(this.getUsersIdx("users",name) !== -1) {
                     users[this.getUsersIdx("users",name)].onLine = false;
-                    let sortUsers = users.sort((a,b)=> b.onLine - a.onLine);
-                    this.setState({users:sortUsers});
+                    //let sortUsers = users.sort((a,b)=> b.onLine - a.onLine);
+                    this.setState({users:users});
                 }
                 if(this.getUsersIdx("blockedContacts",name) !== -1) {
                     usersBC[this.getUsersIdx("blockedContacts",name)].onLine = false;
-                    let sortUsers = usersBC.sort((a,b)=> b.onLine - a.onLine);
-                    this.setState({blockedContacts:sortUsers});
+                    //let sortUsers = usersBC.sort((a,b)=> b.onLine - a.onLine);
+                    this.setState({blockedContacts:usersBC});
                 }
             })
             .on('message', (data)=> {
@@ -207,7 +212,7 @@ class Chat extends React.Component {
     };
 
     inxHandler =(arrName,inx)=> {
-        console.log('inxHandler arrName: ',arrName,", arrName inx: ", inx);
+        //console.log('inxHandler arrName: ',arrName,", arrName inx: ", inx);
         this.setState({
             messageBlockHandlerId: inx,
             arrayBlockHandlerId: arrName
@@ -296,7 +301,7 @@ class Chat extends React.Component {
     };
 
     hideModal =()=> {
-        this.setState({modalWindow: false});
+        this.setState({modalWindow: false,modalWindowMessage:"",err:{}});
     };
 
     addMe =(name)=> {
@@ -420,6 +425,18 @@ class Chat extends React.Component {
 
     onContextMenuHandler =(res,username)=>{
         switch (res) {
+            case "inviteUser":
+                console.log("onContextMenuHandler inviteUser");
+
+
+
+                break;
+            case "viewRoomData":
+                console.log("onContextMenuHandler viewRoomData");
+                break;
+            case "deleteRoom":
+                console.log("onContextMenuHandler deleteRoom");
+                break;
             case "deleteUser":
                 console.log("onContextMenuHandler deleteUser");
                 this.setState({
@@ -479,14 +496,20 @@ class Chat extends React.Component {
 
     //Group functional
     createRoom =(roomName)=>{
-        this.socket.emit('createRoom',roomName,(err,userData)=>{
+        console.log("createRoom: ",roomName);
+        this.socket.emit('createRoom',roomName,Date.now(),(err,userData)=>{
+            console.log("createRoom res err: ",err," ,userData: ",userData);
             if(err){
                 this.setState({
                     modalWindow:true,
                     err:{message:err},
                 })
             }else {
-                this.setState({rooms:userData.rooms})
+                this.setState({
+                    rooms:userData.rooms,
+                    modalWindow:true,
+                    modalWindowMessage:"Group created successful.",
+                })
             }
         })
     };
@@ -500,20 +523,26 @@ class Chat extends React.Component {
     };
 
     getRoomLog =(reqRoomName,reqMesCountCb)=>{
-        if(this.getUsersIdx("rooms",reqRoomName) === this.state.messageBlockHandlerId) return;
+        if(this.state.arrayBlockHandlerId === "rooms" && this.getUsersIdx("rooms",reqRoomName) === this.state.messageBlockHandlerId) return;
+        console.log("getRoomLog: ",reqRoomName);
         let reqRoom = this.state.rooms[this.getUsersIdx("rooms",reqRoomName)];
-        this.socket.emit('getRoomLog',reqRoomName,reqMesCountCb,(err,room)=>{
+        this.socket.emit('getRoomLog',reqRoomName,reqMesCountCb,(err,arr)=>{
+            console.log("getRoomLog res err: ",err," ,room: ",arr);
             if(err) {
                 this.setState({
                     modalWindow:true,
                     err:{message:err},
                 })
             }else {
-                room.messages.map(itm => itm.date = this.dateToString(itm.date));
-                reqRoom = room;
+                arr.map(itm => itm.date = this.dateToString(itm.date));
+                reqRoom.messages = arr;
                 this.setState({reqRoom});
             }
         })
+    };
+
+    hideShowPrompt = () => {
+        this.setState({promptModalWindow: !this.state.promptModalWindow});
     };
 
 
@@ -525,7 +554,7 @@ class Chat extends React.Component {
         return (
             <Page user={this.state.user} title="CHAT PAGE" className="container">
                 {this.state.modalWindow ?
-                    <Modal show={this.state.modalWindow} handleClose={this.hideModal} err={this.state.err}/>
+                    <Modal show={this.state.modalWindow} handleClose={this.hideModal} err={this.state.err} message={this.state.modalWindowMessage ? this.state.modalWindowMessage:""}/>
                 :""}
                 {this.state.addMeHandler ?
                     <Confirm confirmHandler={this.addMeHandler} show={this.state.addMeHandler} message={this.state.confirmMessage}/>
@@ -536,6 +565,16 @@ class Chat extends React.Component {
                 {this.state.changeStatusHandler ?
                     <Confirm confirmHandler={this.userStatusHandler} show={this.state.changeStatusHandler} message={this.state.confirmMessage}/>
                 :""}
+                {(this.state.promptModalWindow)?(
+                    <Prompt
+                        promptHandler={this.createRoom}
+                        show={this.state.promptModalWindow}
+                        handleClose={this.hideShowPrompt}
+                        name={"Group name"}
+                        type={""}
+                        placeholder={"Group name"}
+                        message={"Input the desired group name."}/>
+                ):('')}
                 <div className="chat-room">
                     <div className="chat-users">
                         <div className="login-form">
@@ -543,7 +582,7 @@ class Chat extends React.Component {
                                     onChange={ev => this.setFiltered(ev.target.value)}
                             />
                             <div className="userList">
-                                <button  name="msgBtn" type="button" className="btn">AR</button>
+                                <button  onClick={()=>this.hideShowPrompt()} name="msgBtn" type="button" className="btn">AG</button>
                                 <button  name="msgBtn" type="button" className="btn">AU</button>
                                 <button  name="msgBtn" type="button" className="btn">SS</button>
                                 <button  name="msgBtn" type="button" className="btn">SN</button>
@@ -568,6 +607,7 @@ class Chat extends React.Component {
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
                                             onContextMenuHandler={this.onContextMenuHandler}
                                             banList={false}
+                                            roomList={false}
                                         />)
                                 : this.state.users.filter(items => this.state.filteredUsers
                                         .map(i => i.name)
@@ -581,6 +621,7 @@ class Chat extends React.Component {
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
                                             onContextMenuHandler={this.onContextMenuHandler}
                                             banList={false}
+                                            roomList={false}
                                         />
                                 )}
 
@@ -598,6 +639,7 @@ class Chat extends React.Component {
                                                     messageBlockHandlerId={this.state.messageBlockHandlerId}
                                                     onContextMenuHandler={this.onContextMenuHandler}
                                                     banList={true}
+                                                    roomList={false}
                                                 />)
                                         }
                                     </div>
@@ -609,12 +651,15 @@ class Chat extends React.Component {
                                             this.state.rooms.map((itm,i) =>
                                                 <UserBtn
                                                     key={i}
+                                                    name={itm.name}
                                                     itm={itm}
                                                     i={i}
-                                                    getUserLog={() => this.getRoomLog("rooms",itm.name,null)}
+                                                    getUserLog={() => this.getRoomLog(itm.name,null)}
                                                     inxHandler={() => this.inxHandler("rooms",i)}
                                                     messageBlockHandlerId={this.state.messageBlockHandlerId}
-                                                    //onContextMenuHandler={this.onContextMenuHandler}
+                                                    onContextMenuHandler={this.onContextMenuHandler}
+                                                    banList={false}
+                                                    roomList={true}
                                                 />)
                                         }
                                     </div>

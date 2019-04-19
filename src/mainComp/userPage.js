@@ -246,7 +246,14 @@ class UserP extends React.Component {
                 ):('')}
 
                 {(this.state.PromptModalWindow)?(
-                    <Prompt promptHandler={this.promptHandler} show={this.state.PromptModalWindow} handleClose={this.hidePrompt} message={this.state.promptMessage}/>
+                    <Prompt
+                        promptHandler={this.promptHandler}
+                        show={this.state.PromptModalWindow}
+                        handleClose={this.hidePrompt}
+                        name={"password"}
+                        type={"password"}
+                        placeholder={"password"}
+                        message={this.state.promptMessage}/>
                 ):('')}
 
                 {(this.state.ConfirmModalWindow)?(

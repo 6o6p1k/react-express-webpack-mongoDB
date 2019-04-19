@@ -100,6 +100,7 @@ class UserBtn extends React.Component {
                     <OnContextMenu
                         authorizedStatus={this.state.authorizedStatus}
                         banList={this.props.banList}
+                        roomList={this.props.roomList}
                         rightClickMenuOnHide={this.rightClickMenuOnHide}
                         onContextMenuResponse={this.onContextMenuResponse}
                         contextMenuLocation={this.state.contextMenuLocation}
