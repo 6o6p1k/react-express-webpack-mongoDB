@@ -46,9 +46,9 @@ class UserBtn extends React.Component {
         });
     };
 
-    onContextMenuResponse =(res)=> {
+    onContextMenuResponse =(res,username)=> {
         //console.log("onContextMenuResponse res: ", res);
-        (()=>{this.props.onContextMenuHandler(res,this.state.onContextMenuUserName)})();
+        (()=>{this.props.onContextMenuHandler(res,username ? username : this.state.onContextMenuUserName)})();
         this.setState({onContextMenu:false});
     };
 
@@ -80,7 +80,8 @@ class UserBtn extends React.Component {
                                     </div>
                                     :""}
                             </li>
-                            <li className={` statusNet ${itm.onLine ? "onLine":"offLine"}`}/>
+                            {!this.props.roomList ? <li className={` statusNet ${itm.onLine ? "onLine":"offLine"}`}/>:""}
+
                         </ul>
                     </div>
                     :""}
@@ -104,6 +105,7 @@ class UserBtn extends React.Component {
                         rightClickMenuOnHide={this.rightClickMenuOnHide}
                         onContextMenuResponse={this.onContextMenuResponse}
                         contextMenuLocation={this.state.contextMenuLocation}
+                        userList={this.props.userList}
                     />
                     :''}
             </div>

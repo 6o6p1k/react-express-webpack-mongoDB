@@ -427,9 +427,6 @@ class Chat extends React.Component {
         switch (res) {
             case "inviteUser":
                 console.log("onContextMenuHandler inviteUser");
-
-
-
                 break;
             case "viewRoomData":
                 console.log("onContextMenuHandler viewRoomData");
@@ -660,6 +657,7 @@ class Chat extends React.Component {
                                                     onContextMenuHandler={this.onContextMenuHandler}
                                                     banList={false}
                                                     roomList={true}
+                                                    userList={this.state.users.map(itm =>itm.name)}
                                                 />)
                                         }
                                     </div>

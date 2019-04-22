@@ -1,13 +1,27 @@
 import React from 'react';
+//import OnContextUserList from './onContextListWindow.js'
 
 class OnContextMenu extends React.Component {
+
+    onEnterUserList =()=>{
+        console.log("onEnterUserList");
+        return (
+            <ul className="userDropDown" onMouseLeave={this.props.rightClickMenuOnHide}>
+
+                {this.props.userList.map(name => {
+                    <li className='dropDownBtn' onClick={()=>{this.props.onContextMenuResponse("Invite user",name)}}>{name}</li>
+                })}
+
+            </ul>
+            )
+    };
 
     render() {
         return (
             <ul className="userDropDown" onMouseLeave={this.props.rightClickMenuOnHide} style={this.props.contextMenuLocation}>
                 {this.props.roomList === true ?(
                     <div>
-                        <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("inviteUser")}}>Invite user</li>
+                        <li className='dropDownBtn' onMouseEnter={(e)=>{e.preventDefault();e.stopPropagation();this.onEnterUserList()}}>Invite user</li>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("moveOnTop")}}>Move on top</li>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("viewRoomData")}}>View group data</li>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("clearChatWindow")}}>Clear chat window</li>
