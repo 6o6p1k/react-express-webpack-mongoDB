@@ -1,34 +1,46 @@
 import React from 'react';
-//import OnContextUserList from './onContextListWindow.js'
+
+
+
 
 class OnContextMenu extends React.Component {
 
-    onEnterUserList =()=>{
-        console.log("onEnterUserList");
-        return (
-            <ul className="userDropDown" onMouseLeave={this.props.rightClickMenuOnHide}>
+    constructor(props){
+        super(props);
+        this.state = {
+            onEnterUserList:false,
 
-                {this.props.userList.map(name => {
-                    <li className='dropDownBtn' onClick={()=>{this.props.onContextMenuResponse("Invite user",name)}}>{name}</li>
-                })}
+        }
+    }
 
-            </ul>
-            )
+    showHideUserList =()=>{
+        this.setState({onEnterUserList: !this.state.onEnterUserList},()=>console.log("showHideUserList: ",this.state.onEnterUserList))
     };
 
+
+
     render() {
+        const OnEnterUserList =()=>{
+            console.log("onEnterUserList: ",this.props.userList);
+            return (
+                <ul className="userDropDown"  onMouseLeave={()=>this.showHideUserList()}>
+                    {this.props.userList.map((name,i) => <li className='dropDownBtn' key={i} onClick={()=>{this.props.onContextMenuResponse("Invite user",name)}}>{name}</li>)}
+                </ul>
+            )
+        };
         return (
-            <ul className="userDropDown" onMouseLeave={this.props.rightClickMenuOnHide} style={this.props.contextMenuLocation}>
+            <div>
                 {this.props.roomList === true ?(
-                    <div>
-                        <li className='dropDownBtn' onMouseEnter={(e)=>{e.preventDefault();e.stopPropagation();this.onEnterUserList()}}>Invite user</li>
+                    <ul className="userDropDown" onMouseLeave={this.props.rightClickMenuOnHide} style={this.props.contextMenuLocation}>
+                        {this.state.onEnterUserList ? <OnEnterUserList/>:""}
+                        <li className='dropDownBtn' onMouseEnter={(e)=>{e.preventDefault();e.stopPropagation();this.showHideUserList()}} onMouseLeave={()=>this.showHideUserList()} >Invite user</li>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("moveOnTop")}}>Move on top</li>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("viewRoomData")}}>View group data</li>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("clearChatWindow")}}>Clear chat window</li>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("deleteRoom")}}>Delete and exit</li>
-                    </div>
+                    </ul>
                 ):(
-                    <div>
+                    <ul className="userDropDown" onMouseLeave={this.props.rightClickMenuOnHide} style={this.props.contextMenuLocation}>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("moveOnTop")}}>Move on top</li>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("viewUserData")}}>View user data</li>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("clearChatWindow")}}>Clear chat window</li>
@@ -40,9 +52,9 @@ class OnContextMenu extends React.Component {
                         {this.props.authorizedStatus === false ?
                             <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("reqAuth")}}>Request authorization</li>:""
                         }
-                    </div>
+                    </ul>
                 )}
-            </ul>
+            </div>
         )
     }
 }
