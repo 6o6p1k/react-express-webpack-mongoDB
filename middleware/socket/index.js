@@ -365,12 +365,12 @@ module.exports = function (server) {
         });
         //get room log
         socket.on('getRoomLog', async function  (roomName,reqMesCountCb,cb) {
-            console.log("getRoomLog: ",roomName);
+            //console.log("getRoomLog: ",roomName);
             try {
                 let room = await Room.findOne({name:roomName});
                 if(room.members.find(itm => itm.name === username) === undefined) return cb("You do not member of this group.",null);
                 let {err,mes} = await Message.roomMessageHandler({roomName:roomName});
-                console.log("getRoomLog mes: ",mes,", err: ",err);
+                //console.log("getRoomLog mes: ",mes,", err: ",err);
                 if(err) {
                     return cb(err,null)
                 } else cb(null,mes.messages);
@@ -380,15 +380,15 @@ module.exports = function (server) {
         });
         //room message handler
         socket.on('messageRoom', async function  (text,roomName,dateNow,cb) {
-            //console.log('messageRoom text: ',text, 'resToUserName: ',resToUserName, 'dateNow: ',dateNow);
+            console.log('messageRoom text: ',text, 'roomName: ',roomName, 'dateNow: ',dateNow);
             if (text.length === 0) return;
             if (text.length >= 60) return socket.emit('messageRoom', { room:roomName,user: "Admin", text: "To long message.", status: false, date: Date.now()});
             let room = await Room.findOne({name:roomName});
-            if(!room.members.includes(username)) return socket.emit('messageRoom', {room:roomName, user: "Admin", text: "You do not room member.", status: false, date: Date.now()});
-            if(room.blockedContacts.includes(username)) return socket.emit('messageRoom', {room:roomName, user: "Admin", text: "You baned.", status: false, date: Date.now()});
+            if(!room.members.some(itm => itm.name === username)) return socket.emit('messageRoom', {room:roomName, user: "Admin", text: "You do not room member.", status: false, date: Date.now()});
+            if(room.blockedContacts.some(itm => itm.name === username)) return socket.emit('messageRoom', {room:roomName, user: "Admin", text: "You baned.", status: false, date: Date.now()});
             let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: text, status: false, date: dateNow}});
-            room.members.forEach(name =>{
-                if(globalChatUsers[name] && name !== username) socket.broadcast.to(globalChatUsers[name].sockedId).emit('message',{
+            room.members.forEach(itm =>{
+                if(globalChatUsers[itm.name] && itm.name !== username) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
                     room:roomName,
                     user:username,
                     text: text,

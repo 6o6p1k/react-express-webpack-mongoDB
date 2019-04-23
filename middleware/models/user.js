@@ -246,7 +246,7 @@ message.statics.messageHandler = async function (data) {
     let mes = {};
     let err = {};
     let sig = setGetSig(data.members);
-    console.log('DB messageHandler: ',data);
+    //console.log('DB messageHandler: ',data);
     try {
         mes = await Message.findOne({uniqSig:sig});
         if(data.message) {//write data
@@ -279,10 +279,10 @@ message.statics.roomMessageHandler = async function (data) {
     let mes = {};
     let err = {};
 
-    console.log('DB roomMessageHandler: ',data);
+    //console.log('DB roomMessageHandler: ',data);
     try {
         mes = await Message.findOne({uniqSig:data.roomName});
-        console.log("message.statics.roomMessageHandler mes: ", mes);
+        //console.log("message.statics.roomMessageHandler mes: ", mes);
         if(data.message) {//write data
             if(mes){
                 mes.messages.push(data.message);

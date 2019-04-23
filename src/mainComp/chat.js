@@ -106,14 +106,14 @@ class Chat extends React.Component {
             })
             .on('message', (data)=> {
                 //message receiver
-                this.printMessage({name:data.user,text:data.text,status:data.status,date:this.dateToString(data.date)},this.getUsersIdx("users",data.user));
-                this.msgCounter(this.getUsersIdx("users",data.user));
+                this.printMessage({name:data.user,text:data.text,status:data.status,date:this.dateToString(data.date)},"users",this.getUsersIdx("users",data.user));
+                this.msgCounter("users",this.getUsersIdx("users",data.user));
             })
             .on('messageRoom',(data)=>{
                 console.log("messageRoom data: ",data);
-                let currentRoom = this.state.rooms[this.getUsersIdx("users",data.room)];
-                currentRoom.messages = [...currentRoom.messages,{user:data.name, text:data.text, status:data.status, date:data.date}];
-                this.setState({currentRoom});
+                let currentRoom = this.state.rooms[this.getUsersIdx("rooms",data.room)];
+                this.printMessage({name:data.user,text:data.text,status:data.status,date:this.dateToString(data.date)},"rooms",this.getUsersIdx("rooms",data.room));
+                this.msgCounter("rooms",this.getUsersIdx("rooms",data.room));
                 if(data.addUser) {
                     currentRoom.members = [...currentRoom.members,data.addUser];
                     this.setState({currentRoom});
@@ -215,27 +215,26 @@ class Chat extends React.Component {
         if(name) {this.socket.emit('typing', name)}
     };
 
-    msgCounter =(i)=> {
-        //console.log('msgCounter i : ', i);
-        //if(this.state.messageBlockHandlerId === "users") return;
+    msgCounter =(a,i)=> {
         if(this.state.messageBlockHandlerId !== i) {
-            const currentUser = this.state.users[i];
-            currentUser.msgCounter = currentUser.msgCounter + 1;
-            this.setState({currentUser});
+            const current = this.state[a][i];
+            current.msgCounter = current.msgCounter + 1;
+            this.setState({current});
         }
     };
 
-    inxHandler =(arrName,inx)=> {
-        //console.log('inxHandler arrName: ',arrName,", arrName inx: ", inx);
+    inxHandler =(a,i)=> {
+        console.log('inxHandler arrName: ',a,", arrName inx: ", i);
         this.setState({
-            messageBlockHandlerId: inx,
-            arrayBlockHandlerId: arrName
+            messageBlockHandlerId: i,
+            arrayBlockHandlerId: a
         });
-        if(arrName !== "users") return;
-        const eUser = this.state.users[inx];
-        if (eUser && eUser.msgCounter !== 0) {
-            eUser.msgCounter = 0;
-            this.setState({eUser});
+        if(a === "blockedContacts") return;
+        const e = this.state[a][i];
+        console.log('inxHandler e: ',e);
+        if (e && e.msgCounter !== 0) {
+            e.msgCounter = 0;
+            this.setState({e});
         }
     };
 
@@ -245,14 +244,24 @@ class Chat extends React.Component {
     };
 
     sendMessage =(name)=> {
-        if (name) {
-            console.log('this.sendMessage !GC');
-            let date = Date.now();
-            this.socket.emit('message', this.state.message, name, date, ()=> {
-                this.printMessage({name:this.state.user.username, text:this.state.message, date:this.dateToString(date), status:false},this.getUsersIdx("users",name));
-                this.setState({message:''});
-            });
-            return false;
+        let date = Date.now();
+        switch (this.state.arrayBlockHandlerId){
+            case "rooms":
+                console.log("sendMessage rooms");
+                this.socket.emit('messageRoom', this.state.message, name, date, ()=> {//This name means Group Name
+                    this.printMessage({name:this.state.user.username, text:this.state.message, date:this.dateToString(date), status:false},"rooms",this.getUsersIdx("rooms",name));
+                    this.setState({message:''});
+                });
+                break;
+            case "users":
+                console.log("sendMessage users");
+                this.socket.emit('message', this.state.message, name, date, ()=> {//This name means User Name
+                    this.printMessage({name:this.state.user.username, text:this.state.message, date:this.dateToString(date), status:false},"users",this.getUsersIdx("users",name));
+                    this.setState({message:''});
+                });
+                break;
+            default:
+                console.log("sendMessage: Sorry, we are out of " + res + ".");
         }
     };
 
@@ -260,11 +269,11 @@ class Chat extends React.Component {
         return this.state[arrName].map((itm)=>{return itm.name;}).indexOf(username);
     };
 
-    printMessage =(data,i)=> {
+    printMessage =(data,a,i)=> {//a - array itm, i - index in a - array
         console.log("printMessage: ",data);
-        const currentUser = this.state.users[i];
-        currentUser.messages = [...currentUser.messages,{user:data.name, text:data.text, status:data.status, date:data.date}];
-        this.setState({currentUser});
+        const current = this.state[a][i];
+        current.messages = [...current.messages,{user:data.name, text:data.text, status:data.status, date:data.date}];
+        this.setState({current});
     };
 
     moveToBlackList =(name)=> {
@@ -536,20 +545,12 @@ class Chat extends React.Component {
         })
     };
 
-    inviteUserToRoom =(roomName,invitedUser)=>{
-
-    };
-
-    leaveRoom =(roomName)=>{
-
-    };
-
     getRoomLog =(reqRoomName,reqMesCountCb)=>{
         if(this.state.arrayBlockHandlerId === "rooms" && this.getUsersIdx("rooms",reqRoomName) === this.state.messageBlockHandlerId) return;
-        console.log("getRoomLog: ",reqRoomName);
+        //console.log("getRoomLog: ",reqRoomName);
         let reqRoom = this.state.rooms[this.getUsersIdx("rooms",reqRoomName)];
         this.socket.emit('getRoomLog',reqRoomName,reqMesCountCb,(err,arr)=>{
-            console.log("getRoomLog res err: ",err," ,room: ",arr);
+            //console.log("getRoomLog res err: ",err," ,room: ",arr);
             if(err) {
                 this.setState({
                     modalWindow:true,
@@ -570,7 +571,7 @@ class Chat extends React.Component {
 
 
     render() {
-        console.log('/chat user:', this.state);
+        //console.log('/chat user:', this.state);
         if(this.state.errorRedirect) {return <Redirect to='/error'/>}//passing props in Redirect to={{pathname:'/error',state:{error:this.state.err}}} get props: this.props.location.state.error
         if(this.state.loginRedirect) {return <Redirect to='/login'/>}
         return (
@@ -714,7 +715,7 @@ class Chat extends React.Component {
                                         <form onSubmit={(ev) => {
                                             ev.preventDefault();
                                             ev.stopPropagation();
-                                            this.sendMessage(eUser.name)
+                                            //this.sendMessage(eUser.name)
                                         }} name="chatRoomForm" className="writeMessWrapp">
                                                     <div className="input-group writeMess">
                                                         <textarea name="formInp" className="form-control" autoComplete="off"
