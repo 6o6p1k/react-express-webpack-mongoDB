@@ -341,8 +341,8 @@ room.statics.inviteUserToRoom = async function(roomName,invited) {
     try {
         let user = await User.findOne({username:invited});
         let room = await Room.findOne({name:roomName});
-        if(room.members.find(itm => itm.name === invited) === undefined) return {err:"User name "+invited+" always included in room.",room:null,user:null};
-        if(room.blockedContacts.find(itm => itm.name === invited) === undefined) return {err:"User name "+invited+" included in ban list.",room:null,user:null};
+        if(room.members.some(itm => itm.name === invited)) return {err:"User name "+invited+" always included in room.",room:null,user:null};
+        if(room.blockedContacts.some(itm => itm.name === invited)) return {err:"User name "+invited+" included in ban list.",room:null,user:null};
         if(user.blockedContacts.includes(roomName)) return {err:"Group name "+roomName+" included in ban list.",room:null,user:null};
         user.rooms.push(roomName);
         room.members.push({name:invited,enable:true,admin:false});

@@ -908,3 +908,21 @@ textarea{
     transform: rotate(-20deg);
 }
 /*~~~~~~~~~~~~~~~~~~~~~END STYLE CAT~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+.userInvite{
+    position: absolute;
+    top: 0;
+    right: -100%;
+    padding: 0;
+    opacity: 0;
+    z-index: -1;
+    height: 0;
+    width: 0;
+    background-color: #403b3b;
+    transition: all .3s cubic-bezier(0.2, 0, 0, 1);
+}
+.dropDownBtn.invite:hover .userInvite{
+    opacity: 1;
+    z-index: 1;
+    height: auto;
+    width: 100%;
+}

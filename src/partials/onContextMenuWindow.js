@@ -14,30 +14,32 @@ class OnContextMenu extends React.Component {
     }
 
     showHideUserList =()=>{
-        this.setState({onEnterUserList: !this.state.onEnterUserList},()=>console.log("showHideUserList: ",this.state.onEnterUserList))
+        this.setState({onEnterUserList: !this.state.onEnterUserList})
     };
 
 
 
     render() {
         const OnEnterUserList =()=>{
-            console.log("onEnterUserList: ",this.props.userList);
+            //console.log("onEnterUserList: ",this.props.userList);
             return (
-                <ul className="userDropDown"  onMouseLeave={()=>this.showHideUserList()}>
-                    {this.props.userList.map((name,i) => <li className='dropDownBtn' key={i} onClick={()=>{this.props.onContextMenuResponse("Invite user",name)}}>{name}</li>)}
+                <ul className="userInvite"  >
+                    {this.props.userList.map((name,i) => <li className='dropDownBtn' key={i} onClick={()=>{this.props.onContextMenuResponse("inviteUser",name)}}>{name}</li>)}
                 </ul>
             )
         };
         return (
             <div>
                 {this.props.roomList === true ?(
-                    <ul className="userDropDown" onMouseLeave={this.props.rightClickMenuOnHide} style={this.props.contextMenuLocation}>
-                        {this.state.onEnterUserList ? <OnEnterUserList/>:""}
-                        <li className='dropDownBtn' onMouseEnter={(e)=>{e.preventDefault();e.stopPropagation();this.showHideUserList()}} onMouseLeave={()=>this.showHideUserList()} >Invite user</li>
+                    <ul className="userDropDown"  style={this.props.contextMenuLocation}>
+                        <li className='dropDownBtn invite' onMouseEnter={(e)=>{e.preventDefault();e.stopPropagation();this.showHideUserList()}} onMouseLeave={()=>this.showHideUserList()} >Invite user
+                            <OnEnterUserList/>
+                        </li>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("moveOnTop")}}>Move on top</li>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("viewRoomData")}}>View group data</li>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("clearChatWindow")}}>Clear chat window</li>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("deleteRoom")}}>Delete and exit</li>
+
                     </ul>
                 ):(
                     <ul className="userDropDown" onMouseLeave={this.props.rightClickMenuOnHide} style={this.props.contextMenuLocation}>
@@ -54,6 +56,7 @@ class OnContextMenu extends React.Component {
                         }
                     </ul>
                 )}
+
             </div>
         )
     }

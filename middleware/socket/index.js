@@ -323,6 +323,7 @@ module.exports = function (server) {
         });
         //invite users to room
         socket.on('inviteUserToRoom', async function  (roomName,invitedUser,dateNow,cb) {
+            console.log('inviteUserToRoom');
             let {err,room,user} = await Room.inviteUserToRoom(roomName,invitedUser);
             if(err) {
                 return cb(err,null)
@@ -330,7 +331,7 @@ module.exports = function (server) {
                 let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: username+" added "+invitedUser+".", status: false, date: dateNow}});
                 if(globalChatUsers[invitedUser]) socket.broadcast.to(globalChatUsers[invitedUser].sockedId).emit('updateUserData',await aggregateUserData(invitedUser));
                 room.members.forEach((name) => {
-                    if(globalChatUsers[name] && name !== username) socket.broadcast.to(globalChatUsers[name].sockedId).emit('messageRoom',{
+                    if(globalChatUsers[name] && name !== username && name !== invitedUser) socket.broadcast.to(globalChatUsers[name].sockedId).emit('messageRoom',{
                         room:roomName,
                         user:username,
                         text: username+" added "+invitedUser+".",
@@ -339,7 +340,7 @@ module.exports = function (server) {
                         addUser:invitedUser
                     });
                 });
-                return cb(null,user.rooms)
+                return cb(null,await aggregateUserData(username))
             }
         });
         //leave room

@@ -109,6 +109,20 @@ class Chat extends React.Component {
                 this.printMessage({name:data.user,text:data.text,status:data.status,date:this.dateToString(data.date)},this.getUsersIdx("users",data.user));
                 this.msgCounter(this.getUsersIdx("users",data.user));
             })
+            .on('messageRoom',(data)=>{
+                console.log("messageRoom data: ",data);
+                let currentRoom = this.state.rooms[this.getUsersIdx("users",data.room)];
+                currentRoom.messages = [...currentRoom.messages,{user:data.name, text:data.text, status:data.status, date:data.date}];
+                this.setState({currentRoom});
+                if(data.addUser) {
+                    currentRoom.members = [...currentRoom.members,data.addUser];
+                    this.setState({currentRoom});
+                }
+                if(data.remuveUser) {
+                    currentRoom.members = currentRoom.members.filter(name => name !== data.remuveUser);
+                    this.setState({currentRoom});
+                }
+            })
             .on('typing', (username)=> {
                 //receiver
                 if(this.getUsersIdx("users",username) < 0) return;
@@ -423,10 +437,21 @@ class Chat extends React.Component {
         }
     };
 
-    onContextMenuHandler =(res,username)=>{
+    onContextMenuHandler =(res,username,roomName)=>{
         switch (res) {
             case "inviteUser":
-                console.log("onContextMenuHandler inviteUser");
+                console.log("onContextMenuHandler inviteUser roomName: ",roomName,", username: ",username);
+                this.socket.emit('inviteUserToRoom',roomName,username,Date.now(),(err,data)=>{
+                    console.log("onContextMenuHandler cb err: ",err,", cb rooms: ",username);
+                    if(err) {
+                        this.setState({
+                            modalWindow:true,
+                            err:{message:err},
+                        })
+                    }
+                    this.setState({rooms:data.rooms});
+                });
+
                 break;
             case "viewRoomData":
                 console.log("onContextMenuHandler viewRoomData");
