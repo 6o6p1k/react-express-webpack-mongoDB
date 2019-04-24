@@ -346,12 +346,13 @@ module.exports = function (server) {
         //leave room
         socket.on('leaveRoom', async function  (roomName,dateNow,cb) {
             let {err,room,user} = await Room.leaveRoom(roomName,username);
+            console.log('leaveRoom err: ',err);
             if(err) {
                 return cb(err,null)
             } else {
                 let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: username+" leaved the group.", status: false, date: dateNow}});
                 room.members.forEach((itm) => {
-                    if(globalChatUsers[itm.name]) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('message',{
+                    if(globalChatUsers[itm.name]) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
                         room:roomName,
                         user:username,
                         text: username+" leaved the group.",
@@ -360,7 +361,7 @@ module.exports = function (server) {
                         remuveUser:username
                     });
                 });
-                return cb(null,user.rooms)
+                return cb(null,await aggregateUserData(username))
             }
         });
         //get room log

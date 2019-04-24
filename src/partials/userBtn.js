@@ -48,8 +48,19 @@ class UserBtn extends React.Component {
 
     onContextMenuResponse =(res,username)=> {
         //console.log("onContextMenuResponse res: ", res);
-        (()=>{this.props.onContextMenuHandler(res,username ? username : this.state.onContextMenuUserName,!username ? null : this.state.onContextMenuUserName)})();
-        this.setState({onContextMenu:false});
+        switch (res){
+            case "inviteUser":
+                this.props.onContextMenuHandler(res,username,this.state.onContextMenuUserName);
+                this.setState({onContextMenu:false});
+                break;
+            case "leaveRoom" || "viewRoomData" || "moveRoomOnTop" || "clearRoomWindow":
+                this.props.onContextMenuHandler(res,null,this.state.onContextMenuUserName);
+                this.setState({onContextMenu:false});
+                break;
+            default:
+                this.props.onContextMenuHandler(res,this.state.onContextMenuUserName,null);
+                this.setState({onContextMenu:false});
+        }
     };
 
     render() {

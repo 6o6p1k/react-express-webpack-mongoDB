@@ -272,7 +272,7 @@ class Chat extends React.Component {
 
     printMessage =(data,a,i)=> {//a - array itm, i - index in a - array
         console.log("printMessage: ",data);
-        const current = this.state[a][i];
+        let current = this.state[a][i];
         current.messages = [...current.messages,{user:data.name, text:data.text, status:data.status, date:data.date}];
         this.setState({current});
     };
@@ -445,22 +445,39 @@ class Chat extends React.Component {
             case "inviteUser":
                 console.log("onContextMenuHandler inviteUser roomName: ",roomName,", username: ",username);
                 this.socket.emit('inviteUserToRoom',roomName,username,Date.now(),(err,data)=>{
-                    console.log("onContextMenuHandler cb err: ",err,", cb rooms: ",username);
+                    console.log("inviteUserToRoom' cb err: ",err,", cb rooms: ",data);
                     if(err) {
                         this.setState({
                             modalWindow:true,
                             err:{message:err},
                         })
+                    }else {
+                        this.setState({rooms:data.rooms});
                     }
-                    this.setState({rooms:data.rooms});
                 });
-
                 break;
             case "viewRoomData":
                 console.log("onContextMenuHandler viewRoomData");
                 break;
-            case "deleteRoom":
-                console.log("onContextMenuHandler deleteRoom");
+            case "leaveRoom":
+                console.log("onContextMenuHandler leaveRoom roomName: ",roomName);
+                this.socket.emit('leaveRoom',roomName,Date.now(),(err,data)=>{
+                    console.log("leaveRoom cb err: ",err,", cb rooms: ",data);
+                    if(err) {
+                        this.setState({
+                            modalWindow:true,
+                            err:{message:err},
+                        })
+                    }else {
+                        this.setState({rooms:data.rooms});
+                    }
+                });
+                break;
+            case "moveRoomOnTop":
+                console.log("onContextMenuHandler moveRoomOnTop");
+                break;
+            case "clearRoomWindow":
+                console.log("onContextMenuHandler clearRoomWindow");
                 break;
             case "deleteUser":
                 console.log("onContextMenuHandler deleteUser");
