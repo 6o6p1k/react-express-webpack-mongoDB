@@ -330,8 +330,8 @@ module.exports = function (server) {
             } else {
                 let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: username+" added "+invitedUser+".", status: false, date: dateNow}});
                 if(globalChatUsers[invitedUser]) socket.broadcast.to(globalChatUsers[invitedUser].sockedId).emit('updateUserData',await aggregateUserData(invitedUser));
-                room.members.forEach((name) => {
-                    if(globalChatUsers[name] && name !== username && name !== invitedUser) socket.broadcast.to(globalChatUsers[name].sockedId).emit('messageRoom',{
+                room.members.forEach((itm) => {
+                    if(globalChatUsers[itm.name] && itm.name !== username && itm.name !== invitedUser) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
                         room:roomName,
                         user:username,
                         text: username+" added "+invitedUser+".",
@@ -350,8 +350,8 @@ module.exports = function (server) {
                 return cb(err,null)
             } else {
                 let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: username+" leaved the group.", status: false, date: dateNow}});
-                room.members.forEach((name) => {
-                    if(globalChatUsers[name]) socket.broadcast.to(globalChatUsers[name].sockedId).emit('message',{
+                room.members.forEach((itm) => {
+                    if(globalChatUsers[itm.name]) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('message',{
                         room:roomName,
                         user:username,
                         text: username+" leaved the group.",

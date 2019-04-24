@@ -25,15 +25,12 @@ class Chat extends React.Component {
 
             user: user,
 
-            messages: [],
-            msgCounter: 0,
-
             message: '',
 
-            users: this.addUsers(user.contacts) || [],
+            users: [],
             filteredUsers: [],
             foundContacts: [],
-            blockedContacts: this.addUsers(user.blockedContacts) || [],
+            blockedContacts: [],
             rooms: [],
 
             arrayBlockHandlerId: undefined,
@@ -54,10 +51,14 @@ class Chat extends React.Component {
             promptRes:"",
         };
     }
+    componentDidUpdate(){
+        //move scroll bootom
+        this.scrollToBottom(this.refs.InpUl);
+    }
 
     componentDidMount(){
-        //move scroll bootom
         console.log("CDM");
+        //move scroll bootom
         this.scrollToBottom(this.refs.InpUl);
 
         let socket = io.connect('', {reconnection: true});
@@ -314,13 +315,6 @@ class Chat extends React.Component {
                 })
             }
         })
-    };
-
-    addUsers =(nameArr)=> {
-        nameArr.map((name,i) =>{
-            nameArr[i] = {name:name, messages:[], msgCounter :0, typing:false, onLine:false, banned:false}
-        });
-        return nameArr;
     };
 
     hideModal =()=> {
