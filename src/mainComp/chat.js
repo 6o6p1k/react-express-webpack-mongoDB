@@ -712,13 +712,14 @@ class Chat extends React.Component {
                             return (
                                 <div className="message-block">
                                     <div name="chatRoom" id="chatDiv">
-                                        {this.state.arrayBlockHandlerId  === "rooms" ?
-                                            <RoomManager
-                                                room={this.state.rooms[this.state.messageBlockHandlerId]}/>
-                                            :""
-                                        }
+
 
                                         <ul name="InpUl" className="chat-list" ref="InpUl">
+                                            {this.state.arrayBlockHandlerId  === "rooms" ?
+                                                <RoomManager
+                                                    room={this.state.rooms[this.state.messageBlockHandlerId]}/>
+                                                :""
+                                            }
                                             {
                                                 (eUser) ? (
                                                     eUser.messages.map((data, i) => {
