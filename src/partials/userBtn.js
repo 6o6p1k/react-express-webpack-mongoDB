@@ -64,7 +64,7 @@ class UserBtn extends React.Component {
     };
 
     render() {
-        //console.log('UserBtn props: ',this.props);
+        console.log('UserBtn props: ',this.props.itm);
         let itm = this.props.itm;
         let i = this.props.i;
         return (
@@ -81,10 +81,18 @@ class UserBtn extends React.Component {
                  type="button"
                  className={`btn user ${this.props.messageBlockHandlerId === i ?"clicked ":""}`}>
                 {this.props.roomList ?
-                    <div className="chat-room-icon">
+                    <div className="user-icon">
                         <img src="../../img/group-of-people-in-a-formation.png" alt=""/>
                     </div>
-                :""}
+                : itm.banned ?
+                        <div className="user-icon">
+                            <img src="../../img/profile-red.png" alt=""/>
+                        </div>
+                : itm.authorized ?
+                        <div className="user-icon">
+                            <img src="../../img/profile.png" alt=""/>
+                        </div>
+                 :""}
 
                 {itm ?
                     <div className="userStatus">

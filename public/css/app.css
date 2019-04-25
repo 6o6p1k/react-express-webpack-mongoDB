@@ -73,9 +73,9 @@ a {
     outline: none;
 }
 .chat-list{
-    max-height:94%;
-    min-height:94%;
-    height: 94%;
+    max-height:90%;
+    min-height:90%;
+    height: 90%;
     overflow-y: scroll;
     overflow-x: hidden;
     background-color: #666666;
@@ -99,6 +99,7 @@ ul li{
 }
 #chatDiv{
     height: 100%;
+    position: relative;
 }
 .chat-room{
     display: flex;
@@ -490,6 +491,9 @@ footer a:active{
 }
 .writeMessWrapp{
     height: 6%;
+    position: absolute;
+    width: 100%;
+    bottom: 0;
 }
 .writeMess{
     background-color: #ddd;
@@ -941,7 +945,7 @@ textarea{
     margin-top: 5px;
     cursor: pointer;
 }
-.chat-room-icon{
+.user-icon{
     display: inline-block;
     width: 20px;
     height: 20px;
@@ -949,6 +953,6 @@ textarea{
     position: relative;
     bottom: -3px;
 }
-.chat-room-icon img{
+.user-icon img{
     max-width: 100%;
 }
