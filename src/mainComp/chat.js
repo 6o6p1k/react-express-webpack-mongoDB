@@ -6,6 +6,7 @@ import UserBtn from '../partials/userBtn.js'
 import Modal from '../partials/modalWindow.js'
 import Confirm from '../partials/confirmModalWindow.js'
 import Prompt from '../partials/promptModalWindow.js'
+import RoomManager from '../partials/roomManager.js'
 
 
 
@@ -582,7 +583,7 @@ class Chat extends React.Component {
 
 
     render() {
-        //console.log('/chat user:', this.state);
+        console.log('/chat user:', this.state.rooms);
         if(this.state.errorRedirect) {return <Redirect to='/error'/>}//passing props in Redirect to={{pathname:'/error',state:{error:this.state.err}}} get props: this.props.location.state.error
         if(this.state.loginRedirect) {return <Redirect to='/login'/>}
         return (
@@ -711,6 +712,12 @@ class Chat extends React.Component {
                             return (
                                 <div className="message-block">
                                     <div name="chatRoom" id="chatDiv">
+                                        {this.state.arrayBlockHandlerId  === "rooms" ?
+                                            <RoomManager
+                                                room={this.state.rooms[this.state.messageBlockHandlerId]}/>
+                                            :""
+                                        }
+
                                         <ul name="InpUl" className="chat-list" ref="InpUl">
                                             {
                                                 (eUser) ? (

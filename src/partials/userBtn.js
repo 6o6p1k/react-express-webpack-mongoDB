@@ -80,9 +80,16 @@ class UserBtn extends React.Component {
                  onMouseLeave={this.rightClickMenuOnHide}
                  type="button"
                  className={`btn user ${this.props.messageBlockHandlerId === i ?"clicked ":""}`}>
+                {this.props.roomList ?
+                    <div className="chat-room-icon">
+                        <img src="../../img/group-of-people-in-a-formation.png" alt=""/>
+                    </div>
+                :""}
+
                 {itm ?
                     <div className="userStatus">
                         <ul>
+
 
                             <li>
                                 {itm.msgCounter !== 0 || itm.msgCounter === undefined ?
