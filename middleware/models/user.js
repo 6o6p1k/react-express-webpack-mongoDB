@@ -67,7 +67,7 @@ user.statics.userMFCTBC = async function (reqUser,contact) {//MoveFromContactsTo
             return {err:null,user:user};
         }else return ({err:"No user name "+reqUser+" found.",user:null});
     } catch(err) {
-        console.log('userMFBCTC err: ',err);
+        console.log('userMFCTBC err: ',err);
         return {err:err,user:null};
     }
 };
@@ -143,7 +143,7 @@ user.statics.userRFAL = async function (reqUser,contact) {//RemoveFromAllList
             return {err:null,user:user};
         }else return ({err:"No user name "+reqUser+" found.",user:null});
     } catch(err) {
-        console.log('userATBC err: ',err);
+        console.log('userRFAL err: ',err);
         return {err:err,user:null};
     }
 };
@@ -269,7 +269,7 @@ message.statics.messageHandler = async function (data) {
             }
         }
     } catch(err) {
-        console.log('messageHandlerGlobalChat err: ',err);
+        console.log('messageHandler err: ',err);
         return {err:err,user:null};
     }
 };
@@ -304,7 +304,7 @@ message.statics.roomMessageHandler = async function (data) {
             }
         }
     } catch(err) {
-        console.log('messageHandlerGlobalChat err: ',err);
+        console.log('roomMessageHandler err: ',err);
         return {err:err,user:null};
     }
 };
@@ -330,7 +330,7 @@ room.statics.createRoom = async function(roomName,username) {//create new room a
             return {err:"Room name: "+roomName+" always exist. Choose another room name.",room:null,user:null};
         }
     } catch (err) {
-        console.log('Create room err: ',err);
+        console.log('createRoom err: ',err);
         return {err:err,room:null,user:null};
     }
 };
@@ -342,34 +342,67 @@ room.statics.inviteUserToRoom = async function(roomName,invited) {
         let user = await User.findOne({username:invited});
         let room = await Room.findOne({name:roomName});
         if(room.members.some(itm => itm.name === invited)) return {err:"User name "+invited+" always included in room.",room:null,user:null};
-        if(room.blockedContacts.some(itm => itm.name === invited)) return {err:"User name "+invited+" included in ban list.",room:null,user:null};
-        if(user.blockedContacts.includes(roomName)) return {err:"Group name "+roomName+" included in ban list.",room:null,user:null};
+        if(room.blockedContacts.some(itm => itm.name === invited)) return {err:"Username "+invited+" is included in the banned list.",room:null,user:null};
+        if(user.blockedContacts.includes(roomName)) return {err:"Group name "+roomName+" included in bann list.",room:null,user:null};
         user.rooms.push(roomName);
         room.members.push({name:invited,enable:true,admin:false});
         await user.save();
         await room.save();
         return {err:null,room:room,user:user};
     } catch (err) {
-        console.log('Create room err: ',err);
+        console.log('inviteUserToRoom err: ',err);
         return {err:err,room:null,user:null};
     }
 };
-//ban user in room
-room.statics.banUserInRoom = async function(roomName,baned) {
+//block user in room
+room.statics.blockUserInRoom = async function(roomName,adminRoom,blocked) {
     let Room = this;
     let err = {};
     try {
-        //let user = await User.findOne({username:invited});
         let room = await Room.findOne({name:roomName});
-        if(!room.members.some(itm => itm.name === baned) || room.blockedContacts.some(itm => itm.name === baned)) return {err:"User name "+baned+" not member of this room or always baned.",room:null,user:null};
-        let filterMemberRoom = room.members.filter(itm => itm.name !== name);
+        if(room.members.find(itm => itm.name === adminRoom).admin !== true) return {err:"You are not admin of this group.",room:null};
+        if(!room.members.some(itm => itm.name === blocked) || room.blockedContacts.some(itm => itm.name === blocked)) return {err:"User name "+blocked+" not a member of this group or always blocked.",room:null};
+        let filterMemberRoom = room.members.filter(itm => itm.name !== blocked);
         room.members = filterMemberRoom;
-        room.blockedContacts.push({name:baned,enable:true,admin:false});
-        await user.save();
+        room.blockedContacts.push({name:blocked,enable:true,admin:false});
         await room.save();
         return {err:null,room:room,user:user};
     } catch (err) {
-        console.log('Create room err: ',err);
+        console.log('blockUserInRoom err: ',err);
+        return {err:err,room:null};
+    }
+};
+//unblock user in room
+room.statics.unblockUserInRoom = async function(roomName,adminRoom,unblocked) {
+    let Room = this;
+    let err = {};
+    try {
+        let room = await Room.findOne({name:roomName});
+        if(room.members.find(itm => itm.name === adminRoom).admin !== true) return {err:"You are not admin of this group.",room:null};
+        if(room.members.some(itm => itm.name === blocked) || !room.blockedContacts.some(itm => itm.name === unblocked)) return {err:"User name "+unblocked+" an allowed members of this group.",room:null};
+        let filterMemberRoom = room.blockedContacts.filter(itm => itm.name !== unblocked);
+        room.blockedContacts = filterMemberRoom;
+        room.members.push({name:unblocked,enable:true,admin:false});
+        await room.save();
+        return {err:null,room:room,user:user};
+    } catch (err) {
+        console.log('unblockUserInRoom err: ',err);
+        return {err:err,room:null};
+    }
+};
+//set admin room
+room.statics.setAdminInRoom = async function(roomName,adminRoom,newAdmin) {
+    let Room = this;
+    let err = {};
+    try {
+        let room = await Room.findOne({name:roomName});
+        if(room.members.find(itm => itm.name === adminRoom).admin !== true) return {err:"You are not admin of this group..",room:null,user:null};
+        if(!room.members.some(itm => itm.name === newAdmin) || room.blockedContacts.some(itm => itm.name === newAdmin)) return {err:"User name "+newAdmin+" not a member of this room or baned.",room:null,user:null};
+        room.members.find(itm => itm.name === newAdmin).admin = true;
+        await room.save();
+        return {err:null,room:room,user:user};
+    } catch (err) {
+        console.log('setAdminInRoom err: ',err);
         return {err:err,room:null,user:null};
     }
 };
@@ -399,7 +432,7 @@ room.statics.leaveRoom = async function(roomName,name) {
         await room.save();
         return {err:null,room:room,user:user};
     } catch (err) {
-        console.log('Create room err: ',err);
+        console.log('leaveRoom err: ',err);
         return {err:err,room:null,user:user};
     }
 };
