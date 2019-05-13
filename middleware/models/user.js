@@ -354,16 +354,45 @@ room.statics.inviteUserToRoom = async function(roomName,invited) {
         return {err:err,room:null,user:null};
     }
 };
+//ban user in room
+room.statics.banUserInRoom = async function(roomName,baned) {
+    let Room = this;
+    let err = {};
+    try {
+        //let user = await User.findOne({username:invited});
+        let room = await Room.findOne({name:roomName});
+        if(!room.members.some(itm => itm.name === baned) || room.blockedContacts.some(itm => itm.name === baned)) return {err:"User name "+baned+" not member of this room or always baned.",room:null,user:null};
+        let filterMemberRoom = room.members.filter(itm => itm.name !== name);
+        room.members = filterMemberRoom;
+        room.blockedContacts.push({name:baned,enable:true,admin:false});
+        await user.save();
+        await room.save();
+        return {err:null,room:room,user:user};
+    } catch (err) {
+        console.log('Create room err: ',err);
+        return {err:err,room:null,user:null};
+    }
+};
 //leave  room
+var Message = mongoose.model('Message', message);
 room.statics.leaveRoom = async function(roomName,name) {
     let Room = this;
     let err = {};
     try {
         let user = await User.findOne({username:name});
         let room = await Room.findOne({name:roomName});
-        if(room.members.find(itm => itm.name === name).admin === true) return {err:"You can not leave the group. You are is admin.",room:null,user:null};
+        //if(room.members.find(itm => itm.name === name).admin === true) return {err:"You can not leave this group. You are admin.",room:null,user:null};
         let filterUserRooms = user.rooms.filter(itm => itm !== roomName);
         let filterMemberRoom = room.members.filter(itm => itm.name !== name);
+        if(room.members.length === 0) {
+            //Delete room protocol. if no one user left.
+            await Room.deleteOne({name:roomName});
+            await Message.deleteOne({uniqSig:roomName});
+            user.rooms = filterUserRooms;
+            await user.save();
+            console.log("Delete room protocol successful done");
+            return {err:null,room:null,user:user};
+        }
         user.rooms = filterUserRooms;
         room.members = filterMemberRoom;
         await user.save();
@@ -375,23 +404,25 @@ room.statics.leaveRoom = async function(roomName,name) {
     }
 };
 //delete  room
-room.statics.deleteRoom = async function(roomName,name) {
+/*room.statics.deleteRoom = async function(roomName,name) {
     let Room = this;
     let err = {};
     try {
         let user = await User.findOne({username:name});
         let room = await Room.findOne({name:roomName});
-        if(room.members.find(itm => itm.name === name).admin === false) return {err:"You can not delete the group. You are is not admin.",user:null};
-        let filterUserRooms = user.rooms.filter(itm => itm !== roomName);
+        if(room.members.find(itm => itm.name === name).admin === false) return {err:"You can not delete this group. You are not admin.",user:null};
+        let filterUserRooms = user.rooms.filter(itm => itm !== roomName);//dell room in user room list
         user.rooms = filterUserRooms;
-        await Room.deleteOne({name:roomName});
+        let roomMesId = await Message.findOne({uniqSig:roomName})._id;
+        await Room.deleteOne({name:roomName});//dell room
+        await Message.deleteOne({_id:roomMesId});//dell room history
         await user.save();
         return {err:null,user:user};
     } catch (err) {
         console.log('Create room err: ',err);
         return {err:err,user:null};
     }
-};
+};*/
 //
 module.exports.User = mongoose.model('User', user);
 module.exports.Room = mongoose.model('Room', room);

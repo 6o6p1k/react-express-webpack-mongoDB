@@ -137,26 +137,12 @@ class Chat extends React.Component {
                 },2000)
             })
 
-            .on('error',(message)=>{
-                //console.log('Server error happened: ',message);
-                if(typeof message === 'string' || message instanceof String) {
-                    let data = JSON.parse(message);
-                    if(data.status == 423 || data.status == 401) {
-                        this.setState({err: data});
-                        sessionStorage.setItem('error', message);
-                        //console.log('this.state.err: ',this.state.err);
-                        this.setState({errorRedirect: true});
-                    }
-                    this.setState({
-                        err: {message:data.message,status:data.status},
-                        modalWindow: true
-                    });
-                } else {
-                    this.setState({
-                        err: message,
-                        modalWindow: true
-                    });
-                }
+            .on('error',(err)=>{
+                console.log('Server error happened: ',err);
+                this.setState({
+                    modalWindow:true,
+                    err:{message:err},
+                })
             })
             .on('logout',()=>{
                 //console.log('logout');
@@ -619,8 +605,6 @@ class Chat extends React.Component {
                             <div className="userList">
                                 <button  onClick={()=>this.hideShowPrompt()} name="msgBtn" type="button" className="btn">AG</button>
                                 <button  name="msgBtn" type="button" className="btn">AU</button>
-                                <button  name="msgBtn" type="button" className="btn">SS</button>
-                                <button  name="msgBtn" type="button" className="btn">SN</button>
                             </div>
 
 

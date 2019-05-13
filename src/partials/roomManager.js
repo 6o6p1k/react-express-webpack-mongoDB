@@ -17,9 +17,10 @@ class RoomManager extends React.Component {
         return (
             <div>
                 <div className="chat-room-info">
-                    <div className="chat-room-name">{this.state.room.name}</div>
-                    {this.state.room.blockedContacts.length > 0 ? <div className="chat-room-members-count">{this.state.room.members.length} members</div>:""}
-                    <div className="chat-room-members-count">{this.state.room.messages.length} messages</div>
+                    <a className="chat-room-name">{this.state.room.name}: </a>
+                    <a className="chat-room-members-count">{this.state.room.members.length} members</a>
+                    {this.state.room.blockedContacts.length > 0 ? <a className="chat-room-members-count">{this.state.room.members.length} members</a>:""}
+                    <a className="chat-room-members-count">, {this.state.room.messages.length} messages.</a>
                 </div>
             </div>
         )

@@ -346,6 +346,9 @@ module.exports = function (server) {
         //leave room
         socket.on('leaveRoom', async function  (roomName,dateNow,cb) {
             let {err,room,user} = await Room.leaveRoom(roomName,username);
+            if(!room) {
+                return cb(null,await aggregateUserData(username))
+            }
             console.log('leaveRoom err: ',err);
             if(err) {
                 return cb(err,null)
@@ -367,17 +370,14 @@ module.exports = function (server) {
         //get room log
         socket.on('getRoomLog', async function  (roomName,reqMesCountCb,cb) {
             //console.log("getRoomLog: ",roomName);
-            try {
-                let room = await Room.findOne({name:roomName});
-                if(room.members.find(itm => itm.name === username) === undefined) return cb("You do not member of this group.",null);
-                let {err,mes} = await Message.roomMessageHandler({roomName:roomName});
-                //console.log("getRoomLog mes: ",mes,", err: ",err);
-                if(err) {
-                    return cb(err,null)
-                } else cb(null,mes.messages);
-            }catch (err){
-                return cb(err,null);
-            }
+            let room = await Room.findOne({name:roomName});
+            if(!room) return cb("Error Group do not exist!",null);
+            if(!room.members.some(itm => itm.name === username)) return cb("You do not member of this group.",null);
+            let {err,mes} = await Message.roomMessageHandler({roomName:roomName});
+            //console.log("getRoomLog mes: ",mes,", err: ",err);
+            if(err) {
+                return cb(err,null)
+            } else cb(null,mes.messages);
         });
         //room message handler
         socket.on('messageRoom', async function  (text,roomName,dateNow,cb) {
