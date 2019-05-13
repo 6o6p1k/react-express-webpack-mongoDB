@@ -956,3 +956,62 @@ textarea{
 .user-icon img{
     max-width: 100%;
 }
+.btnList{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 5px;
+    position: relative;
+}
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltiptext {
+    visibility: hidden;
+    width: 120px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px 0;
+    position: absolute;
+    z-index: 1;
+    bottom: 100%;
+    left: 50%;
+    margin-left: -60px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tooltiptext::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #555 transparent transparent transparent;
+}
+
+.btnList .btn:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}
+.gitLink{
+    position: relative;
+    cursor: pointer;
+}
+.gitLink:before{
+    content: "";
+    width: 24px;
+    height: 24px;
+    background-image: url(/img/github-logo.png);
+    -webkit-background-size: cover;
+    background-size: cover;
+    transition: all .2s linear;
+}
+.gitLink:hover:before{
+    background-image: url(/img/github-logo-hover.png);
+}

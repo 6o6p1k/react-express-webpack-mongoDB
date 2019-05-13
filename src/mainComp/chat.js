@@ -602,9 +602,17 @@ class Chat extends React.Component {
                             <input name="nameSearchInp" className="form-control searchInChat" autoComplete="off" autoFocus placeholder="Search..."
                                     onChange={ev => this.setFiltered(ev.target.value)}
                             />
-                            <div className="userList">
-                                <button  onClick={()=>this.hideShowPrompt()} name="msgBtn" type="button" className="btn">AG</button>
-                                <button  name="msgBtn" type="button" className="btn">AU</button>
+                            <div className="userList btnList">
+
+                                <button  onClick={()=>this.hideShowPrompt()} name="msgBtn" type="button" className="btn">
+                                        <img src="../img/add-group-of-people.png" alt="add user"/>
+                                        <span className="tooltiptext">Create group</span>
+                                </button>
+
+                                <button  name="msgBtn" type="button" className="btn">
+                                        <img src="../img/add-user-button.png" alt="add user"/>
+                                        <span className="tooltiptext">Add user</span>
+                                </button>
                             </div>
 
 
