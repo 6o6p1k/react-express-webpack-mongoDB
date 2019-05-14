@@ -565,10 +565,10 @@ textarea{
 }
 
 .userStatus ul li.onLine{
-    background-image: url(../img/profile.svg);
+    background-image: url(../img/user-shape-online.svg);
 }
 .userStatus ul li.offLine{
-    background-image: url(../img/profileoffLine.svg);
+    background-image: url(../img/user-shape.svg);
 }
 /*~~~~~~~~~~~~~~~~~~~~~STYLE CAT~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 @keyframes tail {
@@ -961,7 +961,7 @@ textarea{
     display: inline-block;
     width: 16px;
     height: 16px;
-    background-image: url(../img/multiple-users-silhouette.svg);
+    background-image: url(../img/users-social-symbol.svg);
     -webkit-background-size: cover;
     background-size: cover;
     background-repeat: no-repeat;
