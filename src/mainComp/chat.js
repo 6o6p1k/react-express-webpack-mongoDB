@@ -138,12 +138,26 @@ class Chat extends React.Component {
                 },2000)
             })
 
-            .on('error',(err)=>{
-                console.log('Server error happened: ',err);
-                this.setState({
-                    modalWindow:true,
-                    err:{message:err},
-                })
+            .on('error',(message)=>{
+                console.log('Server error happened: ',message);
+                if(typeof message === 'string' || message instanceof String) {
+                    let data = JSON.parse(message);
+                    if(data.status == 423 || data.status == 401) {
+                        this.setState({err: data});
+                        sessionStorage.setItem('error', message);
+                        //console.log('this.state.err: ',this.state.err);
+                        this.setState({errorRedirect: true});
+                    }
+                    this.setState({
+                        err: {message:data.message,status:data.status},
+                        modalWindow: true
+                    });
+                } else {
+                    this.setState({
+                        err: message,
+                        modalWindow: true
+                    });
+                }
             })
             .on('logout',()=>{
                 //console.log('logout');
