@@ -477,6 +477,7 @@ footer a:active{
 .searchInChat{
     width: 100%;
     height: 40px;
+    transition: height 2s linear;
 }
 .userList{
     font-size: 14px;
@@ -958,7 +959,7 @@ textarea{
 }
 .btnList{
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     grid-gap: 5px;
     position: relative;
 }
@@ -1014,4 +1015,7 @@ textarea{
 }
 .gitLink:hover:before{
     background-image: url(/img/github-logo-hover.png);
+}
+.btn.search img{
+    width: 16px;
 }

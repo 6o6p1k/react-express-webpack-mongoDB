@@ -50,6 +50,7 @@ class Chat extends React.Component {
 
             promptModalWindow:false,
             promptRes:"",
+            showSearch: false
         };
     }
     componentDidUpdate(){
@@ -566,7 +567,11 @@ class Chat extends React.Component {
         this.setState({promptModalWindow: !this.state.promptModalWindow});
     };
 
-
+    toggleSearch = ()=>{
+        this.setState({
+            showSearch: !this.state.showSearch
+        })
+    }
 
     render() {
         console.log('/chat user:', this.state.rooms);
@@ -599,10 +604,17 @@ class Chat extends React.Component {
                 <div className="chat-room">
                     <div className="chat-users">
                         <div className="login-form">
-                            <input name="nameSearchInp" className="form-control searchInChat" autoComplete="off" autoFocus placeholder="Search..."
-                                    onChange={ev => this.setFiltered(ev.target.value)}
-                            />
+                            {this.state.showSearch ?
+                                <input name="nameSearchInp" className="form-control searchInChat" autoComplete="off" autoFocus placeholder="Search..."
+                                       onChange={ev => this.setFiltered(ev.target.value)}
+                                />
+                            :""}
+
                             <div className="userList btnList">
+                                <button  onClick={()=>this.toggleSearch()} name="msgBtn" type="button" className="btn search">
+                                    <img src="../img/magnifier.svg" alt="search"/>
+                                    <span className="tooltiptext">Search</span>
+                                </button>
 
                                 <button  onClick={()=>this.hideShowPrompt()} name="msgBtn" type="button" className="btn">
                                         <img src="../img/add-group-of-people.png" alt="add user"/>
