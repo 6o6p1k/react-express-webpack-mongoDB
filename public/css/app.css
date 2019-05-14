@@ -178,6 +178,8 @@ select:-webkit-autofill:focus {
     cursor: pointer;
     background-color: #0000000f;
     transition: background-color .2s linear;
+    display: flex;
+    align-items: center;
 }
 .btn.user.clicked,
 .btn.user:hover{
@@ -246,7 +248,7 @@ footer a:active{
     background-color: #2da292;
     border-radius: 3px;
     padding: 10px;
-    margin: 3% 0;
+    margin: 3% 10px;
     display: block;
     position: relative;
     width: 50%;
@@ -542,26 +544,31 @@ textarea{
     width: 100%;
 }
 .userStatus{
-    position: absolute;
-    right: 20px;
-    top: -3px;
+    margin-right: 10px;
 }
 .userStatus ul{
     display: flex;
     align-items: flex-start;
+    margin: 0;
+    padding: 0;
+
 }
 .userStatus ul li{
-    margin: 0 3px;
+    margin: 0;
 }
 .userStatus ul li.statusNet{
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    border: 1px solid #ddd;
+    width: 13px;
+    height: 13px;
+    -webkit-background-size: cover;
+    background-size: cover;
+    background-repeat: no-repeat;
 }
 
 .userStatus ul li.onLine{
-    background-color: #29962e;
+    background-image: url(../img/profile.svg);
+}
+.userStatus ul li.offLine{
+    background-image: url(../img/profileoffLine.svg);
 }
 /*~~~~~~~~~~~~~~~~~~~~~STYLE CAT~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 @keyframes tail {
@@ -952,14 +959,16 @@ textarea{
 }
 .user-icon{
     display: inline-block;
-    width: 20px;
-    height: 20px;
-    margin-right: 10px;
-    position: relative;
-    bottom: -3px;
+    width: 16px;
+    height: 16px;
+    background-image: url(../img/multiple-users-silhouette.svg);
+    -webkit-background-size: cover;
+    background-size: cover;
+    background-repeat: no-repeat;
 }
 .user-icon img{
     max-width: 100%;
+    width: 16px;
 }
 .btnList{
     display: grid;

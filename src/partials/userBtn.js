@@ -81,18 +81,9 @@ class UserBtn extends React.Component {
                  type="button"
                  className={`btn user ${this.props.messageBlockHandlerId === i ?"clicked ":""}`}>
                 {this.props.roomList ?
-                    <div className="user-icon">
-                        <img src="../../img/group-of-people-in-a-formation.png" alt=""/>
-                    </div>
-                : itm.banned ?
-                        <div className="user-icon">
-                            <img src="../../img/profile-red.png" alt=""/>
-                        </div>
-                : itm.authorized ?
-                        <div className="user-icon">
-                            <img src="../../img/profile.png" alt=""/>
-                        </div>
-                 :""}
+                    <div className="user-icon"/>
+
+                :""}
 
                 {itm ?
                     <div className="userStatus">
