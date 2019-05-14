@@ -279,12 +279,8 @@ module.exports = function (server) {
             //console.log("getUserLog reqUsername: ", reqUsername);
             let {err,mes} = await Message.messageHandler({members:[username,reqUsername]});
             if(err) {
-                //console.log("getUserLog err: ", err);
                 return cb(err,null);
             }else {
-                //console.log("getUserLog mes: ", mes);
-                //let messages = mes.messages.map((itm)=> dateToString(itm));
-                //console.log("getUserLog messages: ",mes.messages);
                 return cb(null,mes.messages);
             }
         });
@@ -373,7 +369,7 @@ module.exports = function (server) {
             let room = await Room.findOne({name:roomName});
             if(!room) return cb("Error Group do not exist!",null);
             if(!room.members.some(itm => itm.name === username)) return cb("You are not a member of the group.",null);
-            if(!room.blockedContacts.some(itm => itm.name === username)) return cb("You have been included in the block list. Message history is no longer available to you.",null);
+            if(room.blockedContacts.some(itm => itm.name === username)) return cb("You have been included in the block list. Message history is no longer available to you.",null);
             let {err,mes} = await Message.roomMessageHandler({roomName:roomName});
             //console.log("getRoomLog mes: ",mes,", err: ",err);
             if(err) {
@@ -414,6 +410,24 @@ module.exports = function (server) {
                     status: false,
                     date: dateNow,
                     blockUser: bannedUser,
+                });
+            });
+            cb(null,await aggregateUserData(username))
+        });
+        //unblock user in room
+        socket.on('unbanRoomUser', async function  (roomName,unbannedUser,dateNow,cb) {
+            console.log('unbanRoomUser roomName: ',roomName," ,bannedUser: ",unbannedUser);
+            let room = await Room.findOne({name:roomName});
+            let {err,user} = await Room.unblockUserInRoom(roomName,username,unbannedUser);
+            if(err) return cb(err,null);
+            room.members.forEach(itm =>{
+                if(globalChatUsers[itm.name] && itm.name !== username) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
+                    room:roomName,
+                    user:username,
+                    text: "The group administrator "+username+" has removed user "+unbannedUser+" from the block list.",
+                    status: false,
+                    date: dateNow,
+                    unblockUser: unbannedUser,
                 });
             });
             cb(null,await aggregateUserData(username))

@@ -157,7 +157,26 @@ class Chat extends React.Component {
         this.socket.disconnect();
     };
 
-    getUserLog =(reqArrName,reqUsername,reqMesCountCb)=>{
+    getLog =(reqArrName,reqCellName,reqMesCountCb)=>{
+        if(reqArrName === this.state.arrayBlockHandlerId && this.getUsersIdx(reqArrName,reqCellName) === this.state.messageBlockHandlerId) return;
+        let reqCell = this.state[reqArrName][this.getUsersIdx(reqArrName,reqCellName)];
+        this.socket.emit(reqArrName === "rooms" ? 'getRoomLog' : 'getUserLog',reqCellName,reqMesCountCb,(err,arr)=>{
+            //console.log("getUserLog arr: ",arr," ,err: ",err);
+            if(err) {
+                this.setState({
+                    modalWindow:true,
+                    err:{message:err},
+                })
+            }else {
+                arr.map(itm => itm.date = this.dateToString(itm.date));
+                //console.log("getUserLog arrModDate: ",arr);
+                reqCell.messages = arr;
+                this.setState({reqCell});
+            }
+        })
+    };
+
+/*    getUserLog =(reqArrName,reqUsername,reqMesCountCb)=>{
         if(reqArrName === this.state.arrayBlockHandlerId && this.getUsersIdx(reqArrName,reqUsername) === this.state.messageBlockHandlerId) return;
         let reqUser = this.state[reqArrName][this.getUsersIdx(reqArrName,reqUsername)];
         this.socket.emit('getUserLog',reqUsername,reqMesCountCb,(err,arr)=>{
@@ -175,6 +194,25 @@ class Chat extends React.Component {
             }
         })
     };
+
+    getRoomLog =(reqRoomName,reqMesCountCb)=>{
+        if(this.state.arrayBlockHandlerId === "rooms" && this.getUsersIdx("rooms",reqRoomName) === this.state.messageBlockHandlerId) return;
+        //console.log("getRoomLog: ",reqRoomName);
+        let reqRoom = this.state.rooms[this.getUsersIdx("rooms",reqRoomName)];
+        this.socket.emit('getRoomLog',reqRoomName,reqMesCountCb,(err,arr)=>{
+            //console.log("getRoomLog res err: ",err," ,room: ",arr);
+            if(err) {
+                this.setState({
+                    modalWindow:true,
+                    err:{message:err},
+                })
+            }else {
+                arr.map(itm => itm.date = this.dateToString(itm.date));
+                reqRoom.messages = arr;
+                this.setState({reqRoom});
+            }
+        })
+    };*/
 
     scrollToBottom = (element) => {
         element.scrollTop = element.scrollHeight;
@@ -544,24 +582,7 @@ class Chat extends React.Component {
         })
     };
 
-    getRoomLog =(reqRoomName,reqMesCountCb)=>{
-        if(this.state.arrayBlockHandlerId === "rooms" && this.getUsersIdx("rooms",reqRoomName) === this.state.messageBlockHandlerId) return;
-        //console.log("getRoomLog: ",reqRoomName);
-        let reqRoom = this.state.rooms[this.getUsersIdx("rooms",reqRoomName)];
-        this.socket.emit('getRoomLog',reqRoomName,reqMesCountCb,(err,arr)=>{
-            //console.log("getRoomLog res err: ",err," ,room: ",arr);
-            if(err) {
-                this.setState({
-                    modalWindow:true,
-                    err:{message:err},
-                })
-            }else {
-                arr.map(itm => itm.date = this.dateToString(itm.date));
-                reqRoom.messages = arr;
-                this.setState({reqRoom});
-            }
-        })
-    };
+
 
     hideShowPrompt = () => {
         this.setState({promptModalWindow: !this.state.promptModalWindow});
@@ -641,7 +662,7 @@ class Chat extends React.Component {
                                             key={i}
                                             itm={itm}
                                             i={i}
-                                            getUserLog={() => this.getUserLog("users",itm.name,null)}
+                                            getUserLog={() => this.getLog("users",itm.name,null)}
                                             inxHandler={()=> this.inxHandler("users",i)}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
                                             onContextMenuHandler={this.onContextMenuHandler}
@@ -655,7 +676,7 @@ class Chat extends React.Component {
                                             key={i}
                                             itm={itm}
                                             i={this.getUsersIdx("users",itm.name)}
-                                            getUserLog={() => this.getUserLog("users",itm.name,null)}
+                                            getUserLog={() => this.getLog("users",itm.name,null)}
                                             inxHandler={() => this.inxHandler("users",i)}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
                                             onContextMenuHandler={this.onContextMenuHandler}
@@ -673,7 +694,7 @@ class Chat extends React.Component {
                                                     key={i}
                                                     itm={itm}
                                                     i={i}
-                                                    getUserLog={() => this.getUserLog("blockedContacts",itm.name,null)}
+                                                    getUserLog={() => this.getLog("blockedContacts",itm.name,null)}
                                                     inxHandler={() => this.inxHandler("blockedContacts",i)}
                                                     messageBlockHandlerId={this.state.messageBlockHandlerId}
                                                     onContextMenuHandler={this.onContextMenuHandler}
@@ -693,7 +714,7 @@ class Chat extends React.Component {
                                                     name={itm.name}
                                                     itm={itm}
                                                     i={i}
-                                                    getUserLog={() => this.getRoomLog(itm.name,null)}
+                                                    getUserLog={() => this.getLog("rooms",itm.name,null)}
                                                     inxHandler={() => this.inxHandler("rooms",i)}
                                                     messageBlockHandlerId={this.state.messageBlockHandlerId}
                                                     onContextMenuHandler={this.onContextMenuHandler}

@@ -327,7 +327,7 @@ room.statics.createRoom = async function(roomName,username) {//create new room a
             await user.save();
             return {err:null,room:room,user:user}
         }else{
-            return {err:"Room name: "+roomName+" always exist. Choose another room name.",room:null,user:null};
+            return {err:"A group named "+roomName+" already exists. Choose another group name.",room:null,user:null};
         }
     } catch (err) {
         console.log('createRoom err: ',err);
@@ -341,9 +341,9 @@ room.statics.inviteUserToRoom = async function(roomName,invited) {
     try {
         let user = await User.findOne({username:invited});
         let room = await Room.findOne({name:roomName});
-        if(room.members.some(itm => itm.name === invited)) return {err:"User name "+invited+" always included in room.",room:null,user:null};
-        if(room.blockedContacts.some(itm => itm.name === invited)) return {err:"Username "+invited+" is included in the banned list.",room:null,user:null};
-        if(user.blockedContacts.includes(roomName)) return {err:"Group name "+roomName+" included in bann list.",room:null,user:null};
+        if(room.members.some(itm => itm.name === invited)) return {err:"User "+invited+" is already included in the group.",room:null,user:null};
+        if(room.blockedContacts.some(itm => itm.name === invited)) return {err:"User "+invited+" is included in the block list.",room:null,user:null};
+        if(user.blockedContacts.includes(roomName)) return {err:"A group named "+roomName+" included in block list.",room:null,user:null};
         user.rooms.push(roomName);
         room.members.push({name:invited,enable:true,admin:false});
         await user.save();
@@ -361,7 +361,9 @@ room.statics.blockUserInRoom = async function(roomName,adminRoom,blocked) {
     try {
         let room = await Room.findOne({name:roomName});
         if(room.members.find(itm => itm.name === adminRoom).admin !== true) return {err:"You are not admin of this group.",room:null};
-        if(!room.members.some(itm => itm.name === blocked) || room.blockedContacts.some(itm => itm.name === blocked)) return {err:"User name "+blocked+" not a member of this group or always blocked.",room:null};
+        if(!room.members.some(itm => itm.name === blocked) || room.blockedContacts.some(itm => itm.name === blocked)) {
+            return {err:"User "+blocked+" is not a member of this group or is already on the block list.",room:null};
+        }
         let filterMemberRoom = room.members.filter(itm => itm.name !== blocked);
         room.members = filterMemberRoom;
         room.blockedContacts.push({name:blocked,enable:true,admin:false});
@@ -379,7 +381,7 @@ room.statics.unblockUserInRoom = async function(roomName,adminRoom,unblocked) {
     try {
         let room = await Room.findOne({name:roomName});
         if(room.members.find(itm => itm.name === adminRoom).admin !== true) return {err:"You are not admin of this group.",room:null};
-        if(room.members.some(itm => itm.name === blocked) || !room.blockedContacts.some(itm => itm.name === unblocked)) return {err:"User name "+unblocked+" an allowed members of this group.",room:null};
+        if(room.members.some(itm => itm.name === unblocked) || !room.blockedContacts.some(itm => itm.name === unblocked)) return {err:"User "+unblocked+" is an allowed members of this group.",room:null};
         let filterMemberRoom = room.blockedContacts.filter(itm => itm.name !== unblocked);
         room.blockedContacts = filterMemberRoom;
         room.members.push({name:unblocked,enable:true,admin:false});
@@ -396,8 +398,10 @@ room.statics.setAdminInRoom = async function(roomName,adminRoom,newAdmin) {
     let err = {};
     try {
         let room = await Room.findOne({name:roomName});
-        if(room.members.find(itm => itm.name === adminRoom).admin !== true) return {err:"You are not admin of this group..",room:null,user:null};
-        if(!room.members.some(itm => itm.name === newAdmin) || room.blockedContacts.some(itm => itm.name === newAdmin)) return {err:"User name "+newAdmin+" not a member of this room or baned.",room:null,user:null};
+        if(room.members.find(itm => itm.name === adminRoom).admin !== true) return {err:"You are not admin of this group.",room:null,user:null};
+        if(!room.members.some(itm => itm.name === newAdmin) || room.blockedContacts.some(itm => itm.name === newAdmin)) {
+            return {err:"User "+newAdmin+" is not a member of this group or is already on the block list.",room:null,user:null};
+        }
         room.members.find(itm => itm.name === newAdmin).admin = true;
         await room.save();
         return {err:null,room:room,user:user};
