@@ -605,7 +605,7 @@ class Chat extends React.Component {
                     <div className="chat-users">
                         <div className="login-form">
                             {this.state.showSearch ?
-                                <input name="nameSearchInp" className="form-control searchInChat" autoComplete="off" autoFocus placeholder="Search..."
+                                <input name="nameSearchInp" className={`form-control searchInChat ${this.state.showSearch ? "show":""}`} autoComplete="off" autoFocus placeholder="Search..."
                                        onChange={ev => this.setFiltered(ev.target.value)}
                                 />
                             :""}
