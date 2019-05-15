@@ -53,7 +53,10 @@ class UserBtn extends React.Component {
                 this.props.onContextMenuHandler(res,username,this.state.onContextMenuUserName);
                 this.setState({onContextMenu:false});
                 break;
-            case "leaveRoom" || "viewRoomData" || "moveRoomOnTop" || "clearRoomWindow":
+            case "leaveRoom":
+            case "viewRoomData":
+            case "moveRoomOnTop":
+            case "clearRoomWindow":
                 this.props.onContextMenuHandler(res,null,this.state.onContextMenuUserName);
                 this.setState({onContextMenu:false});
                 break;
@@ -64,7 +67,7 @@ class UserBtn extends React.Component {
     };
 
     render() {
-        console.log('UserBtn props: ',this.props.itm);
+        //console.log('UserBtn props: ',this.props.itm);
         let itm = this.props.itm;
         let i = this.props.i;
         return (
