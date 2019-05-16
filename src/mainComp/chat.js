@@ -533,14 +533,21 @@ class Chat extends React.Component {
             case "viewUserData":
                 console.log("onContextMenuHandler viewUserData: ",username);
                 //this.setState({messageBlockHandlerId:this.getUsersIdx("users",username)},()=>this.hideShowUserProps());
-                if(this.getUsersIdx("users",username) >= 0) return this.setState({
-                    messageBlockHandlerId:this.getUsersIdx("users",username),
-                    arrayBlockHandlerId:"users"
-                },()=>this.hideShowUserProps());
-                if(this.getUsersIdx("blockedContacts",username) >= 0) return this.setState({
-                    messageBlockHandlerId:this.getUsersIdx("blockedContacts",username),
-                    arrayBlockHandlerId:"blockedContacts"
-                },()=>this.hideShowUserProps());
+                if(this.getUsersIdx("users",username) >= 0) {
+                    this.getLog("users",username,null);
+                    return this.setState({
+                        messageBlockHandlerId:this.getUsersIdx("users",username),
+                        arrayBlockHandlerId:"users"
+                    },()=>this.hideShowUserProps());
+                }
+                if(this.getUsersIdx("blockedContacts",username) >= 0) {
+                    this.getLog("blockedContacts",username,null);
+                    return this.setState({
+                        messageBlockHandlerId:this.getUsersIdx("blockedContacts",username),
+                        arrayBlockHandlerId:"blockedContacts"
+                    },()=>this.hideShowUserProps());
+                }
+                break;
 
             case "moveOnTop":
                 console.log("onContextMenuHandler moveOnTop");
