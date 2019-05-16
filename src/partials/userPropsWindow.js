@@ -22,14 +22,25 @@ class UserPropsWindow extends React.Component {
             <div className={this.props.show ? 'modal display-block' : 'modal display-none'}>
                 <section className='modal-main'>
                     <div className='modal-main-btnRight' onClick={this.props.handleClose}>X</div>
+                    <h1 className="chat-room-name">{curentUser.name}: </h1>
                     <div className="chat-room-info">
-                        <h1 className="chat-room-name">{curentUser.name}: </h1>
-                        <p className="chat-room-members-count">Id: {curentUser.userId}</p>
-                        <p className="chat-room-members-count">Messages: {curentUser.messages.length !== 0 ? curentUser.messages.length : "NA"} .</p>
-                        <p className="chat-room-members-count">Created at: {this.dateToString(curentUser.created_at)}</p>
-                        <p className="chat-room-members-count">Status: {curentUser.onLine ? "onLine":"offLine"}</p>
-                        <p className="chat-room-members-count">Authorized: {curentUser.authorized ? "Yes":"No"}</p>
-                        <p className="chat-room-members-count">Banned: {curentUser.banned ? "Yes":"No"}</p>
+
+                        <div>
+                            <p className="chat-room-members-count">Id:</p>
+                            <p className="chat-room-members-count">Messages:</p>
+                            <p className="chat-room-members-count">Created at:</p>
+                            <p className="chat-room-members-count">Status:</p>
+                            <p className="chat-room-members-count">Authorized:</p>
+                            <p className="chat-room-members-count">Banned:</p>
+                        </div>
+                        <div>
+                            <p className="chat-room-members-count">{curentUser.userId}</p>
+                            <p className="chat-room-members-count">{curentUser.messages.length !== 0 ? curentUser.messages.length : "NA"} .</p>
+                            <p className="chat-room-members-count">{this.dateToString(curentUser.created_at)}</p>
+                            <p className="chat-room-members-count">{curentUser.onLine ? "onLine":"offLine"}</p>
+                            <p className="chat-room-members-count">{curentUser.authorized ? "Yes":"No"}</p>
+                            <p className="chat-room-members-count">{curentUser.banned ? "Yes":"No"}</p>
+                        </div>
                     </div>
                 </section>
             </div>
