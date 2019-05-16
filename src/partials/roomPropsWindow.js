@@ -16,13 +16,14 @@ class RoomPropsWindow extends React.Component {
 
     render() {
         console.log('groupPropsWindow: ',this.props);
-        let curentRoom = this.props.curentRoom;
+        let currentRoom = this.props.curentRoom;
 
         return (
             <div className={this.props.show ? 'modal display-block' : 'modal display-none'}>
                 <section className='modal-main'>
                     <div className='modal-main-btnRight' onClick={this.props.handleClose}>X</div>
-                    <h1 className="chat-room-name">{curentRoom.name}: </h1>
+                    <h1 className="chat-room-name">{currentRoom.name}: </h1>
+
                     <div className="chat-room-info">
                         <div>
                             <p className="chat-room-members-count">Id:</p>
@@ -32,28 +33,31 @@ class RoomPropsWindow extends React.Component {
                             <p className="chat-room-members-count">Created at:</p>
                         </div>
                         <div>
-                            <p className="chat-room-members-count">{curentRoom.groupId}</p>
-                            <p className="chat-room-members-count">{curentRoom.members.length !== 0 ? curentRoom.members.length : "NA"} </p>
-                            <p className="chat-room-members-count">{curentRoom.blockedContacts.length} </p>
-                            <p className="chat-room-members-count">{curentRoom.messages.length} </p>
-                            <p className="chat-room-members-count">{this.dateToString(curentRoom.created_at)}</p>
+                            <p className="chat-room-members-count">{currentRoom.groupId}</p>
+                            <p className="chat-room-members-count">{currentRoom.members.length !== 0 ? currentRoom.members.length : "NA"} </p>
+                            <p className="chat-room-members-count">{currentRoom.blockedContacts.length} </p>
+                            <p className="chat-room-members-count">{currentRoom.messages.length} </p>
+                            <p className="chat-room-members-count">{this.dateToString(currentRoom.created_at)}</p>
                         </div>
                     </div>
                     <div className="userList white"  >
-                        {curentRoom.members.length > 0 ?
+                        {currentRoom.members.length > 0 ?
                         <h1 className="chat-room-name">White list users:</h1>
                             :""}
-
-                        {curentRoom.members ?
-                            curentRoom.members.map((itm,i) => <p className='chat-room-members-count' key={i}>{itm.name}</p>) :""
+                        {
+                            currentRoom.members ?
+                                currentRoom.members.map((itm,i) =>
+                                    <p className={`chat-room-members-count ${itm.admin === true ? "admin" :""}`} key={i}><span>{itm.name}</span></p>
+                                )
+                            : ""
                         }
                     </div>
                     <div className="userList black"  >
-                        {curentRoom.blockedContacts.length > 0 ?
+                        {currentRoom.blockedContacts.length > 0 ?
                         <h1 className="chat-room-name">Black list users:</h1>
                             :""}
-                        {curentRoom.blockedContacts ?
-                            curentRoom.blockedContacts.map((itm,i) => <p className='chat-room-members-count' key={i}>{itm.name}</p>) :""
+                        {currentRoom.blockedContacts ?
+                            currentRoom.blockedContacts.map((itm,i) => <p className='chat-room-members-count' key={i}>{itm.name}</p>) :""
                         }
 
                     </div>
