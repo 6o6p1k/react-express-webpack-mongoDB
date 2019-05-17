@@ -6,7 +6,7 @@ import UserBtn from '../partials/userBtn.js'
 import Modal from '../partials/modalWindow.js'
 import Confirm from '../partials/confirmModalWindow.js'
 import Prompt from '../partials/promptModalWindow.js'
-import RoomManager from '../partials/roomManager.js'
+import ItmProps from '../partials/itmProps.js'
 import RoomProps from '../partials/roomPropsWindow.js'
 import UserProps from '../partials/userPropsWindow.js'
 
@@ -775,12 +775,15 @@ class Chat extends React.Component {
                             return (
                                 <div className="message-block">
                                     <div name="chatRoom" id="chatDiv">
-                                        {a  === "rooms" ?
+                                        {a  === "rooms"?
                                             <div onClick={()=>this.hideShowRoomProps()}>
-                                                <RoomManager
-                                                    room={this.state.rooms[this.state.messageBlockHandlerId]}/>
-                                            </div> :""
+                                                <ItmProps room={eUser}/>
+                                            </div> : e !== undefined ?
+                                            <div onClick={()=>this.hideShowUserProps()}>
+                                                <ItmProps user={eUser}/>
+                                            </div> : ""
                                         }
+
                                         <ul name="InpUl" className="chat-list" ref="InpUl">
                                             {
                                                 (eUser) ? (
