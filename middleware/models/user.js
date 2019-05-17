@@ -361,6 +361,7 @@ room.statics.blockUserInRoom = async function(roomName,adminRoom,blocked) {
     try {
         let room = await Room.findOne({name:roomName});
         if(room.members.find(itm => itm.name === adminRoom).admin !== true) return {err:"You are not admin of this group.",room:null};
+        if(room.members.find(itm => itm.name === blocked).admin === true) return {err:"You can not block a group administrator.",room:null};
         if(!room.members.some(itm => itm.name === blocked) || room.blockedContacts.some(itm => itm.name === blocked)) {
             return {err:"User "+blocked+" is not a member of this group or is already on the block list.",room:null};
         }
@@ -368,7 +369,7 @@ room.statics.blockUserInRoom = async function(roomName,adminRoom,blocked) {
         room.members = filterMemberRoom;
         room.blockedContacts.push({name:blocked,enable:true,admin:false});
         await room.save();
-        return {err:null,room:room,user:user};
+        return {err:null,room:room};
     } catch (err) {
         console.log('blockUserInRoom err: ',err);
         return {err:err,room:null};
@@ -386,7 +387,7 @@ room.statics.unblockUserInRoom = async function(roomName,adminRoom,unblocked) {
         room.blockedContacts = filterMemberRoom;
         room.members.push({name:unblocked,enable:true,admin:false});
         await room.save();
-        return {err:null,room:room,user:user};
+        return {err:null,room:room};
     } catch (err) {
         console.log('unblockUserInRoom err: ',err);
         return {err:err,room:null};
@@ -398,16 +399,16 @@ room.statics.setAdminInRoom = async function(roomName,adminRoom,newAdmin) {
     let err = {};
     try {
         let room = await Room.findOne({name:roomName});
-        if(room.members.find(itm => itm.name === adminRoom).admin !== true) return {err:"You are not admin of this group.",room:null,user:null};
+        if(room.members.find(itm => itm.name === adminRoom).admin !== true) return {err:"You are not admin of this group.",room:null};
         if(!room.members.some(itm => itm.name === newAdmin) || room.blockedContacts.some(itm => itm.name === newAdmin)) {
-            return {err:"User "+newAdmin+" is not a member of this group or is already on the block list.",room:null,user:null};
+            return {err:"User "+newAdmin+" is not a member of this group or is already on the block list.",room:null};
         }
         room.members.find(itm => itm.name === newAdmin).admin = true;
         await room.save();
-        return {err:null,room:room,user:user};
+        return {err:null,room:room};
     } catch (err) {
         console.log('setAdminInRoom err: ',err);
-        return {err:err,room:null,user:null};
+        return {err:err,room:null};
     }
 };
 //leave  room

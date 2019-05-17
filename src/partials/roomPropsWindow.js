@@ -28,7 +28,7 @@ class RoomPropsWindow extends React.Component {
                         <div>
                             <p className="chat-room-members-count">Id:</p>
                             <p className="chat-room-members-count">Members count:</p>
-                            <p className="chat-room-members-count">Banned members count:</p>
+                            <p className="chat-room-members-count">Banned count:</p>
                             <p className="chat-room-members-count">Messages:</p>
                             <p className="chat-room-members-count">Created at:</p>
                         </div>
@@ -42,7 +42,7 @@ class RoomPropsWindow extends React.Component {
                     </div>
                     <div className="userList white"  >
                         {currentRoom.members.length > 0 ?
-                        <h1 className="chat-room-name">Users in group {currentRoom.name}:</h1>
+                        <h1 className="chat-room-name">{currentRoom.name} members:</h1>
                             :""}
                         {
                             currentRoom.members ?

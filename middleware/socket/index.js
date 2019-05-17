@@ -333,7 +333,7 @@ module.exports = function (server) {
                         text: username+" added new user "+invitedUser+".",
                         status: false,
                         date: dateNow,
-                        addUser:invitedUser
+                        changes:{act:'addUser',user:invitedUser}
                     });
                 });
                 return cb(null,await aggregateUserData(username))
@@ -357,7 +357,7 @@ module.exports = function (server) {
                         text: username+" left the group.",
                         status: false,
                         date: dateNow,
-                        remuveUser:username
+                        changes:{act:'remuveUser',user:username}
                     });
                 });
                 return cb(null,await aggregateUserData(username))
@@ -397,10 +397,9 @@ module.exports = function (server) {
             cb && cb();
         });
         //block user in room
-        socket.on('banRoomUser', async function  (roomName,bannedUser,dateNow,cb) {
-            console.log('banRoomUser roomName: ',roomName," ,bannedUser: ",bannedUser);
-            let room = await Room.findOne({name:roomName});
-            let {err,user} = await Room.blockUserInRoom(roomName,username,bannedUser);
+        socket.on('blockRoomUser', async function  (roomName,bannedUser,dateNow,cb) {
+            console.log('blockRoomUser roomName: ',roomName," ,bannedUser: ",bannedUser);
+            let {err,room} = await Room.blockUserInRoom(roomName,username,bannedUser);
             if(err) return cb(err,null);
             room.members.forEach(itm =>{
                 if(globalChatUsers[itm.name] && itm.name !== username) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
@@ -409,16 +408,15 @@ module.exports = function (server) {
                     text: "The group administrator "+username+" has added user "+bannedUser+" to the block list.",
                     status: false,
                     date: dateNow,
-                    blockUser: bannedUser,
+                    changes:{act:'blockUser',user:bannedUser}
                 });
             });
             cb(null,await aggregateUserData(username))
         });
         //unblock user in room
-        socket.on('unbanRoomUser', async function  (roomName,unbannedUser,dateNow,cb) {
-            console.log('unbanRoomUser roomName: ',roomName," ,bannedUser: ",unbannedUser);
-            let room = await Room.findOne({name:roomName});
-            let {err,user} = await Room.unblockUserInRoom(roomName,username,unbannedUser);
+        socket.on('unBlockRoomUser', async function  (roomName,unbannedUser,dateNow,cb) {
+            console.log('unBlockRoomUser roomName: ',roomName," ,bannedUser: ",unbannedUser);
+            let {err,room} = await Room.unblockUserInRoom(roomName,username,unbannedUser);
             if(err) return cb(err,null);
             room.members.forEach(itm =>{
                 if(globalChatUsers[itm.name] && itm.name !== username) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
@@ -427,7 +425,24 @@ module.exports = function (server) {
                     text: "The group administrator "+username+" has removed user "+unbannedUser+" from the block list.",
                     status: false,
                     date: dateNow,
-                    unblockUser: unbannedUser,
+                    changes:{act:'unblockUser',user:unbannedUser},
+                });
+            });
+            cb(null,await aggregateUserData(username))
+        });
+        //set room admin
+        socket.on('setRoomAdmin', async function  (roomName,newAdminName,dateNow,cb) {
+            console.log('setRoomAdmin roomName: ',roomName," ,userName: ",newAdminName);
+            let {err,room} = Room.setAdminInRoom(roomName,username,newAdminName);
+            if(err) return cb(err,null);
+            room.members.forEach(itm =>{
+                if(globalChatUsers[itm.name] && itm.name !== username) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
+                    room:roomName,
+                    user:username,
+                    text: username+" has appointed "+newAdminName+" a new administrator.",
+                    status: false,
+                    date: dateNow,
+                    changes:{act:'setAdmin',user:newAdminName},
                 });
             });
             cb(null,await aggregateUserData(username))

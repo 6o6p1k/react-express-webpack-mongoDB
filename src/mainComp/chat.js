@@ -123,13 +123,32 @@ class Chat extends React.Component {
                 let currentRoom = this.state.rooms[this.getUsersIdx("rooms",data.room)];
                 this.printMessage({name:data.user,text:data.text,status:data.status,date:this.dateToString(data.date)},"rooms",this.getUsersIdx("rooms",data.room));
                 this.msgCounter("rooms",this.getUsersIdx("rooms",data.room));
-                if(data.addUser) {
-                    currentRoom.members = [...currentRoom.members,data.addUser];
-                    this.setState({currentRoom});
-                }
-                if(data.remuveUser) {
-                    currentRoom.members = currentRoom.members.filter(name => name !== data.remuveUser);
-                    this.setState({currentRoom});
+                if(data.changes) {
+                    switch (data.changes.act) {
+                        case "addUser":
+                            currentRoom.members = [...currentRoom.members,{name:data.changes.user,enable:true,admin:false}];
+                            this.setState({currentRoom});
+                            break;
+                        case "remuveUser":
+                            currentRoom.members = currentRoom.members.filter(itm => itm.name !== data.changes.user);
+                            this.setState({currentRoom});
+                            break;
+                        case "blockUser":
+                            currentRoom.members = currentRoom.members.filter(itm => itm.name !== data.changes.user);
+                            currentRoom.blockedContacts = [...currentRoom.blockedContacts,{name:data.changes.user,enable:true,admin:false}];
+                            this.setState({currentRoom});
+                            break;
+                        case "unblockUser":
+                            currentRoom.blockedContacts = currentRoom.blockedContacts.filter(itm => itm.name !== data.changes.user);
+                            currentRoom.members = [...currentRoom.members,{name:data.changes.user,enable:true,admin:false}];
+                            this.setState({currentRoom});
+                            break;
+                        case "setAdmin":
+                            currentRoom.members.find(itm => itm.name === data.changes.user).admin = true;
+                            break;
+                        default:
+                            console.log("messageRoom Changes Sorry, we are out of " + data.changes + ".");
+                    }
                 }
             })
             .on('typing', (username)=> {
