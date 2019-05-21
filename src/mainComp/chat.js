@@ -116,12 +116,12 @@ class Chat extends React.Component {
             })
             .on('message', (data)=> {
                 //message receiver
-                this.printMessage({name:data.user,text:data.text,status:data.status,date:this.dateToString(data.date)},data.user);
+                this.printMessage({user:data.user,text:data.text,status:data.status,date:this.dateToString(data.date)},data.user);
                 this.msgCounter("users",this.getUsersIdx("users",data.user));
             })
             .on('messageRoom',(data)=>{
                 console.log("messageRoom data: ",data);
-                this.printMessage({name:data.user,text:data.text,status:data.status,date:this.dateToString(data.date)},data.room);
+                this.printMessage({user:data.user,text:data.text,status:data.status,date:this.dateToString(data.date)},data.room);
                 this.msgCounter("rooms",this.getUsersIdx("rooms",data.room));
             })
             .on('typing', (username)=> {
@@ -218,7 +218,9 @@ class Chat extends React.Component {
     };
 
     msgCounter =(a,i)=> {
-        if(this.state.messageBlockHandlerId !== i) {
+        console.log("msgCounter a: ",a," ,i: ",i);
+        console.log("msgCounter messageBlockHandlerId: ",this.state.messageBlockHandlerId," ,arrayBlockHandlerId: ",this.state.arrayBlockHandlerId);
+        if(this.state.messageBlockHandlerId !== i ) {//&& this.state.arrayBlockHandlerId !== a
             const current = this.state[a][i];
             current.msgCounter = current.msgCounter + 1;
             this.setState({current});
@@ -251,14 +253,14 @@ class Chat extends React.Component {
             case "rooms":
                 console.log("sendMessage rooms");
                 this.socket.emit('messageRoom', this.state.message, name, date, ()=> {//This name means Group Name
-                    this.printMessage({name:this.state.user.username, text:this.state.message, date:this.dateToString(date), status:false},name);
+                    this.printMessage({user:this.state.user.username, text:this.state.message, date:this.dateToString(date), status:false},name);
                     this.setState({message:''});
                 });
                 break;
             case "users":
                 console.log("sendMessage users");
                 this.socket.emit('message', this.state.message, name, date, ()=> {//This name means User Name
-                    this.printMessage({name:this.state.user.username, text:this.state.message, date:this.dateToString(date), status:false},name);
+                    this.printMessage({user:this.state.user.username, text:this.state.message, date:this.dateToString(date), status:false},name);
                     this.setState({message:''});
                 });
                 break;
@@ -273,13 +275,11 @@ class Chat extends React.Component {
 
     printMessage =(data,name)=> {//a - array itm, i - index in a - array
         console.log("printMessage: ",data);
-        let storeMes = this.state.messagesStore[name];
-        storeMes.push({name:data.user,text:data.text,status:data.status,date:data.date});
+        let storeMes = this.state.messagesStore;
+        console.log("printMessage storeMes[name]: ",storeMes[name]);
+        if(!storeMes[name]) storeMes[name] = [];
+        storeMes[name].push({user:data.user,text:data.text,status:data.status,date:data.date});
         this.setState({storeMes});
-
-/*        let current = this.state[a][i];
-        current.messages = [...current.messages,{user:data.name, text:data.text, status:data.status, date:data.date}];
-        this.setState({current});*/
     };
 
     moveToBlackList =(name)=> {
