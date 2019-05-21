@@ -121,36 +121,8 @@ class Chat extends React.Component {
             })
             .on('messageRoom',(data)=>{
                 console.log("messageRoom data: ",data);
-                let currentRoom = this.state.rooms[this.getUsersIdx("rooms",data.room)];
                 this.printMessage({name:data.user,text:data.text,status:data.status,date:this.dateToString(data.date)},data.room);
                 this.msgCounter("rooms",this.getUsersIdx("rooms",data.room));
-                if(data.changes) {
-                    switch (data.changes.act) {
-                        case "addUser":
-                            currentRoom.members = [...currentRoom.members,{name:data.changes.user,enable:true,admin:false}];
-                            this.setState({currentRoom});
-                            break;
-                        case "remuveUser":
-                            currentRoom.members = currentRoom.members.filter(itm => itm.name !== data.changes.user);
-                            this.setState({currentRoom});
-                            break;
-                        case "blockUser":
-                            currentRoom.members = currentRoom.members.filter(itm => itm.name !== data.changes.user);
-                            currentRoom.blockedContacts = [...currentRoom.blockedContacts,{name:data.changes.user,enable:true,admin:false}];
-                            this.setState({currentRoom});
-                            break;
-                        case "unblockUser":
-                            currentRoom.blockedContacts = currentRoom.blockedContacts.filter(itm => itm.name !== data.changes.user);
-                            currentRoom.members = [...currentRoom.members,{name:data.changes.user,enable:true,admin:false}];
-                            this.setState({currentRoom});
-                            break;
-                        case "setAdmin":
-                            currentRoom.members.find(itm => itm.name === data.changes.user).admin = true;
-                            break;
-                        default:
-                            console.log("messageRoom Changes Sorry, we are out of " + data.changes + ".");
-                    }
-                }
             })
             .on('typing', (username)=> {
                 //receiver
@@ -491,7 +463,11 @@ class Chat extends React.Component {
                 break;
             case "viewRoomData":
                 console.log("onContextMenuHandler viewRoomData: ",roomName);
-                this.setState({messageBlockHandlerId:this.getUsersIdx("rooms",roomName)},()=>this.hideShowRoomProps());
+                this.getLog("rooms",roomName,null);
+                this.setState({
+                    messageBlockHandlerId:this.getUsersIdx("rooms",roomName),
+                    arrayBlockHandlerId:"rooms",
+                },()=>this.hideShowRoomProps());
                 break;
             case "leaveRoom":
                 console.log("onContextMenuHandler leaveRoom roomName: ",roomName);
@@ -573,7 +549,6 @@ class Chat extends React.Component {
                     },()=>this.hideShowUserProps());
                 }
                 break;
-
             case "moveOnTop":
                 console.log("onContextMenuHandler moveOnTop");
                 break;

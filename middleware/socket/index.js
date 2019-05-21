@@ -326,17 +326,19 @@ module.exports = function (server) {
             } else {
                 let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: username+" added new user "+invitedUser+".", status: false, date: dateNow}});
                 if(globalChatUsers[invitedUser]) socket.broadcast.to(globalChatUsers[invitedUser].sockedId).emit('updateUserData',await aggregateUserData(invitedUser));
-                room.members.forEach((itm) => {
-                    if(globalChatUsers[itm.name] && itm.name !== username && itm.name !== invitedUser) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
-                        room:roomName,
-                        user:username,
-                        text: username+" added new user "+invitedUser+".",
-                        status: false,
-                        date: dateNow,
-                        changes:{act:'addUser',user:invitedUser}
-                    });
-                });
-                return cb(null,await aggregateUserData(username))
+                for (let itm of room.members) {
+                    if(globalChatUsers[itm.name] && itm.name !== username) {
+                        socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('updateUserData',await aggregateUserData(itm.name));
+                        socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
+                            room:roomName,
+                            user:username,
+                            text: username+" added new user "+invitedUser+".",
+                            status: false,
+                            date: dateNow,
+                        });
+                    }
+                }
+                cb(null,await aggregateUserData(username))
             }
         });
         //leave room
@@ -346,21 +348,22 @@ module.exports = function (server) {
                 return cb(null,await aggregateUserData(username))
             }
             console.log('leaveRoom err: ',err);
-            if(err) {
-                return cb(err,null)
-            } else {
+            if(err) {return cb(err,null)}
+            else {
                 let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: username+" left the group.", status: false, date: dateNow}});
-                room.members.forEach((itm) => {
-                    if(globalChatUsers[itm.name]) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
-                        room:roomName,
-                        user:username,
-                        text: username+" left the group.",
-                        status: false,
-                        date: dateNow,
-                        changes:{act:'remuveUser',user:username}
-                    });
-                });
-                return cb(null,await aggregateUserData(username))
+                for (let itm of room.members) {
+                    if(globalChatUsers[itm.name]) {
+                        socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('updateUserData',await aggregateUserData(itm.name));
+                        socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
+                            room:roomName,
+                            user:username,
+                            text: username+" left the group.",
+                            status: false,
+                            date: dateNow,
+                        });
+                    }
+                }
+                cb(null,await aggregateUserData(username))
             }
         });
         //get room log
@@ -401,16 +404,18 @@ module.exports = function (server) {
             console.log('blockRoomUser roomName: ',roomName," ,bannedUser: ",bannedUser);
             let {err,room} = await Room.blockUserInRoom(roomName,username,bannedUser);
             if(err) return cb(err,null);
-            room.members.forEach(itm =>{
-                if(globalChatUsers[itm.name] && itm.name !== username) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
-                    room:roomName,
-                    user:username,
-                    text: "The group administrator "+username+" has added user "+bannedUser+" to the block list.",
-                    status: false,
-                    date: dateNow,
-                    changes:{act:'blockUser',user:bannedUser}
-                });
-            });
+            for (let itm of room.members){
+                if(globalChatUsers[itm.name] && itm.name !== username) {
+                    socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('updateUserData',await aggregateUserData(itm.name));
+                    socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
+                        room:roomName,
+                        user:username,
+                        text: "The group administrator "+username+" has added user "+bannedUser+" to the block list.",
+                        status: false,
+                        date: dateNow,
+                    });
+                }
+            }
             cb(null,await aggregateUserData(username))
         });
         //unblock user in room
@@ -418,16 +423,18 @@ module.exports = function (server) {
             console.log('unBlockRoomUser roomName: ',roomName," ,bannedUser: ",unbannedUser);
             let {err,room} = await Room.unblockUserInRoom(roomName,username,unbannedUser);
             if(err) return cb(err,null);
-            room.members.forEach(itm =>{
-                if(globalChatUsers[itm.name] && itm.name !== username) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
-                    room:roomName,
-                    user:username,
-                    text: "The group administrator "+username+" has removed user "+unbannedUser+" from the block list.",
-                    status: false,
-                    date: dateNow,
-                    changes:{act:'unblockUser',user:unbannedUser},
-                });
-            });
+            for (let itm of room.members){
+                if(globalChatUsers[itm.name] && itm.name !== username) {
+                    socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('updateUserData',await aggregateUserData(itm.name));
+                    socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
+                        room:roomName,
+                        user:username,
+                        text: "The group administrator "+username+" has removed user "+unbannedUser+" from the block list.",
+                        status: false,
+                        date: dateNow,
+                    });
+                }
+            }
             cb(null,await aggregateUserData(username))
         });
         //set room admin
@@ -435,16 +442,19 @@ module.exports = function (server) {
             console.log('setRoomAdmin roomName: ',roomName," ,userName: ",newAdminName);
             let {err,room} = Room.setAdminInRoom(roomName,username,newAdminName);
             if(err) return cb(err,null);
-            room.members.forEach(itm =>{
-                if(globalChatUsers[itm.name] && itm.name !== username) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
-                    room:roomName,
-                    user:username,
-                    text: username+" has appointed "+newAdminName+" a new administrator.",
-                    status: false,
-                    date: dateNow,
-                    changes:{act:'setAdmin',user:newAdminName},
-                });
-            });
+            for (let itm of room.members){
+                if(globalChatUsers[itm.name] && itm.name !== username) {
+                    socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('updateUserData',await aggregateUserData(itm.name));
+                    socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
+                        room:roomName,
+                        user:username,
+                        text: username+" has appointed "+newAdminName+" a new administrator.",
+                        status: false,
+                        date: dateNow,
+                        changes:{act:'setAdmin',user:newAdminName},
+                    });
+                }
+            }
             cb(null,await aggregateUserData(username))
         });
 

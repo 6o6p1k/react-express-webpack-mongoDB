@@ -28,11 +28,11 @@ class RoomManager extends React.Component {
                             <a className="chat-room-name">{this.props.room.name}</a>
                             <a className="chat-room-members-count">{this.props.room.members.length} members</a>
                         </div>
-                    ) : (
+                    ) : ( this.props.user ?
                         <div className="chat-room-info">
                             <a className="chat-room-name">{this.props.user.name}</a>
                             <a className="chat-room-members-count">id:{this.props.user.userId}</a>
-                        </div>
+                        </div> : ""
                     )
                 }
 
