@@ -171,11 +171,10 @@ class Chat extends React.Component {
 
     getLog =(reqArrName,reqCellName,reqMesCountCb)=>{
         if(reqArrName === this.state.arrayBlockHandlerId && this.getUsersIdx(reqArrName,reqCellName) === this.state.messageBlockHandlerId) return;
-        let storeMes = this.state.messagesStore;
-        if(!storeMes[reqCellName]) {
+        let messagesStore = this.state.messagesStore;
+        if(!messagesStore[reqCellName]) {
             console.log("getUserLog");
-            storeMes[reqCellName] = {};
-            storeMes[reqCellName].messages = [];
+            messagesStore[reqCellName] = [];
             this.socket.emit(reqArrName === "rooms" ? 'getRoomLog' : 'getUserLog',reqCellName,reqMesCountCb,(err,arr)=>{
                 console.log("getUserLog arr: ",arr," ,err: ",err);
                 if(err) {
@@ -185,8 +184,8 @@ class Chat extends React.Component {
                     })
                 }else {
                     arr.map(itm => itm.date = this.dateToString(itm.date));
-                    storeMes[reqCellName].messages = arr;
-                    this.setState({storeMes});
+                    messagesStore[reqCellName] = arr;
+                    this.setState({messagesStore});
                 }
             })
         }
@@ -278,10 +277,10 @@ class Chat extends React.Component {
 
     printMessage =(data,name)=> {//a - array itm, i - index in a - array
         console.log("printMessage: ",data);
-        let storeMes = this.state.messagesStore;
-        if(!storeMes[name]) {storeMes[name] = {};storeMes[name].messages = [];}
-        storeMes[name].messages.push({user:data.user,text:data.text,status:data.status,date:data.date});
-        this.setState({storeMes});
+        let messagesStore = this.state.messagesStore;
+        if(!messagesStore[name]) {messagesStore[name] = [];}
+        messagesStore[name].push({user:data.user,text:data.text,status:data.status,date:data.date});
+        this.setState({messagesStore});
     };
 
     moveToBlackList =(name)=> {
@@ -770,7 +769,7 @@ class Chat extends React.Component {
                                         <ul name="InpUl" className="chat-list" ref="InpUl">
                                             {
                                                 (eUser) ? (
-                                                    this.state.messagesStore[eUser.name].messages.map((data, i) => {
+                                                    this.state.messagesStore[eUser.name].map((data, i) => {
                                                         return (
                                                             <li key={i}
                                                                 className={(data.user === this.state.user.username) ? ("right") : ("")}>{data.text} <span className="messageData">{data.user}<span className="messageTime">{data.date}</span></span></li>
