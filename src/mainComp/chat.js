@@ -171,22 +171,25 @@ class Chat extends React.Component {
 
     getLog =(reqArrName,reqCellName,reqMesCountCb)=>{
         if(reqArrName === this.state.arrayBlockHandlerId && this.getUsersIdx(reqArrName,reqCellName) === this.state.messageBlockHandlerId) return;
-        console.log("getUserLog");
         let storeMes = this.state.messagesStore;
-        storeMes[reqCellName] = [];
-        this.socket.emit(reqArrName === "rooms" ? 'getRoomLog' : 'getUserLog',reqCellName,reqMesCountCb,(err,arr)=>{
-            console.log("getUserLog arr: ",arr," ,err: ",err);
-            if(err) {
-                this.setState({
-                    modalWindow:true,
-                    err:{message:err},
-                })
-            }else {
-                arr.map(itm => itm.date = this.dateToString(itm.date));
-                storeMes[reqCellName] = arr;
-                this.setState({storeMes});
-            }
-        })
+        if(!storeMes[reqCellName]) {
+            console.log("getUserLog");
+            storeMes[reqCellName] = {};
+            storeMes[reqCellName].messages = [];
+            this.socket.emit(reqArrName === "rooms" ? 'getRoomLog' : 'getUserLog',reqCellName,reqMesCountCb,(err,arr)=>{
+                console.log("getUserLog arr: ",arr," ,err: ",err);
+                if(err) {
+                    this.setState({
+                        modalWindow:true,
+                        err:{message:err},
+                    })
+                }else {
+                    arr.map(itm => itm.date = this.dateToString(itm.date));
+                    storeMes[reqCellName].messages = arr;
+                    this.setState({storeMes});
+                }
+            })
+        }
     };
 
 /*    scrollToBottom = (element) => {
@@ -228,14 +231,14 @@ class Chat extends React.Component {
     };
 
     inxHandler =(a,i)=> {
-        console.log('inxHandler arrName: ',a,", arrName inx: ", i);
+        //console.log('inxHandler arrName: ',a,", arrName inx: ", i);
         this.setState({
             messageBlockHandlerId: i,
             arrayBlockHandlerId: a
         });
         if(a === "blockedContacts") return;
         const e = this.state[a][i];
-        console.log('inxHandler e: ',e);
+        //console.log('inxHandler e: ',e);
         if (e && e.msgCounter !== 0) {
             e.msgCounter = 0;
             this.setState({e});
@@ -276,9 +279,8 @@ class Chat extends React.Component {
     printMessage =(data,name)=> {//a - array itm, i - index in a - array
         console.log("printMessage: ",data);
         let storeMes = this.state.messagesStore;
-        console.log("printMessage storeMes[name]: ",storeMes[name]);
-        if(!storeMes[name]) storeMes[name] = [];
-        storeMes[name].push({user:data.user,text:data.text,status:data.status,date:data.date});
+        if(!storeMes[name]) {storeMes[name] = {};storeMes[name].messages = [];}
+        storeMes[name].messages.push({user:data.user,text:data.text,status:data.status,date:data.date});
         this.setState({storeMes});
     };
 
@@ -749,7 +751,7 @@ class Chat extends React.Component {
 
                     {
                         ((a,e) => {
-                            console.log('message-block: e:',e,", a:",a);
+                            //console.log('message-block: e:',e,", a:",a);
                             let eUser = {};
                             if(a && e !== undefined) {eUser = this.state[a][e];}
                             else{eUser = undefined}
@@ -768,7 +770,7 @@ class Chat extends React.Component {
                                         <ul name="InpUl" className="chat-list" ref="InpUl">
                                             {
                                                 (eUser) ? (
-                                                    this.state.messagesStore[eUser.name].map((data, i) => {
+                                                    this.state.messagesStore[eUser.name].messages.map((data, i) => {
                                                         return (
                                                             <li key={i}
                                                                 className={(data.user === this.state.user.username) ? ("right") : ("")}>{data.text} <span className="messageData">{data.user}<span className="messageTime">{data.date}</span></span></li>

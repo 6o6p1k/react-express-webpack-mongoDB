@@ -55,18 +55,18 @@ async function aggregateUserData(username) {
         let nameUserDB = await User.findOne({username:name});
         let banned = nameUserDB.blockedContacts.includes(username);
         let authorized =  !(!nameUserDB.contacts.includes(username) && !nameUserDB.blockedContacts.includes(username));
-        return contacts[i] = {name:name, messages:[], msgCounter :0, typing:false, onLine:status, banned:banned, authorized:authorized, created_at:nameUserDB.created, userId:nameUserDB._id}
+        return contacts[i] = {name:name,  msgCounter :0, typing:false, onLine:status, banned:banned, authorized:authorized, created_at:nameUserDB.created, userId:nameUserDB._id}
     });
     let bL = blockedContacts.map(async (name,i) =>{
         let status = !!globalChatUsers[name];
         let nameUserDB = await User.findOne({username:name});
         let banned = nameUserDB.blockedContacts.includes(username);
         let authorized =  !(!nameUserDB.contacts.includes(username) && !nameUserDB.blockedContacts.includes(username));
-        return blockedContacts[i] = {name:name, messages:[], msgCounter :0, typing:false, onLine:status, banned:banned, authorized:authorized, created_at:nameUserDB.created, userId:nameUserDB._id}
+        return blockedContacts[i] = {name:name, msgCounter :0, typing:false, onLine:status, banned:banned, authorized:authorized, created_at:nameUserDB.created, userId:nameUserDB._id}
     });
     let rL = rooms.map(async (name,i) =>{
         let room = await Room.findOne({name:name});
-        return rooms[i] = {name:name, messages:[],msgCounter :0,members:room.members,blockedContacts:room.blockedContacts,created_at:room.created_at, groupId:room._id}
+        return rooms[i] = {name:name, msgCounter :0,members:room.members,blockedContacts:room.blockedContacts,created_at:room.created_at, groupId:room._id}
     });
     userData.contacts = await Promise.all(wL);
     userData.blockedContacts = await Promise.all(bL);

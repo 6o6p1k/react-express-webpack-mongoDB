@@ -17,7 +17,7 @@ class RoomManager extends React.Component {
     };
 
     render() {
-        console.log("itmProps: ", this.props);
+        //console.log("itmProps: ", this.props);
 
         return (
 
