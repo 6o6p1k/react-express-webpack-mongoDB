@@ -186,6 +186,7 @@ class Chat extends React.Component {
                     arr.map(itm => itm.date = this.dateToString(itm.date));
                     messagesStore[reqCellName] = arr;
                     this.setState({messagesStore});
+                    //this.setState({messagesStore},()=>this.msgCounter(reqArrName,this.getUsersIdx(reqArrName,reqCellName)));
                 }
             })
         }
@@ -222,11 +223,13 @@ class Chat extends React.Component {
     msgCounter =(a,i)=> {
         console.log("msgCounter a: ",a," ,i: ",i);
         console.log("msgCounter messageBlockHandlerId: ",this.state.messageBlockHandlerId," ,arrayBlockHandlerId: ",this.state.arrayBlockHandlerId);
-        if(this.state.messageBlockHandlerId !== i ) {//&& this.state.arrayBlockHandlerId !== a
-            const current = this.state[a][i];
-            current.msgCounter = current.msgCounter + 1;
-            this.setState({current});
-        }
+        let current = this.state[a][i];
+        let currentUserMes = this.state.messagesStore[current.name];
+        let unReadMes = 0;
+        currentUserMes.forEach(itm => itm.status === false && itm.user !== this.state.user.username ? unReadMes += 1 : "");
+        console.log("unReadMes: ",unReadMes);
+        current.msgCounter = unReadMes;
+        this.setState({current});
     };
 
     inxHandler =(a,i)=> {
@@ -238,10 +241,10 @@ class Chat extends React.Component {
         if(a === "blockedContacts") return;
         const e = this.state[a][i];
         //console.log('inxHandler e: ',e);
-        if (e && e.msgCounter !== 0) {
+/*        if (e && e.msgCounter !== 0) {
             e.msgCounter = 0;
             this.setState({e});
-        }
+        }*/
     };
 
     dateToString =(dateMlS)=> {
@@ -602,25 +605,43 @@ class Chat extends React.Component {
         this.setState({showSearch: !this.state.showSearch})
     };
 
+
+    //message bar handler
+    selectAsRead = (mes)=>{
+
+    };
+
+    sendAsRead = (mesDataArr,name,)=>{
+
+    };
+
     render() {
         console.log('/chat user:', this.state);
-        if(this.state.errorRedirect) {return <Redirect to='/error'/>}//passing props in Redirect to={{pathname:'/error',state:{error:this.state.err}}} get props: this.props.location.state.error
-        if(this.state.loginRedirect) {return <Redirect to='/login'/>}
+        if (this.state.errorRedirect) {
+            return <Redirect to='/error'/>
+        }//passing props in Redirect to={{pathname:'/error',state:{error:this.state.err}}} get props: this.props.location.state.error
+        if (this.state.loginRedirect) {
+            return <Redirect to='/login'/>
+        }
         return (
             <Page user={this.state.user} title="CHAT PAGE" className="container">
                 {this.state.modalWindow ?
-                    <Modal show={this.state.modalWindow} handleClose={this.hideModal} err={this.state.err} message={this.state.modalWindowMessage ? this.state.modalWindowMessage:""}/>
-                :""}
+                    <Modal show={this.state.modalWindow} handleClose={this.hideModal} err={this.state.err}
+                           message={this.state.modalWindowMessage ? this.state.modalWindowMessage : ""}/>
+                    : ""}
                 {this.state.addMeHandler ?
-                    <Confirm confirmHandler={this.addMeHandler} show={this.state.addMeHandler} message={this.state.confirmMessage}/>
-                :""}
+                    <Confirm confirmHandler={this.addMeHandler} show={this.state.addMeHandler}
+                             message={this.state.confirmMessage}/>
+                    : ""}
                 {this.state.resAddMeHandler ?
-                    <Confirm confirmHandler={this.resAddMeHandler} show={this.state.resAddMeHandler} message={this.state.confirmMessage}/>
-                :""}
+                    <Confirm confirmHandler={this.resAddMeHandler} show={this.state.resAddMeHandler}
+                             message={this.state.confirmMessage}/>
+                    : ""}
                 {this.state.changeStatusHandler ?
-                    <Confirm confirmHandler={this.userStatusHandler} show={this.state.changeStatusHandler} message={this.state.confirmMessage}/>
-                :""}
-                {(this.state.promptModalWindow)?(
+                    <Confirm confirmHandler={this.userStatusHandler} show={this.state.changeStatusHandler}
+                             message={this.state.confirmMessage}/>
+                    : ""}
+                {(this.state.promptModalWindow) ? (
                     <Prompt
                         promptHandler={this.createRoom}
                         show={this.state.promptModalWindow}
@@ -629,141 +650,149 @@ class Chat extends React.Component {
                         type={""}
                         placeholder={"Group name"}
                         message={"Input the desired group name."}/>
-                ):('')}
+                ) : ('')}
                 {(this.state.roomPropsWindow) ?
                     (<RoomProps
                         curentRoom={this.state.rooms[this.state.messageBlockHandlerId]}
                         handleClose={this.hideShowRoomProps}
                         show={this.state.roomPropsWindow}
-                    />):("")}
+                    />) : ("")}
                 {(this.state.userPropsWindow) ?
                     (<UserProps
                         curentUser={this.state[this.state.arrayBlockHandlerId][this.state.messageBlockHandlerId]}
                         handleClose={this.hideShowUserProps}
                         show={this.state.userPropsWindow}
-                    />):("")}
+                    />) : ("")}
                 <div className="chat-room">
                     <div className="chat-users">
                         <div className="login-form">
                             {this.state.showSearch ?
-                                <input name="nameSearchInp" className={`form-control searchInChat ${this.state.showSearch ? "show":""}`} autoComplete="off" autoFocus placeholder="Search..."
+                                <input name="nameSearchInp"
+                                       className={`form-control searchInChat ${this.state.showSearch ? "show" : ""}`}
+                                       autoComplete="off" autoFocus placeholder="Search..."
                                        onChange={ev => this.setFiltered(ev.target.value)}
                                 />
-                            :""}
+                                : ""}
 
                             <div className="userList btnList">
-                                <button  onClick={()=>this.toggleSearch()} name="msgBtn" type="button" className="btn search">
+                                <button onClick={() => this.toggleSearch()} name="msgBtn" type="button"
+                                        className="btn search">
                                     <img src="../img/magnifier.svg" alt="search"/>
                                     <span className="tooltiptext">Search</span>
                                 </button>
 
-                                <button  onClick={()=>this.hideShowPrompt()} name="msgBtn" type="button" className="btn">
-                                        <img src="../img/add-group-of-people.png" alt="add user"/>
-                                        <span className="tooltiptext">Create group</span>
+                                <button onClick={() => this.hideShowPrompt()} name="msgBtn" type="button"
+                                        className="btn">
+                                    <img src="../img/add-group-of-people.png" alt="add user"/>
+                                    <span className="tooltiptext">Create group</span>
                                 </button>
 
-                                <button  name="msgBtn" type="button" className="btn">
-                                        <img src="../img/add-user-button.png" alt="add user"/>
-                                        <span className="tooltiptext">Add user</span>
+                                <button name="msgBtn" type="button" className="btn">
+                                    <img src="../img/add-user-button.png" alt="add user"/>
+                                    <span className="tooltiptext">Add user</span>
                                 </button>
                             </div>
 
 
                             <div className="userList white">white list users</div>
-                            {this.state.filteredUsers.length === 0?
-                                (this.state.foundContacts.length !== 0)? (
-                                        this.state.foundContacts.map((name,i) =><UserBtn
-                                            key={i}
-                                            i={i}
-                                            name={name}
-                                            addMe={() => this.addMe(name)}
-                                        />)
-                                    ):this.state.users.map((itm,i) => <UserBtn
-                                            key={i}
-                                            itm={itm}
-                                            i={i}
-                                            getUserLog={() => this.getLog("users",itm.name,null)}
-                                            inxHandler={()=> this.inxHandler("users",i)}
-                                            messageBlockHandlerId={this.state.messageBlockHandlerId}
-                                            onContextMenuHandler={this.onContextMenuHandler}
-                                            banList={false}
-                                            roomList={false}
-                                        />)
+                            {this.state.filteredUsers.length === 0 ?
+                                (this.state.foundContacts.length !== 0) ? (
+                                    this.state.foundContacts.map((name, i) => <UserBtn
+                                        key={i}
+                                        i={i}
+                                        name={name}
+                                        addMe={() => this.addMe(name)}
+                                    />)
+                                ) : this.state.users.map((itm, i) => <UserBtn
+                                    key={i}
+                                    itm={itm}
+                                    i={i}
+                                    getUserLog={() => this.getLog("users", itm.name, null)}
+                                    inxHandler={() => this.inxHandler("users", i)}
+                                    messageBlockHandlerId={this.state.messageBlockHandlerId}
+                                    onContextMenuHandler={this.onContextMenuHandler}
+                                    banList={false}
+                                    roomList={false}
+                                />)
                                 : this.state.users.filter(items => this.state.filteredUsers
-                                        .map(i => i.name)
-                                        .includes(items.name))
-                                        .map((itm,i) => <UserBtn
+                                    .map(i => i.name)
+                                    .includes(items.name))
+                                    .map((itm, i) => <UserBtn
                                             key={i}
                                             itm={itm}
-                                            i={this.getUsersIdx("users",itm.name)}
-                                            getUserLog={() => this.getLog("users",itm.name,null)}
-                                            inxHandler={() => this.inxHandler("users",i)}
+                                            i={this.getUsersIdx("users", itm.name)}
+                                            getUserLog={() => this.getLog("users", itm.name, null)}
+                                            inxHandler={() => this.inxHandler("users", i)}
                                             messageBlockHandlerId={this.state.messageBlockHandlerId}
                                             onContextMenuHandler={this.onContextMenuHandler}
                                             banList={false}
                                             roomList={false}
                                         />
-                                )}
+                                    )}
 
                             {this.state.blockedContacts.length !== 0 ?
-                                    <div>
-                                        <div className="userList black">black list users</div>
-                                        {
-                                            this.state.blockedContacts.map((itm,i) =>
-                                                <UserBtn
-                                                    key={i}
-                                                    itm={itm}
-                                                    i={i}
-                                                    getUserLog={() => this.getLog("blockedContacts",itm.name,null)}
-                                                    inxHandler={() => this.inxHandler("blockedContacts",i)}
-                                                    messageBlockHandlerId={this.state.messageBlockHandlerId}
-                                                    onContextMenuHandler={this.onContextMenuHandler}
-                                                    banList={true}
-                                                    roomList={false}
-                                                />)
-                                        }
-                                    </div>
-                                :""}
+                                <div>
+                                    <div className="userList black">black list users</div>
+                                    {
+                                        this.state.blockedContacts.map((itm, i) =>
+                                            <UserBtn
+                                                key={i}
+                                                itm={itm}
+                                                i={i}
+                                                getUserLog={() => this.getLog("blockedContacts", itm.name, null)}
+                                                inxHandler={() => this.inxHandler("blockedContacts", i)}
+                                                messageBlockHandlerId={this.state.messageBlockHandlerId}
+                                                onContextMenuHandler={this.onContextMenuHandler}
+                                                banList={true}
+                                                roomList={false}
+                                            />)
+                                    }
+                                </div>
+                                : ""}
                             {this.state.rooms.length !== 0 ?
-                                    <div>
-                                        <div className="userList white">group list</div>
-                                        {
-                                            this.state.rooms.map((itm,i) =>
-                                                <UserBtn
-                                                    key={i}
-                                                    name={itm.name}
-                                                    itm={itm}
-                                                    i={i}
-                                                    getUserLog={() => this.getLog("rooms",itm.name,null)}
-                                                    inxHandler={() => this.inxHandler("rooms",i)}
-                                                    messageBlockHandlerId={this.state.messageBlockHandlerId}
-                                                    onContextMenuHandler={this.onContextMenuHandler}
-                                                    banList={false}
-                                                    roomList={true}
-                                                    userList={this.state.users.map(itm =>itm.name)}
-                                                />)
-                                        }
-                                    </div>
-                                :""}
+                                <div>
+                                    <div className="userList white">group list</div>
+                                    {
+                                        this.state.rooms.map((itm, i) =>
+                                            <UserBtn
+                                                key={i}
+                                                name={itm.name}
+                                                itm={itm}
+                                                i={i}
+                                                getUserLog={() => this.getLog("rooms", itm.name, null)}
+                                                inxHandler={() => this.inxHandler("rooms", i)}
+                                                messageBlockHandlerId={this.state.messageBlockHandlerId}
+                                                onContextMenuHandler={this.onContextMenuHandler}
+                                                banList={false}
+                                                roomList={true}
+                                                userList={this.state.users.map(itm => itm.name)}
+                                            />)
+                                    }
+                                </div>
+                                : ""}
                         </div>
                     </div>
 
                     {
-                        ((a,e) => {
+                        ((a, e) => {
                             //console.log('message-block: e:',e,", a:",a);
                             let eUser = {};
-                            if(a && e !== undefined) {eUser = this.state[a][e];}
-                            else{eUser = undefined}
+                            if (a && e !== undefined) {
+                                eUser = this.state[a][e];
+                            }
+                            else {
+                                eUser = undefined
+                            }
                             return (
                                 <div className="message-block">
                                     <div name="chatRoom" id="chatDiv">
-                                        {a  === "rooms"?
-                                            <div onClick={()=>this.hideShowRoomProps()}>
+                                        {a === "rooms" ?
+                                            <div onClick={() => this.hideShowRoomProps()}>
                                                 <ItmProps room={eUser}/>
                                             </div> : e !== undefined ?
-                                            <div onClick={()=>this.hideShowUserProps()}>
-                                                <ItmProps user={eUser}/>
-                                            </div> : ""
+                                                <div onClick={() => this.hideShowUserProps()}>
+                                                    <ItmProps user={eUser}/>
+                                                </div> : ""
                                         }
 
                                         <ul name="InpUl" className="chat-list" ref="InpUl">
@@ -771,8 +800,21 @@ class Chat extends React.Component {
                                                 (eUser) ? (
                                                     this.state.messagesStore[eUser.name].map((data, i) => {
                                                         return (
-                                                            <li key={i}
-                                                                className={(data.user === this.state.user.username) ? ("right") : ("")}>{data.text} <span className="messageData">{data.user}<span className="messageTime">{data.date}</span></span></li>
+                                                            (data.user === this.state.user.username)?(
+                                                                <li key={i} className="right">{data.text}
+                                                                    <span className="messageData">{data.user}<span className="messageTime">{data.date}</span></span>
+                                                                </li>
+                                                            ):(
+                                                                <li key={i} >{data.text}
+                                                                    <span className="messageData">{data.user}<span className="messageTime">{data.date}</span></span>
+                                                                </li>
+                                                            )
+
+/*                                                            <li key={i}
+                                                                className={(data.user === this.state.user.username) ? ("right") : ("")}>{data.text}
+                                                                <span className="messageData">{data.user}<span
+                                                                    className="messageTime">{data.date}</span></span>
+                                                            </li>*/
                                                         )
                                                     })
                                                 ) : ("")
@@ -783,24 +825,28 @@ class Chat extends React.Component {
                                             ev.stopPropagation();
                                             //this.sendMessage(eUser.name)
                                         }} name="chatRoomForm" className="writeMessWrapp">
-                                                    <div className="input-group writeMess">
-                                                        <textarea name="formInp" className="form-control" autoComplete="off"
-                                                               autoFocus placeholder="Message..."
-                                                               value={this.state.message}
-                                                               onChange={ev => (this.typing(eUser.name, ev))}
+                                            <div className="input-group writeMess">
+                                                        <textarea name="formInp" className="form-control"
+                                                                  autoComplete="off"
+                                                                  autoFocus placeholder="Message..."
+                                                                  value={this.state.message}
+                                                                  onChange={ev => (this.typing(eUser.name, ev))}
                                                         />
-                                                        {
-                                                            (a !== "blockedContacts") ?
-                                                                <button onClick={() => this.sendMessage(eUser.name)} name="msgBtn" type="button" className="btn">SEND</button> :
-                                                                <button onClick={() => this.resAddMe(eUser.name)} name="msgBtn" type="button" className="btn">ALLOW USER</button>
-                                                        }
-                                                    </div>
-                                                </form>
+                                                {
+                                                    (a !== "blockedContacts") ?
+                                                        <button onClick={() => this.sendMessage(eUser.name)}
+                                                                name="msgBtn" type="button" className="btn">
+                                                            SEND</button> :
+                                                        <button onClick={() => this.resAddMe(eUser.name)} name="msgBtn"
+                                                                type="button" className="btn">ALLOW USER</button>
+                                                }
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
                             );
-                        })(this.state.arrayBlockHandlerId,this.state.messageBlockHandlerId)
-                     }
+                        })(this.state.arrayBlockHandlerId, this.state.messageBlockHandlerId)
+                    }
 
                 </div>
             </Page>

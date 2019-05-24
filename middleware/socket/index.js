@@ -45,33 +45,46 @@ function loadUser(session, callback) {
     });
 }
 
+
+
 async function aggregateUserData(username) {
-    let userData = await User.findOne({username:username});
-    let contacts = userData.contacts;
-    let blockedContacts = userData.blockedContacts;
-    let rooms = userData.rooms;
-    let wL = contacts.map(async (name,i) =>{
-        let status = !!globalChatUsers[name];
-        let nameUserDB = await User.findOne({username:name});
-        let banned = nameUserDB.blockedContacts.includes(username);
-        let authorized =  !(!nameUserDB.contacts.includes(username) && !nameUserDB.blockedContacts.includes(username));
-        return contacts[i] = {name:name,  msgCounter :0, typing:false, onLine:status, banned:banned, authorized:authorized, created_at:nameUserDB.created, userId:nameUserDB._id}
-    });
-    let bL = blockedContacts.map(async (name,i) =>{
-        let status = !!globalChatUsers[name];
-        let nameUserDB = await User.findOne({username:name});
-        let banned = nameUserDB.blockedContacts.includes(username);
-        let authorized =  !(!nameUserDB.contacts.includes(username) && !nameUserDB.blockedContacts.includes(username));
-        return blockedContacts[i] = {name:name, msgCounter :0, typing:false, onLine:status, banned:banned, authorized:authorized, created_at:nameUserDB.created, userId:nameUserDB._id}
-    });
-    let rL = rooms.map(async (name,i) =>{
-        let room = await Room.findOne({name:name});
-        return rooms[i] = {name:name, msgCounter :0,members:room.members,blockedContacts:room.blockedContacts,created_at:room.created_at, groupId:room._id}
-    });
-    userData.contacts = await Promise.all(wL);
-    userData.blockedContacts = await Promise.all(bL);
-    userData.rooms = await Promise.all(rL);
-    return userData;
+    try {
+        //let {err,mes} = await Message.messageHandler({members:[username,name]});
+        let userData = await User.findOne({username:username});
+        let contacts = userData.contacts;
+        let blockedContacts = userData.blockedContacts;
+        let rooms = userData.rooms;
+        let wL = contacts.map(async (name,i) =>{
+            let status = !!globalChatUsers[name];
+            let nameUserDB = await User.findOne({username:name});
+            let banned = nameUserDB.blockedContacts.includes(username);
+            let authorized =  !(!nameUserDB.contacts.includes(username) && !nameUserDB.blockedContacts.includes(username));
+            let {err,mes} = await Message.messageHandler({members:[username,name]});
+            let col = mes.messages.filter(itm => itm.status === false && itm.user !== username).length;
+            return contacts[i] = {name:name,  msgCounter :col, typing:false, onLine:status, banned:banned, authorized:authorized, created_at:nameUserDB.created, userId:nameUserDB._id}
+        });
+        let bL = blockedContacts.map(async (name,i) =>{
+            let status = !!globalChatUsers[name];
+            let nameUserDB = await User.findOne({username:name});
+            let banned = nameUserDB.blockedContacts.includes(username);
+            let authorized =  !(!nameUserDB.contacts.includes(username) && !nameUserDB.blockedContacts.includes(username));
+            let {err,mes} = await Message.messageHandler({members:[username,name]});
+            let col = mes.messages.filter(itm => itm.status === false && itm.user !== username).length;
+            return blockedContacts[i] = {name:name, msgCounter :col, typing:false, onLine:status, banned:banned, authorized:authorized, created_at:nameUserDB.created, userId:nameUserDB._id}
+        });
+        let rL = rooms.map(async (name,i) =>{
+            let room = await Room.findOne({name:name});
+            let {err,mes} = await Message.roomMessageHandler({roomName:name});
+            let col = mes.messages.filter(itm => itm.status === false && itm.user !== username).length;
+            return rooms[i] = {name:name, msgCounter :col,members:room.members,blockedContacts:room.blockedContacts,created_at:room.created_at, groupId:room._id}
+        });
+        userData.contacts = await Promise.all(wL);
+        userData.blockedContacts = await Promise.all(bL);
+        userData.rooms = await Promise.all(rL);
+        return userData;
+    } catch (err) {
+        console.log("aggregateUserData err: ",err)
+    }
 }
 
 
@@ -283,6 +296,34 @@ module.exports = function (server) {
             }else {
                 return cb(null,mes.messages);
             }
+        });
+        //setMesStatus
+        socket.on('setMesStatus',async function (mesDataArray,reqUsername,cb) {
+            let {err,mes} = await Message.messageHandler({members:[username,reqUsername]});
+            if(err) return cb(err);
+            for (let itm of mes) {
+                if(itm.status === true) continue;
+                if(mesDataArray.includes(itm.date)) itm.status = true;
+            }
+            await mes.save();
+            if(globalChatUsers[reqUsername]) socket.broadcast.to(globalChatUsers[reqUsername].sockedId).emit('updateUserData',await aggregateUserData(reqUsername));
+            cb(null)
+        });
+        //setRoomMesStatus
+        socket.on('setRoomMesStatus',async function (mesDataArray,reqRoom,cb) {
+            let {err,mes} = await Message.roomMessageHandler({members:reqRoom});
+            if(err) return cb(err);
+            for (let itm of mes) {
+                if(itm.status.includes(username)) continue;
+                if(mesDataArray.includes(itm.date)) itm.status = [...itm.status,username];
+                if(itm.status.length === mes.members.length) {
+                    for (let name of mes.members) {
+                        if(globalChatUsers[name]) socket.broadcast.to(globalChatUsers[name].sockedId).emit('updateUserData',await aggregateUserData(name));
+                    }
+                }
+            }
+            await mes.save();
+            cb(null)
         });
         //chat message typing
         socket.on('typing', function (name) {
