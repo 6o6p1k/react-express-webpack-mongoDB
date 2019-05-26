@@ -28,6 +28,7 @@ class UserPropsWindow extends React.Component {
                         <div>
                             <p className="chat-room-members-count">Id:</p>
                             <p className="chat-room-members-count">Messages:</p>
+                            <p className="chat-room-members-count">Unread Messages:</p>
                             <p className="chat-room-members-count">Created at:</p>
                             <p className="chat-room-members-count">Status:</p>
                             <p className="chat-room-members-count">Authorized:</p>
@@ -35,7 +36,8 @@ class UserPropsWindow extends React.Component {
                         </div>
                         <div>
                             <p className="chat-room-members-count">{curentUser.userId}</p>
-                            <p className="chat-room-members-count">{curentUser.messages.length}</p>
+                            <p className="chat-room-members-count">{curentUser.allMesCounter} </p>
+                            <p className="chat-room-members-count">{curentUser.msgCounter} </p>
                             <p className="chat-room-members-count">{this.dateToString(curentUser.created_at)}</p>
                             <p className="chat-room-members-count">{curentUser.onLine ? "onLine":"offLine"}</p>
                             <p className="chat-room-members-count">{curentUser.authorized ? "Yes":"No"}</p>

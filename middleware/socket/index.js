@@ -61,7 +61,7 @@ async function aggregateUserData(username) {
             let authorized =  !(!nameUserDB.contacts.includes(username) && !nameUserDB.blockedContacts.includes(username));
             let {err,mes} = await Message.messageHandler({members:[username,name]});
             let col = mes.messages.filter(itm => itm.status === false && itm.user !== username).length;
-            return contacts[i] = {name:name,  msgCounter :col, typing:false, onLine:status, banned:banned, authorized:authorized, created_at:nameUserDB.created, userId:nameUserDB._id}
+            return contacts[i] = {name:name,  msgCounter :col, allMesCounter: mes.messages.length, typing:false, onLine:status, banned:banned, authorized:authorized, created_at:nameUserDB.created, userId:nameUserDB._id}
         });
         let bL = blockedContacts.map(async (name,i) =>{
             let status = !!globalChatUsers[name];
@@ -70,13 +70,13 @@ async function aggregateUserData(username) {
             let authorized =  !(!nameUserDB.contacts.includes(username) && !nameUserDB.blockedContacts.includes(username));
             let {err,mes} = await Message.messageHandler({members:[username,name]});
             let col = mes.messages.filter(itm => itm.status === false && itm.user !== username).length;
-            return blockedContacts[i] = {name:name, msgCounter :col, typing:false, onLine:status, banned:banned, authorized:authorized, created_at:nameUserDB.created, userId:nameUserDB._id}
+            return blockedContacts[i] = {name:name, msgCounter :col, allMesCounter: mes.messages.length,typing:false, onLine:status, banned:banned, authorized:authorized, created_at:nameUserDB.created, userId:nameUserDB._id}
         });
         let rL = rooms.map(async (name,i) =>{
             let room = await Room.findOne({name:name});
             let {err,mes} = await Message.roomMessageHandler({roomName:name});
             let col = mes.messages.filter(itm => itm.status === false && itm.user !== username).length;
-            return rooms[i] = {name:name, msgCounter :col,members:room.members,blockedContacts:room.blockedContacts,created_at:room.created_at, groupId:room._id}
+            return rooms[i] = {name:name, msgCounter :col, allMesCounter: mes.messages.length,members:room.members,blockedContacts:room.blockedContacts,created_at:room.created_at, groupId:room._id}
         });
         userData.contacts = await Promise.all(wL);
         userData.blockedContacts = await Promise.all(bL);
@@ -298,22 +298,31 @@ module.exports = function (server) {
             }
         });
         //setMesStatus
-        socket.on('setMesStatus',async function (mesDataArray,reqUsername,cb) {
-            let {err,mes} = await Message.messageHandler({members:[username,reqUsername]});
-            if(err) return cb(err);
-            for (let itm of mes) {
-                if(itm.status === true) continue;
-                if(mesDataArray.includes(itm.date)) itm.status = true;
+        function setGetSig(arr) {
+            arr.sort();
+            return arr[0] + '_' + arr[1];
+        };
+        socket.on('setMesStatus',async function (index,reqUsername,cb) {
+            try {
+                console.log("setMesStatus: indexArr: ",index," ,reqUsername: ",reqUsername);
+                let mes = await Message.findOne({uniqSig:setGetSig([username,reqUsername])});
+                let currentMes = mes.messages[index];
+                mes.messages.set(index, {user: currentMes.user,text:currentMes.text,status:true,date:currentMes.date});
+                mes.messages[index].status = true;
+                //mes.markModified('status');
+                await mes.save();
+                if(globalChatUsers[reqUsername]) socket.broadcast.to(globalChatUsers[reqUsername].sockedId).emit('updateUserData',await aggregateUserData(reqUsername));
+                cb(null)
+            } catch (err) {
+                console.log("setMesStatus err: ",err);
             }
-            await mes.save();
-            if(globalChatUsers[reqUsername]) socket.broadcast.to(globalChatUsers[reqUsername].sockedId).emit('updateUserData',await aggregateUserData(reqUsername));
-            cb(null)
+
         });
         //setRoomMesStatus
         socket.on('setRoomMesStatus',async function (mesDataArray,reqRoom,cb) {
             let {err,mes} = await Message.roomMessageHandler({members:reqRoom});
             if(err) return cb(err);
-            for (let itm of mes) {
+            for (let itm of mes.messages) {
                 if(itm.status.includes(username)) continue;
                 if(mesDataArray.includes(itm.date)) itm.status = [...itm.status,username];
                 if(itm.status.length === mes.members.length) {

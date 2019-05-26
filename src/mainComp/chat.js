@@ -9,6 +9,11 @@ import Prompt from '../partials/promptModalWindow.js'
 import ItmProps from '../partials/itmProps.js'
 import RoomProps from '../partials/roomPropsWindow.js'
 import UserProps from '../partials/userPropsWindow.js'
+//third-party applications
+import VisibilitySensor from'react-visibility-sensor'
+
+
+
 
 
 
@@ -58,6 +63,8 @@ class Chat extends React.Component {
             roomPropsWindow:false,
             userPropsWindow:false
 
+
+
         };
     }
     componentDidUpdate(){
@@ -74,6 +81,7 @@ class Chat extends React.Component {
         this.socket = socket
             .on('updateUserData',(userData)=>{
                 console.log("updateUserData: ",userData);
+                if(userData.username !== this.state.user.username) return;
                 //let sortUsers = userData.contacts.sort((a,b)=> b.onLine - a.onLine);
                 //let sortBlockedUsers = userData.blockedContacts.sort((a,b)=> b.onLine - a.onLine);
                 this.setState({
@@ -116,12 +124,12 @@ class Chat extends React.Component {
             })
             .on('message', (data)=> {
                 //message receiver
-                this.printMessage({user:data.user,text:data.text,status:data.status,date:this.dateToString(data.date)},data.user);
+                this.printMessage({user:data.user,text:data.text,status:data.status,date:data.date},data.user);
                 this.msgCounter("users",this.getUsersIdx("users",data.user));
             })
             .on('messageRoom',(data)=>{
                 console.log("messageRoom data: ",data);
-                this.printMessage({user:data.user,text:data.text,status:data.status,date:this.dateToString(data.date)},data.room);
+                this.printMessage({user:data.user,text:data.text,status:data.status,date:data.date},data.room);
                 this.msgCounter("rooms",this.getUsersIdx("rooms",data.room));
             })
             .on('typing', (username)=> {
@@ -169,6 +177,8 @@ class Chat extends React.Component {
         this.socket.disconnect();
     };
 
+
+
     getLog =(reqArrName,reqCellName,reqMesCountCb)=>{
         if(reqArrName === this.state.arrayBlockHandlerId && this.getUsersIdx(reqArrName,reqCellName) === this.state.messageBlockHandlerId) return;
         let messagesStore = this.state.messagesStore;
@@ -183,7 +193,6 @@ class Chat extends React.Component {
                         err:{message:err},
                     })
                 }else {
-                    arr.map(itm => itm.date = this.dateToString(itm.date));
                     messagesStore[reqCellName] = arr;
                     this.setState({messagesStore});
                     //this.setState({messagesStore},()=>this.msgCounter(reqArrName,this.getUsersIdx(reqArrName,reqCellName)));
@@ -222,7 +231,7 @@ class Chat extends React.Component {
 
     msgCounter =(a,i)=> {
         console.log("msgCounter a: ",a," ,i: ",i);
-        console.log("msgCounter messageBlockHandlerId: ",this.state.messageBlockHandlerId," ,arrayBlockHandlerId: ",this.state.arrayBlockHandlerId);
+        //console.log("msgCounter messageBlockHandlerId: ",this.state.messageBlockHandlerId," ,arrayBlockHandlerId: ",this.state.arrayBlockHandlerId);
         let current = this.state[a][i];
         let currentUserMes = this.state.messagesStore[current.name];
         let unReadMes = 0;
@@ -258,14 +267,14 @@ class Chat extends React.Component {
             case "rooms":
                 console.log("sendMessage rooms");
                 this.socket.emit('messageRoom', this.state.message, name, date, ()=> {//This name means Group Name
-                    this.printMessage({user:this.state.user.username, text:this.state.message, date:this.dateToString(date), status:false},name);
+                    this.printMessage({user:this.state.user.username, text:this.state.message, date:date, status:false},name);
                     this.setState({message:''});
                 });
                 break;
             case "users":
                 console.log("sendMessage users");
                 this.socket.emit('message', this.state.message, name, date, ()=> {//This name means User Name
-                    this.printMessage({user:this.state.user.username, text:this.state.message, date:this.dateToString(date), status:false},name);
+                    this.printMessage({user:this.state.user.username, text:this.state.message, date:date, status:false},name);
                     this.setState({message:''});
                 });
                 break;
@@ -607,12 +616,21 @@ class Chat extends React.Component {
 
 
     //message bar handler
-    selectAsRead = (mes)=>{
-
-    };
-
-    sendAsRead = (mesDataArr,name,)=>{
-
+    setAsRead = (mesData,i)=>{
+        console.log("setAsRead: ",mesData);
+        this.socket.emit('setMesStatus',i,mesData.user,(err)=>{
+            console.log("setAsRead ,err: ",err);
+            if(err) {
+                this.setState({
+                    modalWindow:true,
+                    err:{message:err},
+                })
+            } else {
+                let messagesStore = this.state.messagesStore;
+                messagesStore[mesData.user][i].status = true;
+                this.setState({messagesStore},()=> this.msgCounter(this.state.arrayBlockHandlerId,this.state.messageBlockHandlerId))
+            }
+        })
     };
 
     render() {
@@ -775,10 +793,11 @@ class Chat extends React.Component {
 
                     {
                         ((a, e) => {
-                            //console.log('message-block: e:',e,", a:",a);
+                            console.log('message-block: e:',e,", a:",a);
                             let eUser = {};
                             if (a && e !== undefined) {
                                 eUser = this.state[a][e];
+                                console.log("eUser.name: ",eUser.name);
                             }
                             else {
                                 eUser = undefined
@@ -801,13 +820,17 @@ class Chat extends React.Component {
                                                     this.state.messagesStore[eUser.name].map((data, i) => {
                                                         return (
                                                             (data.user === this.state.user.username)?(
+
                                                                 <li key={i} className="right">{data.text}
-                                                                    <span className="messageData">{data.user}<span className="messageTime">{data.date}</span></span>
+                                                                    <span className="messageData">{data.user}<span className="messageTime">{this.dateToString(data.date)}</span></span>
                                                                 </li>
                                                             ):(
-                                                                <li key={i} >{data.text}
-                                                                    <span className="messageData">{data.user}<span className="messageTime">{data.date}</span></span>
-                                                                </li>
+                                                                <VisibilitySensor containment={this.refs.InpUl}  onChange={(inView)=> inView && data.status === false ? this.setAsRead(data,i) : ""}>
+                                                                    <li key={i} >{data.text}
+                                                                        <span className="messageData">{data.user}<span className="messageTime">{this.dateToString(data.date)}</span></span>
+                                                                    </li>
+                                                                </VisibilitySensor >
+
                                                             )
 
 /*                                                            <li key={i}
@@ -820,6 +843,7 @@ class Chat extends React.Component {
                                                 ) : ("")
                                             }
                                         </ul>
+
                                         <form onSubmit={(ev) => {
                                             ev.preventDefault();
                                             ev.stopPropagation();

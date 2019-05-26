@@ -30,13 +30,15 @@ class RoomPropsWindow extends React.Component {
                             <p className="chat-room-members-count">Members count:</p>
                             <p className="chat-room-members-count">Banned count:</p>
                             <p className="chat-room-members-count">Messages:</p>
+                            <p className="chat-room-members-count">Unread Messages:</p>
                             <p className="chat-room-members-count">Created at:</p>
                         </div>
                         <div>
                             <p className="chat-room-members-count">{currentRoom.groupId}</p>
                             <p className="chat-room-members-count">{currentRoom.members.length}</p>
                             <p className="chat-room-members-count">{currentRoom.blockedContacts.length} </p>
-                            <p className="chat-room-members-count">{currentRoom.messages.length} </p>
+                            <p className="chat-room-members-count">{currentRoom.allMesCounter} </p>
+                            <p className="chat-room-members-count">{currentRoom.msgCounter} </p>
                             <p className="chat-room-members-count">{this.dateToString(currentRoom.created_at)}</p>
                         </div>
                     </div>
