@@ -91,6 +91,13 @@ class Chat extends React.Component {
                     rooms:userData.rooms,
                 });
             })
+            .on('updateMsgStatus',(itmName,itmIndex,status)=>{
+                console.log("updateMsgData itmName: ",itmName," ,itmIndex: ",itmIndex);
+                if(itmName === this.state.user.username) return;
+                let messagesStore = this.state.messagesStore;
+                messagesStore[itmName][itmIndex].status = status;
+                this.setState({messagesStore});
+            })
             .emit('sayOnLine')
             .on('onLine', (name)=> {
                 //console.log('receiver user offLine: ',name," ,this.getUsersIdx: ", this.getUsersIdx("users",name));
@@ -822,7 +829,13 @@ class Chat extends React.Component {
                                                             (data.user === this.state.user.username)?(
 
                                                                 <li key={i} className="right">{data.text}
-                                                                    <span className="messageData">{data.user}<span className="messageTime">{this.dateToString(data.date)}</span></span>
+                                                                    <span className="messageData">{data.user}
+                                                                        <span className="messageTime">{this.dateToString(data.date)}</span>
+                                                                        <span className="messageTime">{data.status === true ? " R":""}</span>
+                                                                        /*<span className="messageTime">{data.status === true ? " R" : Array.isArray(data.status) ? (
+                                                                             data.status.map(name => <span className="messageTime">{name}</span>)
+                                                                           ):("")}</span>*/
+                                                                    </span>
                                                                 </li>
                                                             ):(
                                                                 <VisibilitySensor containment={this.refs.InpUl}  onChange={(inView)=> inView && data.status === false ? this.setAsRead(data,i) : ""}>

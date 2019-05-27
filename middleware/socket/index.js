@@ -301,38 +301,36 @@ module.exports = function (server) {
         function setGetSig(arr) {
             arr.sort();
             return arr[0] + '_' + arr[1];
-        };
+        }
         socket.on('setMesStatus',async function (index,reqUsername,cb) {
-            try {
-                console.log("setMesStatus: indexArr: ",index," ,reqUsername: ",reqUsername);
-                let mes = await Message.findOne({uniqSig:setGetSig([username,reqUsername])});
-                let currentMes = mes.messages[index];
-                mes.messages.set(index, {user: currentMes.user,text:currentMes.text,status:true,date:currentMes.date});
-                mes.messages[index].status = true;
-                //mes.markModified('status');
-                await mes.save();
-                if(globalChatUsers[reqUsername]) socket.broadcast.to(globalChatUsers[reqUsername].sockedId).emit('updateUserData',await aggregateUserData(reqUsername));
-                cb(null)
-            } catch (err) {
-                console.log("setMesStatus err: ",err);
-            }
-
+            console.log("setMesStatus: indexArr: ",index," ,reqUsername: ",reqUsername);
+            let mes = await Message.findOne({uniqSig:setGetSig([username,reqUsername])});
+            let currentMes = mes.messages[index];
+            if(currentMes.status === true) return;
+            currentMes.status = true;
+            mes.messages.set(index, currentMes);
+            await mes.save();
+            if(globalChatUsers[reqUsername]) socket.broadcast.to(globalChatUsers[reqUsername].sockedId).emit('updateMsgStatus',username,index,currentMes.status);
+            cb(null);
         });
         //setRoomMesStatus
-        socket.on('setRoomMesStatus',async function (mesDataArray,reqRoom,cb) {
-            let {err,mes} = await Message.roomMessageHandler({members:reqRoom});
-            if(err) return cb(err);
-            for (let itm of mes.messages) {
-                if(itm.status.includes(username)) continue;
-                if(mesDataArray.includes(itm.date)) itm.status = [...itm.status,username];
-                if(itm.status.length === mes.members.length) {
-                    for (let name of mes.members) {
-                        if(globalChatUsers[name]) socket.broadcast.to(globalChatUsers[name].sockedId).emit('updateUserData',await aggregateUserData(name));
-                    }
-                }
+        socket.on('setRoomMesStatus',async function (index,reqRoom,cb) {
+            console.log("setRoomMesStatus: indexArr: ",index," ,reqRoom: ",reqRoom);
+            let mes = await Message.findOne({uniqSig:reqRoom});
+            let currentMes = mes.messages[index];
+            if(currentMes.status === true) return;
+            if(currentMes.status === false) currentMes.status = [];
+            if(currentMes.status.includes(username)) return;
+            currentMes.status = [...currentMes.status,username];
+            if(currentMes.status.length === mes.members.length - 1) {
+                currentMes.status = true;
             }
+            mes.messages.set(index, currentMes);
             await mes.save();
-            cb(null)
+            for (let name of mes.members) {
+                if(globalChatUsers[name] && name !== username) socket.broadcast.to(globalChatUsers[name].sockedId).emit('updateMsgStatus',reqRoom,index,currentMes.status);
+            }
+            cb(null);
         });
         //chat message typing
         socket.on('typing', function (name) {
@@ -357,6 +355,7 @@ module.exports = function (server) {
             cb && cb();
         });
         //room events
+
         //create new room
         socket.on('createRoom', async function  (roomName,dateNow,cb) {
             let {err,room,user} = await Room.createRoom(roomName,username);
