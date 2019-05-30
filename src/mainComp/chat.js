@@ -236,13 +236,13 @@ class Chat extends React.Component {
         if(name) {this.socket.emit('typing', name)}
     };
 
+
     msgCounter =(a,i)=> {
         console.log("msgCounter a: ",a," ,i: ",i);
-        //console.log("msgCounter messageBlockHandlerId: ",this.state.messageBlockHandlerId," ,arrayBlockHandlerId: ",this.state.arrayBlockHandlerId);
         let current = this.state[a][i];
         let currentUserMes = this.state.messagesStore[current.name];
         let unReadMes = 0;
-        currentUserMes.forEach(itm => itm.status === false && itm.user !== this.state.user.username ? unReadMes += 1 : "");
+        currentUserMes.forEach(itm => itm.status === false  && itm.user !== this.state.user.username ? unReadMes += 1 : "");
         console.log("unReadMes: ",unReadMes);
         current.msgCounter = unReadMes;
         this.setState({current});
@@ -250,17 +250,7 @@ class Chat extends React.Component {
 
     inxHandler =(a,i)=> {
         //console.log('inxHandler arrName: ',a,", arrName inx: ", i);
-        this.setState({
-            messageBlockHandlerId: i,
-            arrayBlockHandlerId: a
-        });
-        if(a === "blockedContacts") return;
-        const e = this.state[a][i];
-        //console.log('inxHandler e: ',e);
-/*        if (e && e.msgCounter !== 0) {
-            e.msgCounter = 0;
-            this.setState({e});
-        }*/
+        this.setState({messageBlockHandlerId: i, arrayBlockHandlerId: a});
     };
 
     dateToString =(dateMlS)=> {
@@ -623,9 +613,9 @@ class Chat extends React.Component {
 
 
     //message bar handler
-    setAsRead = (mesData,i)=>{
-        console.log("setAsRead: ",mesData);
-        this.socket.emit('setMesStatus',i,mesData.user,(err)=>{
+    setAsRead = (itmName,i)=>{
+        console.log("setAsRead: ",itmName," ,index: ",i);
+        this.socket.emit(this.state.arrayBlockHandlerId === "rooms" ? 'setRoomMesStatus' : 'setMesStatus',i,itmName,(err)=>{
             console.log("setAsRead ,err: ",err);
             if(err) {
                 this.setState({
@@ -634,7 +624,7 @@ class Chat extends React.Component {
                 })
             } else {
                 let messagesStore = this.state.messagesStore;
-                messagesStore[mesData.user][i].status = true;
+                messagesStore[itmName][i].status = true;
                 this.setState({messagesStore},()=> this.msgCounter(this.state.arrayBlockHandlerId,this.state.messageBlockHandlerId))
             }
         })
@@ -831,14 +821,13 @@ class Chat extends React.Component {
                                                                 <li key={i} className="right">{data.text}
                                                                     <span className="messageData">{data.user}
                                                                         <span className="messageTime">{this.dateToString(data.date)}</span>
-                                                                        <span className="messageTime">{data.status === true ? " R":""}</span>
-                                                                        /*<span className="messageTime">{data.status === true ? " R" : Array.isArray(data.status) ? (
+                                                                        <span className="messageTime">{data.status === true ? " R" : Array.isArray(data.status) ? (
                                                                              data.status.map(name => <span className="messageTime">{name}</span>)
-                                                                           ):("")}</span>*/
+                                                                           ):("")}</span>
                                                                     </span>
                                                                 </li>
                                                             ):(
-                                                                <VisibilitySensor containment={this.refs.InpUl}  onChange={(inView)=> inView && data.status === false ? this.setAsRead(data,i) : ""}>
+                                                                <VisibilitySensor containment={this.refs.InpUl}  onChange={(inView)=> inView && data.status !== true ? this.setAsRead(eUser.name,i,) : ""}>
                                                                     <li key={i} >{data.text}
                                                                         <span className="messageData">{data.user}<span className="messageTime">{this.dateToString(data.date)}</span></span>
                                                                     </li>

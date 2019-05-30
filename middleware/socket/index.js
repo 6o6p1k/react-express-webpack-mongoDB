@@ -45,7 +45,13 @@ function loadUser(session, callback) {
     });
 }
 
-
+async function asyncIncludes(arr, chkItm) {
+    if(!Array.isArray(arr)) return false;
+    for (itm of arr) {
+        if(itm === chkItm) return true;
+    }
+    return false;
+}
 
 async function aggregateUserData(username) {
     try {
@@ -75,7 +81,11 @@ async function aggregateUserData(username) {
         let rL = rooms.map(async (name,i) =>{
             let room = await Room.findOne({name:name});
             let {err,mes} = await Message.roomMessageHandler({roomName:name});
-            let col = mes.messages.filter(itm => itm.status === false && itm.user !== username).length;
+            //let col = mes.messages.filter(itm => itm.status === false && itm.user !== username).length;//(itm.status === false || Array.isArray(itm.status))
+            let col = 0;
+            for(let itm of mes.messages) {
+                if((itm.status === false || await asyncIncludes(itm.status, username)) && itm.user === username) col +=1;
+            }
             return rooms[i] = {name:name, msgCounter :col, allMesCounter: mes.messages.length,members:room.members,blockedContacts:room.blockedContacts,created_at:room.created_at, groupId:room._id}
         });
         userData.contacts = await Promise.all(wL);
@@ -303,7 +313,7 @@ module.exports = function (server) {
             return arr[0] + '_' + arr[1];
         }
         socket.on('setMesStatus',async function (index,reqUsername,cb) {
-            console.log("setMesStatus: indexArr: ",index," ,reqUsername: ",reqUsername);
+            //console.log("setMesStatus: indexArr: ",index," ,reqUsername: ",reqUsername);
             let mes = await Message.findOne({uniqSig:setGetSig([username,reqUsername])});
             let currentMes = mes.messages[index];
             if(currentMes.status === true) return;
@@ -315,16 +325,17 @@ module.exports = function (server) {
         });
         //setRoomMesStatus
         socket.on('setRoomMesStatus',async function (index,reqRoom,cb) {
-            console.log("setRoomMesStatus: indexArr: ",index," ,reqRoom: ",reqRoom);
+            //console.log("setRoomMesStatus: indexArr: ",index," ,reqRoom: ",reqRoom);
             let mes = await Message.findOne({uniqSig:reqRoom});
             let currentMes = mes.messages[index];
             if(currentMes.status === true) return;
             if(currentMes.status === false) currentMes.status = [];
             if(currentMes.status.includes(username)) return;
-            currentMes.status = [...currentMes.status,username];
+            currentMes.status.push(username);
             if(currentMes.status.length === mes.members.length - 1) {
                 currentMes.status = true;
             }
+            //console.log("currentMes.status: ",currentMes.status," ,of room name: ",reqRoom);
             mes.messages.set(index, currentMes);
             await mes.save();
             for (let name of mes.members) {
