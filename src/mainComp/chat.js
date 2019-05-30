@@ -95,6 +95,7 @@ class Chat extends React.Component {
                 console.log("updateMsgData itmName: ",itmName," ,itmIndex: ",itmIndex);
                 if(itmName === this.state.user.username) return;
                 let messagesStore = this.state.messagesStore;
+                if(!messagesStore[itmName]) return;
                 messagesStore[itmName][itmIndex].status = status;
                 this.setState({messagesStore});
             })
@@ -188,24 +189,22 @@ class Chat extends React.Component {
 
     getLog =(reqArrName,reqCellName,reqMesCountCb)=>{
         if(reqArrName === this.state.arrayBlockHandlerId && this.getUsersIdx(reqArrName,reqCellName) === this.state.messageBlockHandlerId) return;
+        console.log("getLog");
         let messagesStore = this.state.messagesStore;
-        if(!messagesStore[reqCellName]) {
-            console.log("getUserLog");
-            messagesStore[reqCellName] = [];
-            this.socket.emit(reqArrName === "rooms" ? 'getRoomLog' : 'getUserLog',reqCellName,reqMesCountCb,(err,arr)=>{
-                console.log("getUserLog arr: ",arr," ,err: ",err);
-                if(err) {
-                    this.setState({
-                        modalWindow:true,
-                        err:{message:err},
-                    })
-                }else {
-                    messagesStore[reqCellName] = arr;
-                    this.setState({messagesStore});
-                    //this.setState({messagesStore},()=>this.msgCounter(reqArrName,this.getUsersIdx(reqArrName,reqCellName)));
-                }
-            })
-        }
+        if(!messagesStore[reqCellName]) messagesStore[reqCellName] = [];
+        this.socket.emit(reqArrName === "rooms" ? 'getRoomLog' : 'getUserLog',reqCellName,reqMesCountCb,(err,arr)=>{
+            console.log("getUserLog arr: ",arr," ,err: ",err);
+            if(err) {
+                this.setState({
+                    modalWindow:true,
+                    err:{message:err},
+                })
+            }else {
+                messagesStore[reqCellName] = arr;
+                this.setState({messagesStore});
+                //this.setState({messagesStore},()=>this.msgCounter(reqArrName,this.getUsersIdx(reqArrName,reqCellName)));
+            }
+        })
     };
 
 /*    scrollToBottom = (element) => {
@@ -827,7 +826,10 @@ class Chat extends React.Component {
                                                                     </span>
                                                                 </li>
                                                             ):(
-                                                                <VisibilitySensor containment={this.refs.InpUl}  onChange={(inView)=> inView && data.status !== true ? this.setAsRead(eUser.name,i,) : ""}>
+                                                                <VisibilitySensor
+                                                                    containment={this.refs.InpUl}
+                                                                    onChange={(inView)=> inView && data.status !== true ? this.setAsRead(eUser.name,i,) : ""}
+                                                                >
                                                                     <li key={i} >{data.text}
                                                                         <span className="messageData">{data.user}<span className="messageTime">{this.dateToString(data.date)}</span></span>
                                                                     </li>
