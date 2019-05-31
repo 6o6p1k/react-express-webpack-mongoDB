@@ -297,6 +297,14 @@ module.exports = function (server) {
                 return  cb(usersArr);
             }
         });
+        //Check contact
+        socket.on('checkContact', async function (data,cb) {
+            console.log('checkContact: ',data);
+            let user = await User.findOne({username:data}) || await User.findOne({_id:data});
+            if(user) {
+                return cb(User.username)
+            } else return cb(null)
+        });
         //chat users history cb
         socket.on('getUserLog', async function (reqUsername,reqMesCountCb,cb) {
             //console.log("getUserLog reqUsername: ", reqUsername);

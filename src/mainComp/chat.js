@@ -56,7 +56,8 @@ class Chat extends React.Component {
 
             confirmMessage:"",
 
-            promptModalWindow:false,
+            promptCreateRoom:false,
+            promptSearchUser:false,
             promptRes:"",
             showSearch: false,
 
@@ -189,11 +190,11 @@ class Chat extends React.Component {
 
     getLog =(reqArrName,reqCellName,reqMesCountCb)=>{
         if(reqArrName === this.state.arrayBlockHandlerId && this.getUsersIdx(reqArrName,reqCellName) === this.state.messageBlockHandlerId) return;
-        console.log("getLog");
+        //console.log("getLog");
         let messagesStore = this.state.messagesStore;
         if(!messagesStore[reqCellName]) messagesStore[reqCellName] = [];
         this.socket.emit(reqArrName === "rooms" ? 'getRoomLog' : 'getUserLog',reqCellName,reqMesCountCb,(err,arr)=>{
-            console.log("getUserLog arr: ",arr," ,err: ",err);
+            //console.log("getUserLog arr: ",arr," ,err: ",err);
             if(err) {
                 this.setState({
                     modalWindow:true,
@@ -234,7 +235,6 @@ class Chat extends React.Component {
         this.setState({message: ev.target.value});
         if(name) {this.socket.emit('typing', name)}
     };
-
 
     msgCounter =(a,i)=> {
         console.log("msgCounter a: ",a," ,i: ",i);
@@ -333,6 +333,20 @@ class Chat extends React.Component {
 
     hideModal =()=> {
         this.setState({modalWindow: false,modalWindowMessage:"",err:{}});
+    };
+
+    searchUser = (data)=> {
+        console.log("searchUser: ",data)
+        this.socket.emit('checkContact',data,(name)=>{
+            if(name) {
+                this.addMe(name)
+            } else {
+                this.setState({
+                    modalWindow:true,
+                    modalWindowMessage:"User with name or id "+data+"not found.",
+                })
+            }
+        })
     };
 
     addMe =(name)=> {
@@ -591,11 +605,12 @@ class Chat extends React.Component {
     };
 
     hideShowFunc = (stateName) => {
-        this.setState({stateName: !this.state[stateName]});
+        this.setState({[stateName]: !this.state[stateName]});
     };
 
-    hideShowPrompt = () => {
-        this.setState({promptModalWindow: !this.state.promptModalWindow});
+    hideShowPrompt = (name) => {
+        //console.log("hideShowPrompt this.state[name]: ",this.state[name]);
+        this.setState({[name]: !this.state[name]});
     };
 
     hideShowRoomProps = () => {
@@ -611,9 +626,11 @@ class Chat extends React.Component {
     };
 
 
+
+
     //message bar handler
     setAsRead = (itmName,i)=>{
-        console.log("setAsRead: ",itmName," ,index: ",i);
+        //console.log("setAsRead: ",itmName," ,index: ",i);
         this.socket.emit(this.state.arrayBlockHandlerId === "rooms" ? 'setRoomMesStatus' : 'setMesStatus',i,itmName,(err)=>{
             console.log("setAsRead ,err: ",err);
             if(err) {
@@ -655,15 +672,25 @@ class Chat extends React.Component {
                     <Confirm confirmHandler={this.userStatusHandler} show={this.state.changeStatusHandler}
                              message={this.state.confirmMessage}/>
                     : ""}
-                {(this.state.promptModalWindow) ? (
+                {(this.state.promptCreateRoom) ? (
                     <Prompt
                         promptHandler={this.createRoom}
-                        show={this.state.promptModalWindow}
-                        handleClose={this.hideShowPrompt}
+                        show={this.state.promptCreateRoom}
+                        handleClose={()=>this.hideShowPrompt("promptCreateRoom")}
                         name={"Group name"}
                         type={""}
                         placeholder={"Group name"}
                         message={"Input the desired group name."}/>
+                ) : ('')}
+                {(this.state.promptSearchUser) ? (
+                    <Prompt
+                        promptHandler={this.searchUser}
+                        show={this.state.promptSearchUser}
+                        handleClose={()=>this.hideShowPrompt("promptSearchUser")}
+                        name={"User name"}
+                        type={""}
+                        placeholder={"name/id"}
+                        message={"Input user name or id."}/>
                 ) : ('')}
                 {(this.state.roomPropsWindow) ?
                     (<RoomProps
@@ -695,13 +722,12 @@ class Chat extends React.Component {
                                     <span className="tooltiptext">Search</span>
                                 </button>
 
-                                <button onClick={() => this.hideShowPrompt()} name="msgBtn" type="button"
-                                        className="btn">
+                                <button onClick={() => this.hideShowPrompt("promptCreateRoom")} name="msgBtn" type="button" className="btn">
                                     <img src="../img/add-group-of-people.png" alt="add user"/>
                                     <span className="tooltiptext">Create group</span>
                                 </button>
 
-                                <button name="msgBtn" type="button" className="btn">
+                                <button onClick={() => this.hideShowPrompt("promptSearchUser")} name="msgBtn" type="button" className="btn">
                                     <img src="../img/add-user-button.png" alt="add user"/>
                                     <span className="tooltiptext">Add user</span>
                                 </button>
@@ -821,7 +847,7 @@ class Chat extends React.Component {
                                                                     <span className="messageData">{data.user}
                                                                         <span className="messageTime">{this.dateToString(data.date)}</span>
                                                                         <span className="messageTime">{data.status === true ? " R" : Array.isArray(data.status) ? (
-                                                                             data.status.map(name => <span className="messageTime">{name}</span>)
+                                                                             data.status.map((name,i) => <span key={i} className="messageTime">{name}</span>)
                                                                            ):("")}</span>
                                                                     </span>
                                                                 </li>
