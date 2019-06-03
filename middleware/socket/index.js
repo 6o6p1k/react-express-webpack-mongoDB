@@ -46,6 +46,7 @@ function loadUser(session, callback) {
 }
 
 async function asyncIncludes(arr, chkItm) {
+    if(arr === true) return true;
     if(!Array.isArray(arr)) return false;
     for (itm of arr) {
         if(itm === chkItm) return true;
@@ -84,7 +85,8 @@ async function aggregateUserData(username) {
             //let col = mes.messages.filter(itm => itm.status === false && itm.user !== username).length;//(itm.status === false || Array.isArray(itm.status))
             let col = 0;
             for(let itm of mes.messages) {
-                if((itm.status === false || await asyncIncludes(itm.status, username)) && itm.user === username) col +=1;
+                //console.log("chkArr: ",await asyncIncludes(itm.status, username),", itm.user: ",itm.user,", username: ",username);
+                if(!(await asyncIncludes(itm.status, username)) && itm.user !== username) col +=1;
             }
             return rooms[i] = {name:name, msgCounter :col, allMesCounter: mes.messages.length,members:room.members,blockedContacts:room.blockedContacts,created_at:room.created_at, groupId:room._id}
         });
@@ -395,7 +397,7 @@ module.exports = function (server) {
                 let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: username+" added new user "+invitedUser+".", status: false, date: dateNow}});
                 if(globalChatUsers[invitedUser]) socket.broadcast.to(globalChatUsers[invitedUser].sockedId).emit('updateUserData',await aggregateUserData(invitedUser));
                 for (let itm of room.members) {
-                    if(globalChatUsers[itm.name] && itm.name !== username) {
+                    if(globalChatUsers[itm.name]) {
                         socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('updateUserData',await aggregateUserData(itm.name));
                         socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
                             room:roomName,
@@ -457,7 +459,7 @@ module.exports = function (server) {
             if(room.blockedContacts.some(itm => itm.name === username)) return socket.emit('messageRoom', {room:roomName, user: "Admin", text: "You have been included in the block list. Send messages to you is no longer available.", status: false, date: Date.now()});
             let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: text, status: false, date: dateNow}});
             room.members.forEach(itm =>{
-                if(globalChatUsers[itm.name] && itm.name !== username) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
+                if(globalChatUsers[itm.name]) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
                     room:roomName,
                     user:username,
                     text: text,
@@ -473,7 +475,7 @@ module.exports = function (server) {
             let {err,room} = await Room.blockUserInRoom(roomName,username,bannedUser);
             if(err) return cb(err,null);
             for (let itm of room.members){
-                if(globalChatUsers[itm.name] && itm.name !== username) {
+                if(globalChatUsers[itm.name]) {
                     socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('updateUserData',await aggregateUserData(itm.name));
                     socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
                         room:roomName,
@@ -492,7 +494,7 @@ module.exports = function (server) {
             let {err,room} = await Room.unblockUserInRoom(roomName,username,unbannedUser);
             if(err) return cb(err,null);
             for (let itm of room.members){
-                if(globalChatUsers[itm.name] && itm.name !== username) {
+                if(globalChatUsers[itm.name]) {
                     socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('updateUserData',await aggregateUserData(itm.name));
                     socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
                         room:roomName,
@@ -511,7 +513,7 @@ module.exports = function (server) {
             let {err,room} = Room.setAdminInRoom(roomName,username,newAdminName);
             if(err) return cb(err,null);
             for (let itm of room.members){
-                if(globalChatUsers[itm.name] && itm.name !== username) {
+                if(globalChatUsers[itm.name]) {
                     socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('updateUserData',await aggregateUserData(itm.name));
                     socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
                         room:roomName,

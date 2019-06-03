@@ -472,7 +472,8 @@ class Chat extends React.Component {
         switch (res) {
             case "inviteUser":
                 console.log("onContextMenuHandler inviteUser roomName: ",roomName,", username: ",username);
-                this.socket.emit('inviteUserToRoom',roomName,username,Date.now(),(err,data)=>{
+                let date = Date.now();
+                this.socket.emit('inviteUserToRoom',roomName,username,date,(err,data)=>{
                     console.log("inviteUserToRoom' cb err: ",err,", cb rooms: ",data);
                     if(err) {
                         this.setState({
@@ -481,6 +482,7 @@ class Chat extends React.Component {
                         })
                     }else {
                         this.setState({rooms:data.rooms});
+                        this.printMessage({user:this.state.user.username, text:this.state.user.username+" added new user "+username+".",date:date, status:false},roomName);
                     }
                 });
                 break;
@@ -630,7 +632,9 @@ class Chat extends React.Component {
 
     //message bar handler
     setAsRead = (itmName,i)=>{
-        //console.log("setAsRead: ",itmName," ,index: ",i);
+        if(Array.isArray(this.state.messagesStore[itmName][i].status) && this.state.messagesStore[itmName][i].status.includes(this.state.user.username)) return;
+        console.log("setAsRead: ",itmName," ,index: ",i);
+        console.log("setAsRead this.state.arrayBlockHandlerIdindex: ",this.state.arrayBlockHandlerId);
         this.socket.emit(this.state.arrayBlockHandlerId === "rooms" ? 'setRoomMesStatus' : 'setMesStatus',i,itmName,(err)=>{
             console.log("setAsRead ,err: ",err);
             if(err) {
@@ -817,13 +821,11 @@ class Chat extends React.Component {
                         ((a, e) => {
                             console.log('message-block: e:',e,", a:",a);
                             let eUser = {};
-                            if (a && e !== undefined) {
-                                eUser = this.state[a][e];
-                                console.log("eUser.name: ",eUser.name);
-                            }
-                            else {
-                                eUser = undefined
-                            }
+                            let eStore = {};
+                            if (a !== undefined && e !== undefined) {eUser = this.state[a][e]}
+                            else eUser = undefined;
+                            if(eUser !== undefined && eUser.name !== undefined) {eStore = this.state.messagesStore[eUser.name]}
+                            else eStore = undefined;
                             return (
                                 <div className="message-block">
                                     <div name="chatRoom" id="chatDiv">
@@ -839,10 +841,9 @@ class Chat extends React.Component {
                                         <ul name="InpUl" className="chat-list" ref="InpUl">
                                             {
                                                 (eUser) ? (
-                                                    this.state.messagesStore[eUser.name].map((data, i) => {
+                                                    eStore.map((data, i) => {
                                                         return (
                                                             (data.user === this.state.user.username)?(
-
                                                                 <li key={i} className="right">{data.text}
                                                                     <span className="messageData">{data.user}
                                                                         <span className="messageTime">{this.dateToString(data.date)}</span>
@@ -853,21 +854,24 @@ class Chat extends React.Component {
                                                                 </li>
                                                             ):(
                                                                 <VisibilitySensor
+                                                                    key={i+"VisibilitySensor"}
                                                                     containment={this.refs.InpUl}
                                                                     onChange={(inView)=> inView && data.status !== true ? this.setAsRead(eUser.name,i,) : ""}
                                                                 >
                                                                     <li key={i} >{data.text}
-                                                                        <span className="messageData">{data.user}<span className="messageTime">{this.dateToString(data.date)}</span></span>
+                                                                        <span className="messageData">{data.user}
+                                                                            <span className="messageTime">{this.dateToString(data.date)}</span>
+                                                                            {data.status === true ?
+                                                                                "" : Array.isArray(data.status) ? data.status.includes(this.state.user.username) ? "" :
+                                                                                    <span className="messageTime" onClick={()=>this.setAsRead(eUser.name,i,)}>set is read</span> :
+                                                                                    <span className="messageTime" onClick={()=>this.setAsRead(eUser.name,i,)}>set is read</span>
+                                                                            }
+
+                                                                        </span>
                                                                     </li>
                                                                 </VisibilitySensor >
 
                                                             )
-
-/*                                                            <li key={i}
-                                                                className={(data.user === this.state.user.username) ? ("right") : ("")}>{data.text}
-                                                                <span className="messageData">{data.user}<span
-                                                                    className="messageTime">{data.date}</span></span>
-                                                            </li>*/
                                                         )
                                                     })
                                                 ) : ("")

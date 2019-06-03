@@ -311,6 +311,7 @@ message.statics.roomMessageHandler = async function (data) {
 //
 //room methods
 var User = mongoose.model('User', user);
+var Message = mongoose.model('Message', message);
 
 room.statics.createRoom = async function(roomName,username) {//create new room and push roomName to user room list
     let Room = this;
@@ -341,13 +342,16 @@ room.statics.inviteUserToRoom = async function(roomName,invited) {
     try {
         let user = await User.findOne({username:invited});
         let room = await Room.findOne({name:roomName});
+        let mes = await Message.findOne({uniqSig:roomName});
         if(room.members.some(itm => itm.name === invited)) return {err:"User "+invited+" is already included in the group.",room:null,user:null};
         if(room.blockedContacts.some(itm => itm.name === invited)) return {err:"User "+invited+" is included in the block list.",room:null,user:null};
         if(user.blockedContacts.includes(roomName)) return {err:"A group named "+roomName+" included in block list.",room:null,user:null};
         user.rooms.push(roomName);
         room.members.push({name:invited,enable:true,admin:false});
+        if(!mes.members.includes(invited)) mes.members.push(invited);
         await user.save();
         await room.save();
+        await mes.save();
         return {err:null,room:room,user:user};
     } catch (err) {
         console.log('inviteUserToRoom err: ',err);
@@ -412,7 +416,6 @@ room.statics.setAdminInRoom = async function(roomName,adminRoom,newAdmin) {
     }
 };
 //leave  room
-var Message = mongoose.model('Message', message);
 room.statics.leaveRoom = async function(roomName,name) {
     let Room = this;
     let err = {};
@@ -422,12 +425,14 @@ room.statics.leaveRoom = async function(roomName,name) {
         //if(room.members.find(itm => itm.name === name).admin === true) return {err:"You can not leave this group. You are admin.",room:null,user:null};
         let filterUserRooms = user.rooms.filter(itm => itm !== roomName);
         let filterMemberRoom = room.members.filter(itm => itm.name !== name);
-        if(room.members.length === 0) {
+        console.log("filterMemberRoom: ",filterMemberRoom);
+        if(filterMemberRoom === 0) {
             //Delete room protocol. if no one user left.
             await Room.deleteOne({name:roomName});
             await Message.deleteOne({uniqSig:roomName});
             user.rooms = filterUserRooms;
             await user.save();
+            await room.save();
             console.log("Delete room protocol successful done");
             return {err:null,room:null,user:user};
         }
