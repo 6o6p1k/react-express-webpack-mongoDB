@@ -426,7 +426,7 @@ room.statics.leaveRoom = async function(roomName,name) {
         let filterUserRooms = user.rooms.filter(itm => itm !== roomName);
         let filterMemberRoom = room.members.filter(itm => itm.name !== name);
         console.log("filterMemberRoom: ",filterMemberRoom);
-        if(filterMemberRoom === 0) {
+        if(filterMemberRoom.length === 0) {
             //Delete room protocol. if no one user left.
             await Room.deleteOne({name:roomName});
             await Message.deleteOne({uniqSig:roomName});
