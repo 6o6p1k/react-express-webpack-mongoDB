@@ -198,25 +198,25 @@ module.exports = function (server) {
         socket.on('banUser', async function (data,cb) {
             console.log("banUser name:" ,data.name);
             let userRG = await User.userMFCTBC(username,data.name);//move to blockedContacts
-            if(userRG.err) {
-                return cb("Move user to black list filed. DB err: " + userRG.err,null);
-            }
+            if(userRG.err) return cb("Move user to black list filed. DB err: " + userRG.err,null);
+            await Message.messageHandler({members:[username,data.name],message:{ user: username, text: "I added you to my black list.", status: false, date: data.date}});
             if(globalChatUsers[data.name]) {
                 socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('updateUserData',await aggregateUserData(data.name));//update user data
-                cb(null,await aggregateUserData(username));
-            } else cb(null,await aggregateUserData(username));
+                socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('message', { user: username, text: "I added you to my black list.", status: false, date: data.date});
+            }
+            cb(null,await aggregateUserData(username));
         });
         //move to white list
         socket.on('unBanUser', async function (data,cb) {
             console.log("unBanUser name:" ,data.name);
             let userRG = await User.userMFBCTC(username,data.name);//move to Contacts
-            if(userRG.err) {
-                return cb("Move user to black list filed. DB err: " + userRG.err,null);
-            }
+            if(userRG.err) return cb("Move user to black list filed. DB err: " + userRG.err,null);
+            await Message.messageHandler({members:[username,data.name],message:{ user: username, text: "I added you to my contact list.", status: false, date: data.date}});
             if(globalChatUsers[data.name]) {
                 socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('updateUserData',await aggregateUserData(data.name));//update user data
-                cb(null,await aggregateUserData(username));
-            } else cb(null,await aggregateUserData(username));
+                socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('message', { user: username, text: "I added you to my contact list.", status: false, date: data.date});
+            }
+            cb(null,await aggregateUserData(username));
         });
         //remove completely
         socket.on('deleteUser', async function (data,cb) {
@@ -277,17 +277,7 @@ module.exports = function (server) {
                 } else cb(null,await aggregateUserData(username));
             }else cb("Request rejected. You always send request. Await then user response you.",null);
         });
-        //res to add me
-        socket.on('resAddMe', async function (data,cb) {
-            //console.log('resAddMe: ',data);
-            let userRG = await User.userMFBCTC(username,data.name);
-            if(userRG.err) return cb("Request rejected. DB err: "+userRG.err,null);
-            if(globalChatUsers[data.name]) {//Send message "Add me to you contact list" if user online
-                let {err,mes} = await Message.messageHandler({members:[username,data.name],message:{ user: username, text: "I added you to my contact list.", status: false, date: data.date}});
-                socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('message', { user: username, text: "I added you to my contact list.", status: false, date: data.date});
-                cb(null,await aggregateUserData(username));
-            }else return cb(null,await aggregateUserData(username));
-        });
+
         //Find contacts
         socket.on('findContacts', async function (data,cb) {
             //console.log('findContacts: ',data);
@@ -304,7 +294,7 @@ module.exports = function (server) {
             console.log('checkContact: ',data);
             let user = await User.findOne({username:data}) || await User.findOne({_id:data});
             if(user) {
-                return cb(User.username)
+                return cb(user.username);
             } else return cb(null)
         });
         //chat users history cb

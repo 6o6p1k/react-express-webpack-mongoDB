@@ -336,14 +336,14 @@ class Chat extends React.Component {
     };
 
     searchUser = (data)=> {
-        console.log("searchUser: ",data)
+        console.log("searchUser: ",data);
         this.socket.emit('checkContact',data,(name)=>{
             if(name) {
                 this.addMe(name)
             } else {
                 this.setState({
                     modalWindow:true,
-                    modalWindowMessage:"User with name or id "+data+"not found.",
+                    modalWindowMessage:"User with name or id: "+data+" not found.",
                 })
             }
         })
@@ -402,8 +402,10 @@ class Chat extends React.Component {
     resAddMeHandler =(confirmRes)=>{
         //('resAddMeHandler: ',confirmRes);
         if(confirmRes){
-            this.socket.emit('resAddMe', {name:this.state.resAddMeAddMeName,date:Date.now()},(err,userData)=>{
-                console.log("resAddMeHandler callback err: ",err," ,userData: ",userData);
+            let date = Date.now();
+            let addUserName = this.state.resAddMeAddMeName;
+            this.socket.emit('unBanUser', {name:addUserName,date:date},(err,userData)=>{
+                console.log("unBanUser callback err: ",err," ,userData: ",userData);
                 if(err) {
                     this.setState({
                         modalWindow:true,
@@ -420,7 +422,7 @@ class Chat extends React.Component {
                         resAddMeAddMeName:"",
                         confirmMessage:""
                     });
-
+                    this.printMessage({user:this.state.user.username, text:"I added you to my contact list.", date:date, status:false},addUserName);
                 }
             })
         }else{
@@ -469,10 +471,11 @@ class Chat extends React.Component {
     };
 
     onContextMenuHandler =(res,username,roomName)=>{
+        let date = Date.now();
         switch (res) {
             case "inviteUser":
                 console.log("onContextMenuHandler inviteUser roomName: ",roomName,", username: ",username);
-                let date = Date.now();
+
                 this.socket.emit('inviteUserToRoom',roomName,username,date,(err,data)=>{
                     console.log("inviteUserToRoom' cb err: ",err,", cb rooms: ",data);
                     if(err) {
@@ -496,7 +499,7 @@ class Chat extends React.Component {
                 break;
             case "leaveRoom":
                 console.log("onContextMenuHandler leaveRoom roomName: ",roomName);
-                this.socket.emit('leaveRoom',roomName,Date.now(),(err,data)=>{
+                this.socket.emit('leaveRoom',roomName,date,(err,data)=>{
                     console.log("leaveRoom cb err: ",err,", cb rooms: ",data);
                     if(err) {
                         this.setState({
@@ -531,10 +534,11 @@ class Chat extends React.Component {
                     changeStatusName:username,
                     changeStatusAct:"banUser",
                 });
+                this.printMessage({user:this.state.user.username, text:"I added you to my black list.", date:date, status:false},username);
                 break;
             case "unBanUser":
                 console.log("onContextMenuHandler unBanUser");
-                this.socket.emit('unBanUser', {name:username,date:Date.now()},(err,userData)=>{
+                this.socket.emit('unBanUser', {name:username,date:date},(err,userData)=>{
                     console.log("unBanUser callback err: ",err," ,userData: ",userData);
                     if(err) {
                         this.setState({
@@ -550,6 +554,7 @@ class Chat extends React.Component {
                             users:userData.contacts,
                             blockedContacts:userData.blockedContacts,
                         });
+                        this.printMessage({user:this.state.user.username, text:"I added you to my contact list.", date:date, status:false},username);
                     }
                 });
                 break;
@@ -611,7 +616,6 @@ class Chat extends React.Component {
     };
 
     hideShowPrompt = (name) => {
-        //console.log("hideShowPrompt this.state[name]: ",this.state[name]);
         this.setState({[name]: !this.state[name]});
     };
 
@@ -840,7 +844,7 @@ class Chat extends React.Component {
 
                                         <ul name="InpUl" className="chat-list" ref="InpUl">
                                             {
-                                                (eUser) ? (
+                                                (eUser && eStore) ? (
                                                     eStore.map((data, i) => {
                                                         return (
                                                             (data.user === this.state.user.username)?(
