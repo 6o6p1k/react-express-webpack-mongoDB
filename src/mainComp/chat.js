@@ -62,8 +62,9 @@ class Chat extends React.Component {
             showSearch: false,
 
             roomPropsWindow:false,
-            userPropsWindow:false
+            userPropsWindow:false,
 
+            connectionLost:false,
 
 
         };
@@ -79,6 +80,7 @@ class Chat extends React.Component {
         //this.scrollToBottom(this.refs.InpUl);
 
         let socket = io.connect('', {reconnection: true});
+        //receivers
         this.socket = socket
             .on('updateUserData',(userData)=>{
                 console.log("updateUserData: ",userData);
@@ -153,6 +155,14 @@ class Chat extends React.Component {
                 },2000)
             })
 
+            .on('disconnect', ()=>{
+                console.log("WSocket connection lost!");
+                this.setState({connectionLost:true})
+            })
+            .on('connect', ()=>{
+                console.log("WSocket connection restored!");
+                this.setState({connectionLost:false})
+            })
             .on('error',(message)=>{
                 console.log('Server error happened: ',message);
                 if(typeof message === 'string' || message instanceof String) {
@@ -181,13 +191,14 @@ class Chat extends React.Component {
                 this.setState({loginRedirect:true})
             });
     }
-
+    //send .disconnect() then user logOut
     componentWillUnmount(){
         this.socket.disconnect();
     };
 
+    /*scrollToBottom = (element) => {element.scrollTop = element.scrollHeight;};*/
 
-
+    //req subscribers log
     getLog =(reqArrName,reqCellName,reqMesCountCb)=>{
         if(reqArrName === this.state.arrayBlockHandlerId && this.getUsersIdx(reqArrName,reqCellName) === this.state.messageBlockHandlerId) return;
         //console.log("getLog");
@@ -207,15 +218,11 @@ class Chat extends React.Component {
             }
         })
     };
-
-/*    scrollToBottom = (element) => {
-        element.scrollTop = element.scrollHeight;
-    };*/
-
+    //filter subscribers then user type in search field
     filterSearch =(str)=> {
         return characters => characters.name.substring(0,str.length).toLowerCase() === str.toLowerCase();
     };
-
+    //filter subscribers then user type in search field or send req for search in DB
     setFiltered = (nameStr) => {
         console.log("setFiltered str: ",nameStr);
         if(nameStr.length === 0) this.setState({filteredUsers: []});
@@ -229,13 +236,13 @@ class Chat extends React.Component {
             }
         });
     };
-
+    //typing msg receiver
     typing =(name,ev)=> {
         //console.log('this.typing sId: ', sId);
         this.setState({message: ev.target.value});
         if(name) {this.socket.emit('typing', name)}
     };
-
+    //unread msgs counter
     msgCounter =(a,i)=> {
         console.log("msgCounter a: ",a," ,i: ",i);
         let current = this.state[a][i];
@@ -246,17 +253,17 @@ class Chat extends React.Component {
         current.msgCounter = unReadMes;
         this.setState({current});
     };
-
+    //set current subscriber
     inxHandler =(a,i)=> {
         //console.log('inxHandler arrName: ',a,", arrName inx: ", i);
         this.setState({messageBlockHandlerId: i, arrayBlockHandlerId: a});
     };
-
+    //transform data in milliseconds to string
     dateToString =(dateMlS)=> {
         let currentdate = new Date(dateMlS);
         return currentdate.getHours() + ":" + currentdate.getMinutes() + "/" + currentdate.getDate() + ":" + (currentdate.getMonth()+1) + ":" + currentdate.getFullYear()// + ":"+ currentdate.getSeconds();
     };
-
+    //send msg handler
     sendMessage =(name)=> {
         let date = Date.now();
         switch (this.state.arrayBlockHandlerId){
@@ -278,11 +285,11 @@ class Chat extends React.Component {
                 console.log("sendMessage: Sorry, we are out of " + res + ".");
         }
     };
-
+    //send req for log data
     getUsersIdx =(a,i)=> {
         return this.state[a].map((itm)=>{return itm.name;}).indexOf(i);
     };
-
+    //pushing incoming msgs
     printMessage =(data,name)=> {//a - array itm, i - index in a - array
         console.log("printMessage: ",data);
         let messagesStore = this.state.messagesStore;
@@ -291,6 +298,7 @@ class Chat extends React.Component {
         this.setState({messagesStore});
     };
 
+    //User functional//
     moveToBlackList =(name)=> {
         this.socket.emit('moveToBlackList',name,(err,userData)=>{
             console.log("moveToBlackList callback err: ",err," ,userData: ",userData);
@@ -329,10 +337,6 @@ class Chat extends React.Component {
                 })
             }
         })
-    };
-
-    hideModal =()=> {
-        this.setState({modalWindow: false,modalWindowMessage:"",err:{}});
     };
 
     searchUser = (data)=> {
@@ -433,7 +437,7 @@ class Chat extends React.Component {
             });
         }
     };
-    //bann, delete, unBann user handler
+
     userStatusHandler =(confirmRes)=> {
         console.log('userStatusHandler: ',confirmRes,' ,this.state.changeStatusAct: ',this.state.changeStatusAct,', this.state.changeStatusName: ',this.state.changeStatusName);
         if(confirmRes){
@@ -469,7 +473,7 @@ class Chat extends React.Component {
             });
         }
     };
-
+    //Right click handler
     onContextMenuHandler =(res,username,roomName)=>{
         let date = Date.now();
         switch (res) {
@@ -495,7 +499,7 @@ class Chat extends React.Component {
                 this.setState({
                     messageBlockHandlerId:this.getUsersIdx("rooms",roomName),
                     arrayBlockHandlerId:"rooms",
-                },()=>this.hideShowRoomProps());
+                },()=>this.hideShowProps("roomPropsWindow"));
                 break;
             case "leaveRoom":
                 console.log("onContextMenuHandler leaveRoom roomName: ",roomName);
@@ -563,20 +567,19 @@ class Chat extends React.Component {
                 break;
             case "viewUserData":
                 console.log("onContextMenuHandler viewUserData: ",username);
-                //this.setState({messageBlockHandlerId:this.getUsersIdx("users",username)},()=>this.hideShowUserProps());
                 if(this.getUsersIdx("users",username) >= 0) {
                     this.getLog("users",username,null);
                     return this.setState({
                         messageBlockHandlerId:this.getUsersIdx("users",username),
                         arrayBlockHandlerId:"users"
-                    },()=>this.hideShowUserProps());
+                    },()=>this.hideShowProps("userPropsWindow"));
                 }
                 if(this.getUsersIdx("blockedContacts",username) >= 0) {
                     this.getLog("blockedContacts",username,null);
                     return this.setState({
                         messageBlockHandlerId:this.getUsersIdx("blockedContacts",username),
                         arrayBlockHandlerId:"blockedContacts"
-                    },()=>this.hideShowUserProps());
+                    },()=>this.hideShowProps("userPropsWindow"));
                 }
                 break;
             case "moveOnTop":
@@ -591,7 +594,7 @@ class Chat extends React.Component {
         }
     };
 
-    //Group functional
+    //Group functional//
     createRoom =(roomName)=>{
         console.log("createRoom: ",roomName);
         this.socket.emit('createRoom',roomName,Date.now(),(err,userData)=>{
@@ -611,20 +614,19 @@ class Chat extends React.Component {
         })
     };
 
-    hideShowFunc = (stateName) => {
-        this.setState({[stateName]: !this.state[stateName]});
+    ////////
+
+    //Triggers
+    hideModal =()=> {
+        this.setState({modalWindow: false,modalWindowMessage:"",err:{}});
+    };
+
+    hideShowProps = (name) => {
+        this.setState({[name]: !this.state[name]});
     };
 
     hideShowPrompt = (name) => {
         this.setState({[name]: !this.state[name]});
-    };
-
-    hideShowRoomProps = () => {
-        this.setState({roomPropsWindow: !this.state.roomPropsWindow});
-    };
-
-    hideShowUserProps = () => {
-        this.setState({userPropsWindow: !this.state.userPropsWindow});
     };
 
     toggleSearch = ()=>{
@@ -664,6 +666,10 @@ class Chat extends React.Component {
         }
         return (
             <Page user={this.state.user} title="CHAT PAGE" className="container">
+                {this.state.connectionLost ?
+                    <Modal show={this.state.connectionLost} err={this.state.err}
+                           message={"Connection lost! Wait until the connection is established."}/>
+                    : ""}
                 {this.state.modalWindow ?
                     <Modal show={this.state.modalWindow} handleClose={this.hideModal} err={this.state.err}
                            message={this.state.modalWindowMessage ? this.state.modalWindowMessage : ""}/>
@@ -703,13 +709,13 @@ class Chat extends React.Component {
                 {(this.state.roomPropsWindow) ?
                     (<RoomProps
                         curentRoom={this.state.rooms[this.state.messageBlockHandlerId]}
-                        handleClose={this.hideShowRoomProps}
+                        handleClose={this.hideShowProps("roomPropsWindow")}
                         show={this.state.roomPropsWindow}
                     />) : ("")}
                 {(this.state.userPropsWindow) ?
                     (<UserProps
                         curentUser={this.state[this.state.arrayBlockHandlerId][this.state.messageBlockHandlerId]}
-                        handleClose={this.hideShowUserProps}
+                        handleClose={this.hideShowProps("userPropsWindow")}
                         show={this.state.userPropsWindow}
                     />) : ("")}
                 <div className="chat-room">
@@ -834,13 +840,12 @@ class Chat extends React.Component {
                                 <div className="message-block">
                                     <div name="chatRoom" id="chatDiv">
                                         {a === "rooms" ?
-                                            <div onClick={() => this.hideShowRoomProps()}>
+                                            <div onClick={() => this.hideShowProps("roomPropsWindow")}>
                                                 <ItmProps room={eUser}/>
                                             </div> : e !== undefined ?
-                                                <div onClick={() => this.hideShowUserProps()}>
+                                                <div onClick={() => this.hideShowProps("userPropsWindow")}>
                                                     <ItmProps user={eUser}/>
-                                                </div> : ""
-                                        }
+                                                </div> : ""}
 
                                         <ul name="InpUl" className="chat-list" ref="InpUl">
                                             {
