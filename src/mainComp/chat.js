@@ -709,13 +709,13 @@ class Chat extends React.Component {
                 {(this.state.roomPropsWindow) ?
                     (<RoomProps
                         curentRoom={this.state.rooms[this.state.messageBlockHandlerId]}
-                        handleClose={this.hideShowProps("roomPropsWindow")}
+                        handleClose={()=>this.hideShowProps("roomPropsWindow")}
                         show={this.state.roomPropsWindow}
                     />) : ("")}
                 {(this.state.userPropsWindow) ?
                     (<UserProps
                         curentUser={this.state[this.state.arrayBlockHandlerId][this.state.messageBlockHandlerId]}
-                        handleClose={this.hideShowProps("userPropsWindow")}
+                        handleClose={()=>this.hideShowProps("userPropsWindow")}
                         show={this.state.userPropsWindow}
                     />) : ("")}
                 <div className="chat-room">
