@@ -82,6 +82,8 @@ class Chat extends React.Component {
         let socket = io.connect('', {reconnection: true});
         //receivers
         this.socket = socket
+            //.emit('sayOnLine')
+
             .on('updateUserData',(userData)=>{
                 console.log("updateUserData: ",userData);
                 if(userData.username !== this.state.user.username) return;
@@ -102,7 +104,6 @@ class Chat extends React.Component {
                 messagesStore[itmName][itmIndex].status = status;
                 this.setState({messagesStore});
             })
-            .emit('sayOnLine')
             .on('onLine', (name)=> {
                 //console.log('receiver user offLine: ',name," ,this.getUsersIdx: ", this.getUsersIdx("users",name));
                 let users = this.state.users;
@@ -161,7 +162,8 @@ class Chat extends React.Component {
             })
             .on('connect', ()=>{
                 console.log("WSocket connection restored!");
-                this.setState({connectionLost:false})
+                this.setState({connectionLost:false});
+                this.socket.emit('sayOnLine');
             })
             .on('error',(message)=>{
                 console.log('Server error happened: ',message);
