@@ -1,5 +1,4 @@
 var config = require('./../../config');
-var async = require('async');
 var cookie = require('cookie');
 var sessionStore = require('./../libs/sessionStore');
 var HttpError = require('./../error/index').HttpError;

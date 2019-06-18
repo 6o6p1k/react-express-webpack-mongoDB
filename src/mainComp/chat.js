@@ -9,6 +9,9 @@ import Prompt from '../partials/promptModalWindow.js'
 import ItmProps from '../partials/itmProps.js'
 import RoomProps from '../partials/roomPropsWindow.js'
 import UserProps from '../partials/userPropsWindow.js'
+import searchImg from '../../public/img/magnifier.svg'
+import addGroupImg from '../../public/img/add-group-of-people.png'
+import addUserImg from '../../public/img/add-user-button.png'
 //third-party applications
 import VisibilitySensor from'react-visibility-sensor'
 
@@ -734,17 +737,17 @@ class Chat extends React.Component {
                             <div className="userList btnList">
                                 <button onClick={() => this.toggleSearch()} name="msgBtn" type="button"
                                         className="btn search">
-                                    <img src="../img/magnifier.svg" alt="search"/>
+                                    <img src={searchImg} alt="search"/>
                                     <span className="tooltiptext">Search</span>
                                 </button>
 
                                 <button onClick={() => this.hideShowPrompt("promptCreateRoom")} name="msgBtn" type="button" className="btn">
-                                    <img src="../img/add-group-of-people.png" alt="add user"/>
+                                    <img src={addGroupImg} alt="add user"/>
                                     <span className="tooltiptext">Create group</span>
                                 </button>
 
                                 <button onClick={() => this.hideShowPrompt("promptSearchUser")} name="msgBtn" type="button" className="btn">
-                                    <img src="../img/add-user-button.png" alt="add user"/>
+                                    <img src={addUserImg} alt="add user"/>
                                     <span className="tooltiptext">Add user</span>
                                 </button>
                             </div>
