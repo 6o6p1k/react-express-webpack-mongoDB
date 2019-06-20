@@ -69,7 +69,7 @@ class Chat extends React.Component {
 
             connectionLost:false,
 
-
+            scrollTopMax: undefined,
         };
     }
     componentDidUpdate(){
@@ -201,14 +201,19 @@ class Chat extends React.Component {
         this.socket.disconnect();
     };
 
-    /*scrollToBottom = (element) => {element.scrollTop = element.scrollHeight;};*/
+    scrollToBottom = (element) => {
+        console.log("this.state.scrollTopMax: ",this.state.scrollTopMax);
+        element.scrollTop = element.scrollTopMax - this.state.scrollTopMax || element.scrollHeight;
+    };
 
     //req subscribers log
     getLog =(reqArrName,reqCellName,reqMesCountCb)=>{
-        if(reqArrName === this.state.arrayBlockHandlerId && this.getUsersIdx(reqArrName,reqCellName) === this.state.messageBlockHandlerId) return;
-        //console.log("getLog");
+        if(this.state.messagesStore[reqCellName] && !reqMesCountCb) return;
+        if(!reqMesCountCb) reqMesCountCb = 15;
+        //console.log("getLog msgCountReq: ",reqMesCountCb);
         let messagesStore = this.state.messagesStore;
         if(!messagesStore[reqCellName]) messagesStore[reqCellName] = [];
+        if(messagesStore[reqCellName].length === this.state.users[this.getUsersIdx(reqArrName,reqCellName)].allMesCounter) return;
         this.socket.emit(reqArrName === "rooms" ? 'getRoomLog' : 'getUserLog',reqCellName,reqMesCountCb,(err,arr)=>{
             //console.log("getUserLog arr: ",arr," ,err: ",err);
             if(err) {
@@ -218,10 +223,11 @@ class Chat extends React.Component {
                 })
             }else {
                 messagesStore[reqCellName] = arr;
-                this.setState({messagesStore});
+                this.setState({messagesStore},()=>this.scrollToBottom(this.refs.InpUl));
                 //this.setState({messagesStore},()=>this.msgCounter(reqArrName,this.getUsersIdx(reqArrName,reqCellName)));
             }
-        })
+        });
+
     };
     //filter subscribers then user type in search field
     filterSearch =(str)=> {
@@ -637,7 +643,15 @@ class Chat extends React.Component {
     toggleSearch = ()=>{
         this.setState({showSearch: !this.state.showSearch})
     };
-
+    //scrollHandler emit load new part of history log
+    onScrollHandler =(e,name,array,itm)=> {
+        //console.log("scrollHandler: ",e.target);
+        if(e.target.scrollTop === 0) {
+            console.log("scrollHandler on top: ",e," ,",name," ,",array," ,",itm);
+            let msgCount = this.state.messagesStore[name].length;
+            this.setState({scrollTopMax: e.target.scrollTopMax},()=>this.getLog(array,name,msgCount+10));
+        }
+    };
 
 
 
@@ -834,7 +848,7 @@ class Chat extends React.Component {
 
                     {
                         ((a, e) => {
-                            console.log('message-block: e:',e,", a:",a);
+                            //console.log('message-block: e:',e,", a:",a);
                             let eUser = {};
                             let eStore = {};
                             if (a !== undefined && e !== undefined) {eUser = this.state[a][e]}
@@ -852,7 +866,7 @@ class Chat extends React.Component {
                                                     <ItmProps user={eUser}/>
                                                 </div> : ""}
 
-                                        <ul name="InpUl" className="chat-list" ref="InpUl">
+                                        <ul onScroll={(evn)=>this.onScrollHandler(evn,eUser.name,a,e)} name="InpUl" className="chat-list" ref="InpUl">
                                             {
                                                 (eUser && eStore) ? (
                                                     eStore.map((data, i) => {

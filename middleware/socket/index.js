@@ -190,6 +190,7 @@ module.exports = function (server) {
             sockedId:reqSocketId,
             contacts:userDB.contacts, //use only for username otherwise the data may not be updated.
             blockedContacts:userDB.blockedContacts, //use only for username otherwise the data may not be updated.
+
         };
         //update UserData
         socket.emit('updateUserData',await aggregateUserData(username));
@@ -298,12 +299,17 @@ module.exports = function (server) {
         });
         //chat users history cb
         socket.on('getUserLog', async function (reqUsername,reqMesCountCb,cb) {
-            //console.log("getUserLog reqUsername: ", reqUsername);
+            console.log("getUserLog reqUsername: ", reqUsername," ,reqMesCountCb: ",reqMesCountCb);
             let {err,mes} = await Message.messageHandler({members:[username,reqUsername]});
+            if(reqMesCountCb) {
+                console.log("getUserLog cutMes len: ", mes.messages.length - reqMesCountCb);
+                let beginInx = mes.messages.length - reqMesCountCb < 0 ? 0 : mes.messages.length - reqMesCountCb;
+                var cutMes = mes.messages.slice(beginInx)
+            }
             if(err) {
                 return cb(err,null);
             }else {
-                return cb(null,mes.messages);
+                return cb(null,cutMes ? cutMes : mes.messages);
             }
         });
         //setMesStatus
