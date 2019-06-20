@@ -213,7 +213,7 @@ class Chat extends React.Component {
         //console.log("getLog msgCountReq: ",reqMesCountCb);
         let messagesStore = this.state.messagesStore;
         if(!messagesStore[reqCellName]) messagesStore[reqCellName] = [];
-        if(messagesStore[reqCellName].length === this.state.users[this.getUsersIdx(reqArrName,reqCellName)].allMesCounter) return;
+        if(messagesStore[reqCellName].length === this.state[reqArrName][this.getUsersIdx(reqArrName,reqCellName)].allMesCounter) return;
         this.socket.emit(reqArrName === "rooms" ? 'getRoomLog' : 'getUserLog',reqCellName,reqMesCountCb,(err,arr)=>{
             //console.log("getUserLog arr: ",arr," ,err: ",err);
             if(err) {
@@ -224,7 +224,6 @@ class Chat extends React.Component {
             }else {
                 messagesStore[reqCellName] = arr;
                 this.setState({messagesStore},()=>this.scrollToBottom(this.refs.InpUl));
-                //this.setState({messagesStore},()=>this.msgCounter(reqArrName,this.getUsersIdx(reqArrName,reqCellName)));
             }
         });
 
@@ -259,6 +258,7 @@ class Chat extends React.Component {
         let current = this.state[a][i];
         let currentUserMes = this.state.messagesStore[current.name];
         let unReadMes = 0;
+        current.allMesCounter = currentUserMes.length;
         currentUserMes.forEach(itm => itm.status === false  && itm.user !== this.state.user.username ? unReadMes += 1 : "");
         console.log("unReadMes: ",unReadMes);
         current.msgCounter = unReadMes;
