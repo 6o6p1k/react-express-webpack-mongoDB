@@ -325,7 +325,7 @@ module.exports = function (server) {
             currentMes.status = true;
             mes.messages.set(index, currentMes);
             await mes.save();
-            if(globalChatUsers[reqUsername]) socket.broadcast.to(globalChatUsers[reqUsername].sockedId).emit('updateMsgStatus',username,index,currentMes.status);
+            if(globalChatUsers[reqUsername]) socket.broadcast.to(globalChatUsers[reqUsername].sockedId).emit('updateMsgStatus',username,index,currentMes.status,mes.messages.length);
             cb(null);
         });
         //setRoomMesStatus
