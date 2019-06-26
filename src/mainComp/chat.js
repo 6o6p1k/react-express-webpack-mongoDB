@@ -99,14 +99,14 @@ class Chat extends React.Component {
                     rooms:userData.rooms,
                 });
             })
-            .on('updateMsgStatus',(itmName,itmIndex,status,allMesCounter)=>{
-                console.log("updateMsgData itmName: ",itmName," ,itmIndex: ",itmIndex);
-                let indexCorrection = allMesCounter - this.state.messagesStore[itmName].length;//index correction factor = all messages - showed msg in message store
+            .on('updateMsgStatus',(itmName,idx,status)=>{
+                console.log("updateMsgData itmName: ",itmName," ,id: ",idx);
+                //let indexCorrection = allMesCounter - this.state.messagesStore[itmName].length;//index correction factor = all messages - showed msg in message store
 
                 if(itmName === this.state.user.username) return;
                 let messagesStore = this.state.messagesStore;
                 if(!messagesStore[itmName]) return;
-                messagesStore[itmName][itmIndex - indexCorrection].status = status;
+                messagesStore[itmName].find(itm => itm._id === idx).status = status;
                 this.setState({messagesStore});
             })
             .on('onLine', (name)=> {
@@ -141,12 +141,12 @@ class Chat extends React.Component {
             })
             .on('message', (data)=> {
                 //message receiver
-                this.printMessage({user:data.user,text:data.text,status:data.status,date:data.date},data.user);
+                this.printMessage(data,data.user);
                 this.msgCounter("users",this.getUsersIdx("users",data.user));
             })
             .on('messageRoom',(data)=>{
                 //messageRoom receiver
-                this.printMessage({user:data.user,text:data.text,status:data.status,date:data.date},data.room);
+                this.printMessage(data,data.room);
                 this.msgCounter("rooms",this.getUsersIdx("rooms",data.room));
             })
             .on('typing', (username)=> {
@@ -281,16 +281,17 @@ class Chat extends React.Component {
         switch (this.state.arrayBlockHandlerId){
             case "rooms":
                 console.log("sendMessage rooms");
-                this.socket.emit('messageRoom', this.state.message, name, date, ()=> {//This name means Group Name
-                    this.printMessage({user:this.state.user.username, text:this.state.message, date:date, status:false},name);
+                this.socket.emit('messageRoom', this.state.message, name, date, (id)=> {//This name means Group Name
+                    this.printMessage({_id:id, user:this.state.user.username, text:this.state.message, date:date, status:false},name);
                     this.msgCounter("rooms",this.getUsersIdx("rooms",name));
                     this.setState({message:''});
                 });
                 break;
             case "users":
                 console.log("sendMessage users");
-                this.socket.emit('message', this.state.message, name, date, ()=> {//This name means User Name
-                    this.printMessage({user:this.state.user.username, text:this.state.message, date:date, status:false},name);
+                this.socket.emit('message', this.state.message, name, date, (id)=> {//This name means User Name
+                    console.log("sendMessage users cb(mes.id): ",id);
+                    this.printMessage({_id:id, user:this.state.user.username, text:this.state.message, date:date, status:false},name);
                     this.msgCounter("users",this.getUsersIdx("users",name));
                     this.setState({message:''});
                 });
@@ -308,7 +309,7 @@ class Chat extends React.Component {
         console.log("printMessage: ",data);
         let messagesStore = this.state.messagesStore;
         if(!messagesStore[name]) messagesStore[name] = [];
-        messagesStore[name].push({user:data.user,text:data.text,status:data.status,date:data.date});
+        messagesStore[name].push({_id:data._id,user:data.user,text:data.text,status:data.status,date:data.date});
         this.setState({messagesStore});
     };
 
@@ -658,14 +659,15 @@ class Chat extends React.Component {
 
 
 
+
     //message bar handler
-    setAsRead = (itmName,i,a,e,readStoreLen)=>{
+    setAsRead = (itmName,i,a,e,idx)=>{
         if(Array.isArray(this.state.messagesStore[itmName][i].status) && this.state.messagesStore[itmName][i].status.includes(this.state.user.username)) return;
-        let indexCorrection = this.state[a][e].allMesCounter - this.state.messagesStore[itmName].length;//index correction factor = all messages - showed msg in message store
+        //let indexCorrection = this.state[a][e].allMesCounter - this.state.messagesStore[itmName].length;//index correction factor = all messages - showed msg in message store
         //console.log("setAsRead: ",itmName," ,i: ",i," ,indexCorrection: ",indexCorrection,"this.state[a][e].allMesCounter: ",
             //this.state[a][e].allMesCounter," ,this.state.messagesStore[itmName].length: ",this.state.messagesStore[itmName].length);
-        //console.log("setAsRead this.state.arrayBlockHandlerIdindex: ",this.state.arrayBlockHandlerId);
-        this.socket.emit(this.state.arrayBlockHandlerId === "rooms" ? 'setRoomMesStatus' : 'setMesStatus',i + indexCorrection,itmName,(err)=>{
+        console.log("setAsRead itmName: ",itmName," ,idx: ",idx);
+        this.socket.emit(this.state.arrayBlockHandlerId === "rooms" ? 'setRoomMesStatus' : 'setMesStatus',idx,itmName,(err)=>{
             if(err) {
                 this.setState({
                     modalWindow:true,
@@ -673,9 +675,7 @@ class Chat extends React.Component {
                 })
             } else {
                 let messagesStore = this.state.messagesStore;
-                let asyncIndxCor = messagesStore[itmName].length - readStoreLen;
-                console.log("messagesStore[itmName].length: ",messagesStore[itmName].length," ,readStoreLen: ",readStoreLen," ,asyncIndxCor: ",asyncIndxCor);
-                messagesStore[itmName][i+asyncIndxCor].status = true;
+                messagesStore[itmName].find(itm => itm._id === idx).status = true;
                 this.setState({messagesStore},()=> {console.log("setAsRead DONE!");this.msgCounter(this.state.arrayBlockHandlerId,this.state.messageBlockHandlerId,true)})
             }
         })
@@ -890,15 +890,15 @@ class Chat extends React.Component {
                                                                 <VisibilitySensor
                                                                     key={i+"VisibilitySensor"}
                                                                     containment={this.refs.InpUl}
-                                                                    onChange={(inView)=> inView && data.status !== true ? this.setAsRead(eUser.name,i,a,e,eStore.length) : ""}
+                                                                    onChange={(inView)=> inView && data.status !== true ? this.setAsRead(eUser.name,i,a,e,data._id) : ""}
                                                                 >
                                                                     <li key={i} >{data.text}
                                                                         <span className="messageData">{data.user}
                                                                             <span className="messageTime">{this.dateToString(data.date)}</span>
                                                                             {data.status === true ?
                                                                                 "" : Array.isArray(data.status) ? data.status.includes(this.state.user.username) ? "" :
-                                                                                    <span className="messageTime" onClick={()=>this.setAsRead(eUser.name,i,a,e)}>set is read</span> :
-                                                                                    <span className="messageTime" onClick={()=>this.setAsRead(eUser.name,i,a,e)}>set is read</span>
+                                                                                    <span className="messageTime">UR</span> :
+                                                                                    <span className="messageTime">UR</span>
                                                                             }
 
                                                                         </span>

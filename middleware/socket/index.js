@@ -45,8 +45,6 @@ function loadUser(session, callback) {
 }
 
 async function asyncIncludes(arr, chkItm) {
-    if(arr === true) return true;
-    if(!Array.isArray(arr)) return false;
     for (itm of arr) {
         if(itm === chkItm) return true;
     }
@@ -85,7 +83,8 @@ async function aggregateUserData(username) {
             let col = 0;
             for(let itm of mes.messages) {
                 //console.log("chkArr: ",await asyncIncludes(itm.status, username),", itm.user: ",itm.user,", username: ",username);
-                if(!(await asyncIncludes(itm.status, username)) && itm.user !== username) col +=1;
+                if (itm.user === username || itm.status) continue;
+                if(!(await asyncIncludes(itm.statusCheckArr, username))) col +=1;
             }
             return rooms[i] = {name:name, msgCounter :col, allMesCounter: mes.messages.length,members:room.members,blockedContacts:room.blockedContacts,created_at:room.created_at, groupId:room._id}
         });
@@ -199,10 +198,11 @@ module.exports = function (server) {
             console.log("banUser name:" ,data.name);
             let userRG = await User.userMFCTBC(username,data.name);//move to blockedContacts
             if(userRG.err) return cb("Move user to black list filed. DB err: " + userRG.err,null);
-            await Message.messageHandler({members:[username,data.name],message:{ user: username, text: "I added you to my black list.", status: false, date: data.date}});
+            let {err,mes} = await Message.messageHandler({members:[username,data.name],message:{ user: username, text: "I added you to my black list.", status: false, date: data.date}});
+            let idx = mes.messages[mes.messages.length-1]._id;
             if(globalChatUsers[data.name]) {
                 socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('updateUserData',await aggregateUserData(data.name));//update user data
-                socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('message', { user: username, text: "I added you to my black list.", status: false, date: data.date});
+                socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('message', {_id:idx,  user: username, text: "I added you to my black list.", status: false, date: data.date});
             }
             cb(null,await aggregateUserData(username));
         });
@@ -211,10 +211,11 @@ module.exports = function (server) {
             console.log("unBanUser name:" ,data.name);
             let userRG = await User.userMFBCTC(username,data.name);//move to Contacts
             if(userRG.err) return cb("Move user to black list filed. DB err: " + userRG.err,null);
-            await Message.messageHandler({members:[username,data.name],message:{ user: username, text: "I added you to my contact list.", status: false, date: data.date}});
+            let {err,mes} = await Message.messageHandler({members:[username,data.name],message:{ user: username, text: "I added you to my contact list.", status: false, date: data.date}});
+            let idx = mes.messages[mes.messages.length-1]._id;
             if(globalChatUsers[data.name]) {
                 socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('updateUserData',await aggregateUserData(data.name));//update user data
-                socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('message', { user: username, text: "I added you to my contact list.", status: false, date: data.date});
+                socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('message', {_id:idx, user: username, text: "I added you to my contact list.", status: false, date: data.date});
             }
             cb(null,await aggregateUserData(username));
         });
@@ -237,6 +238,7 @@ module.exports = function (server) {
         });
         //req show me online
         socket.on('sayOnLine', function () {
+            if(!globalChatUsers[username]) return;
             let contacts = globalChatUsers[username].contacts;
             let blockedContacts = globalChatUsers[username].blockedContacts;
             console.log("sayOnLine, username: ",username,", contacts: ",contacts,", blockedContacts: ",blockedContacts);
@@ -299,10 +301,10 @@ module.exports = function (server) {
         });
         //chat users history cb
         socket.on('getUserLog', async function (reqUsername,reqMesCountCb,cb) {
-            console.log("getUserLog reqUsername: ", reqUsername," ,reqMesCountCb: ",reqMesCountCb);
+            //console.log("getUserLog reqUsername: ", reqUsername," ,reqMesCountCb: ",reqMesCountCb);
             let {err,mes} = await Message.messageHandler({members:[username,reqUsername]});
             if(reqMesCountCb) {
-                console.log("getUserLog cutMes len: ", mes.messages.length - reqMesCountCb);
+                //console.log("getUserLog cutMes len: ", mes.messages.length - reqMesCountCb);
                 let beginInx = mes.messages.length - reqMesCountCb < 0 ? 0 : mes.messages.length - reqMesCountCb;
                 var cutMes = mes.messages.slice(beginInx)
             }
@@ -317,34 +319,36 @@ module.exports = function (server) {
             arr.sort();
             return arr[0] + '_' + arr[1];
         }
-        socket.on('setMesStatus',async function (index,reqUsername,cb) {
-            //console.log("setMesStatus: indexArr: ",index," ,reqUsername: ",reqUsername);
+        socket.on('setMesStatus',async function (idx,reqUsername,cb) {
+            console.log("setMesStatus: indexArr: ",idx," ,reqUsername: ",reqUsername);
             let mes = await Message.findOne({uniqSig:setGetSig([username,reqUsername])});
-            let currentMes = mes.messages[index];
+            let currentMes = mes.messages.id(idx);
+            console.log("setMesStatus: currentMes: ",currentMes);
             if(currentMes.status === true) return;
             currentMes.status = true;
-            mes.messages.set(index, currentMes);
+            //mes.messages.set(index, currentMes);
             await mes.save();
-            if(globalChatUsers[reqUsername]) socket.broadcast.to(globalChatUsers[reqUsername].sockedId).emit('updateMsgStatus',username,index,currentMes.status,mes.messages.length);
+            if(globalChatUsers[reqUsername]) socket.broadcast.to(globalChatUsers[reqUsername].sockedId).emit('updateMsgStatus',username,idx,currentMes.status);
             cb(null);
         });
         //setRoomMesStatus
-        socket.on('setRoomMesStatus',async function (index,reqRoom,cb) {
-            //console.log("setRoomMesStatus: indexArr: ",index," ,reqRoom: ",reqRoom);
+        socket.on('setRoomMesStatus',async function (idx,reqRoom,cb) {
+            console.log("setRoomMesStatus: indexArr: ",idx," ,reqRoom: ",reqRoom," ,username: ",username);
             let mes = await Message.findOne({uniqSig:reqRoom});
-            let currentMes = mes.messages[index];
-            if(currentMes.status === true) return;
-            if(currentMes.status === false) currentMes.status = [];
-            if(currentMes.status.includes(username)) return;
-            currentMes.status.push(username);
-            if(currentMes.status.length === mes.members.length - 1) {
+            let currentMes = mes.messages.id(idx);
+            if(currentMes.user === username) return;
+            if(currentMes.status === true || currentMes.statusCheckArr.includes(username)) return cb(null);
+            currentMes.statusCheckArr.push(username);
+            if(currentMes.statusCheckArr.length === mes.members.length - 1) {
                 currentMes.status = true;
+                currentMes.statusCheckArr = []
             }
-            //console.log("currentMes.status: ",currentMes.status," ,of room name: ",reqRoom);
-            mes.messages.set(index, currentMes);
             await mes.save();
+            console.log("currentMes: ",currentMes);
             for (let name of mes.members) {
-                if(globalChatUsers[name] && name !== username) socket.broadcast.to(globalChatUsers[name].sockedId).emit('updateMsgStatus',reqRoom,index,currentMes.status);
+                if(globalChatUsers[name] && name !== username) {
+                    socket.broadcast.to(globalChatUsers[name].sockedId).emit('updateMsgStatus',reqRoom,idx,currentMes.statusCheckArr.length !== 0 ? currentMes.statusCheckArr : currentMes.status);
+                }
             }
             cb(null);
         });
@@ -364,11 +368,12 @@ module.exports = function (server) {
             if(globalChatUsers[username].blockedContacts.includes(resToUserName)) return socket.emit('message', { user: resToUserName, text: "Admin: You can not write to baned users.", status: false, date: Date.now()});
             if(!resUser.contacts.includes(username)) return socket.emit('message', { user: resToUserName, text: "Admin: user "+resToUserName+" do not add you in his white list!", status: false, date: Date.now()});
             let {err,mes} = await Message.messageHandler({members:[username,resToUserName],message:{ user: username, text: text, status: false, date: dateNow}});
-            if(!globalChatUsers[resToUserName]) return cb && cb();
+            let idx = mes.messages[mes.messages.length-1]._id;
+            if(!globalChatUsers[resToUserName]) return cb && cb(idx);
             let sid = globalChatUsers[resToUserName].sockedId;
             //console.log('message text: ',text, 'sid: ',sid, 'resToUserName: ',resToUserName, 'dateNow: ',dateNow);
-            socket.broadcast.to(sid).emit('message', { user: username, text: text, status: false, date: dateNow});
-            cb && cb();
+            socket.broadcast.to(sid).emit('message', {_id:idx, user: username, text: text, status: false, date: dateNow});
+            cb && cb(idx);
         });
         //room events
 
@@ -390,11 +395,13 @@ module.exports = function (server) {
                 return cb(err,null)
             } else {
                 let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: username+" added new user "+invitedUser+".", status: false, date: dateNow}});
+                let idx = mes.messages[mes.messages.length-1]._id;
                 if(globalChatUsers[invitedUser]) socket.broadcast.to(globalChatUsers[invitedUser].sockedId).emit('updateUserData',await aggregateUserData(invitedUser));
                 for (let itm of room.members) {
                     if(globalChatUsers[itm.name]) {
                         socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('updateUserData',await aggregateUserData(itm.name));
                         socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
+                            _id:idx,
                             room:roomName,
                             user:username,
                             text: username+" added new user "+invitedUser+".",
@@ -439,10 +446,15 @@ module.exports = function (server) {
             if(!room.members.some(itm => itm.name === username)) return cb("You are not a member of the group.",null);
             if(room.blockedContacts.some(itm => itm.name === username)) return cb("You have been included in the block list. Message history is no longer available to you.",null);
             let {err,mes} = await Message.roomMessageHandler({roomName:roomName});
+            if(reqMesCountCb) {
+                //console.log("getUserLog cutMes len: ", mes.messages.length - reqMesCountCb);
+                let beginInx = mes.messages.length - reqMesCountCb < 0 ? 0 : mes.messages.length - reqMesCountCb;
+                var cutMes = mes.messages.slice(beginInx)
+            }
             //console.log("getRoomLog mes: ",mes,", err: ",err);
             if(err) {
                 return cb(err,null)
-            } else cb(null,mes.messages);
+            } else cb(null,cutMes ? cutMes : mes.messages);
         });
         //room message handler
         socket.on('messageRoom', async function  (text,roomName,dateNow,cb) {
@@ -453,8 +465,10 @@ module.exports = function (server) {
             if(!room.members.some(itm => itm.name === username)) return socket.emit('messageRoom', {room:roomName, user: "Admin", text: "You are not a member of the group.", status: false, date: Date.now()});
             if(room.blockedContacts.some(itm => itm.name === username)) return socket.emit('messageRoom', {room:roomName, user: "Admin", text: "You have been included in the block list. Send messages to you is no longer available.", status: false, date: Date.now()});
             let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: text, status: false, date: dateNow}});
+            let idx = mes.messages[mes.messages.length-1]._id;
             room.members.forEach(itm =>{
                 if(globalChatUsers[itm.name]) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
+                    _id:idx,
                     room:roomName,
                     user:username,
                     text: text,
@@ -462,17 +476,20 @@ module.exports = function (server) {
                     date: dateNow,
                 });
             });
-            cb && cb();
+            cb && cb(idx);
         });
         //block user in room
         socket.on('blockRoomUser', async function  (roomName,bannedUser,dateNow,cb) {
             console.log('blockRoomUser roomName: ',roomName," ,bannedUser: ",bannedUser);
-            let {err,room} = await Room.blockUserInRoom(roomName,username,bannedUser);
-            if(err) return cb(err,null);
+            let {errR,room} = await Room.blockUserInRoom(roomName,username,bannedUser);
+            if(errR) return cb(errR,null);
+            let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: "The group administrator "+username+" has added user "+bannedUser+" to the block list.", status: false, date: dateNow}});
+            let idx = mes.messages[mes.messages.length-1]._id;
             for (let itm of room.members){
                 if(globalChatUsers[itm.name]) {
                     socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('updateUserData',await aggregateUserData(itm.name));
                     socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
+                        _id:idx,
                         room:roomName,
                         user:username,
                         text: "The group administrator "+username+" has added user "+bannedUser+" to the block list.",
@@ -486,12 +503,15 @@ module.exports = function (server) {
         //unblock user in room
         socket.on('unBlockRoomUser', async function  (roomName,unbannedUser,dateNow,cb) {
             console.log('unBlockRoomUser roomName: ',roomName," ,bannedUser: ",unbannedUser);
-            let {err,room} = await Room.unblockUserInRoom(roomName,username,unbannedUser);
-            if(err) return cb(err,null);
+            let {errR,room} = await Room.unblockUserInRoom(roomName,username,unbannedUser);
+            if(errR) return cb(errR,null);
+            let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: "The group administrator "+username+" has removed user "+unbannedUser+" from the block list.", status: false, date: dateNow}});
+            let idx = mes.messages[mes.messages.length-1]._id;
             for (let itm of room.members){
                 if(globalChatUsers[itm.name]) {
                     socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('updateUserData',await aggregateUserData(itm.name));
                     socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
+                        _id:idx,
                         room:roomName,
                         user:username,
                         text: "The group administrator "+username+" has removed user "+unbannedUser+" from the block list.",
@@ -505,12 +525,15 @@ module.exports = function (server) {
         //set room admin
         socket.on('setRoomAdmin', async function  (roomName,newAdminName,dateNow,cb) {
             console.log('setRoomAdmin roomName: ',roomName," ,userName: ",newAdminName);
-            let {err,room} = Room.setAdminInRoom(roomName,username,newAdminName);
-            if(err) return cb(err,null);
+            let {errR,room} = Room.setAdminInRoom(roomName,username,newAdminName);
+            if(errR) return cb(errR,null);
+            let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: username+" has appointed "+newAdminName+" a new administrator.", status: false, date: dateNow}});
+            let idx = mes.messages[mes.messages.length-1]._id;
             for (let itm of room.members){
                 if(globalChatUsers[itm.name]) {
                     socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('updateUserData',await aggregateUserData(itm.name));
                     socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{
+                        _id:idx,
                         room:roomName,
                         user:username,
                         text: username+" has appointed "+newAdminName+" a new administrator.",

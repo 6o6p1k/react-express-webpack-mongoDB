@@ -20,11 +20,26 @@ var room = new mongoose.Schema({
     blockedContacts: [],
     created_at: { type: Date, default: Date.now },
 });
+var childMessage = new mongoose.Schema({
+    user:String,
+    text:String,
+    status:Boolean,
+    statusCheckArr:[],
+    date:Number,
+});
 var message = new mongoose.Schema({
     uniqSig: {type: String, unique: true, required: true},
     members: [],//["userName1","username2"]
-    messages: [],//{ author: John, body: 'Hi what's up', status: true, data: Date.now},{ author: Petr, body: 'Nothing out here :(' , status: false, data: Date.now}
+    messages: [childMessage],
 });
+// var message = new mongoose.Schema({
+//     uniqSig: {type: String, unique: true, required: true},
+//     members: [],//["userName1","username2"]
+//     messages: [],//{ author: John, body: 'Hi what's up', status: true, data: Date.now},{ author: Petr, body: 'Nothing out here :(' , status: false, data: Date.now}
+// });
+
+
+
 
 ////Internal methods
 function setGetSig(arr) {
