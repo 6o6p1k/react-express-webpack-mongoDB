@@ -25,7 +25,7 @@ var childMessage = new mongoose.Schema({
     text:String,
     status:Boolean,
     statusCheckArr:[],
-    date:Number,
+    date:Date,
 });
 var message = new mongoose.Schema({
     uniqSig: {type: String, unique: true, required: true},

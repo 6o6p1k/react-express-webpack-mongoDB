@@ -5,7 +5,8 @@
     "url": "mongodb://localhost:27017/EMPS_newMesDBStore",
     "options": {
       "useNewUrlParser": true,
-      "useCreateIndex": true
+      "useCreateIndex": true,
+      "useFindAndModify": false
     }
   },
   "session": {

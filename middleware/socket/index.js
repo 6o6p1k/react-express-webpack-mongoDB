@@ -333,24 +333,29 @@ module.exports = function (server) {
         });
         //setRoomMesStatus
         socket.on('setRoomMesStatus',async function (idx,reqRoom,cb) {
-            console.log("setRoomMesStatus: indexArr: ",idx," ,reqRoom: ",reqRoom," ,username: ",username);
-            let mes = await Message.findOne({uniqSig:reqRoom});
-            let currentMes = mes.messages.id(idx);
-            if(currentMes.user === username) return;
-            if(currentMes.status === true || currentMes.statusCheckArr.includes(username)) return cb(null);
-            currentMes.statusCheckArr.push(username);
-            if(currentMes.statusCheckArr.length === mes.members.length - 1) {
-                currentMes.status = true;
-                currentMes.statusCheckArr = []
-            }
-            await mes.save();
-            console.log("currentMes: ",currentMes);
-            for (let name of mes.members) {
-                if(globalChatUsers[name] && name !== username) {
-                    socket.broadcast.to(globalChatUsers[name].sockedId).emit('updateMsgStatus',reqRoom,idx,currentMes.statusCheckArr.length !== 0 ? currentMes.statusCheckArr : currentMes.status);
+            try {
+                console.log("setRoomMesStatus: indexArr: ",idx," ,reqRoom: ",reqRoom," ,username: ",username);
+                let mes = await Message.findOne({uniqSig:reqRoom});
+                let currentMes = mes.messages.id(idx);
+                if(currentMes.user === username) return;
+                if(currentMes.status === true || currentMes.statusCheckArr.includes(username)) return cb(null);
+                currentMes.statusCheckArr.push(username);
+                await Message.findOneAndUpdate({uniqSig:reqRoom ,"messages._id": idx},{"messages.$.statusCheckArr" : currentMes.statusCheckArr});
+                if(currentMes.statusCheckArr.length === mes.members.length - 1) {
+                    currentMes.status = true;
+                    currentMes.statusCheckArr = [];
+                    await Message.findOneAndUpdate({uniqSig:reqRoom ,"messages._id": idx},{"messages.$.statusCheckArr" : [],"messages.$.status" : true});
                 }
+                for (let name of mes.members) {
+                    if(globalChatUsers[name] && name !== username) {
+                        socket.broadcast.to(globalChatUsers[name].sockedId).emit('updateMsgStatus',reqRoom,idx,currentMes.statusCheckArr.length !== 0 ? currentMes.statusCheckArr : currentMes.status);
+                    }
+                }
+                cb(null);
+            } catch (err) {
+                console.log("setRoomMesStatus err: ",err);
             }
-            cb(null);
+
         });
         //chat message typing
         socket.on('typing', function (name) {
