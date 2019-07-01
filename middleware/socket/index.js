@@ -204,7 +204,7 @@ module.exports = function (server) {
                 socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('updateUserData',await aggregateUserData(data.name));//update user data
                 socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('message', {_id:idx,  user: username, text: "I added you to my black list.", status: false, date: data.date});
             }
-            cb(null,await aggregateUserData(username));
+            cb(null,await aggregateUserData(username),{_id:idx,  user: username, text: "I added you to my black list.", status: false, date: data.date});
         });
         //move to white list
         socket.on('unBanUser', async function (data,cb) {
@@ -217,7 +217,7 @@ module.exports = function (server) {
                 socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('updateUserData',await aggregateUserData(data.name));//update user data
                 socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('message', {_id:idx, user: username, text: "I added you to my contact list.", status: false, date: data.date});
             }
-            cb(null,await aggregateUserData(username));
+            cb(null,await aggregateUserData(username),{_id:idx, user: username, text: "I added you to my contact list.", status: false, date: data.date});
         });
         //remove completely
         socket.on('deleteUser', async function (data,cb) {
@@ -544,7 +544,6 @@ module.exports = function (server) {
                         text: username+" has appointed "+newAdminName+" a new administrator.",
                         status: false,
                         date: dateNow,
-                        changes:{act:'setAdmin',user:newAdminName},
                     });
                 }
             }

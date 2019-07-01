@@ -456,8 +456,8 @@ class Chat extends React.Component {
     userStatusHandler =(confirmRes)=> {
         console.log('userStatusHandler: ',confirmRes,' ,this.state.changeStatusAct: ',this.state.changeStatusAct,', this.state.changeStatusName: ',this.state.changeStatusName);
         if(confirmRes){
-            this.socket.emit(this.state.changeStatusAct, {name:this.state.changeStatusName,date:Date.now()},(err,userData)=>{
-                console.log("userStatusHandler callback err: ",err," ,userData: ",userData);
+            this.socket.emit(this.state.changeStatusAct, {name:this.state.changeStatusName,date:Date.now()},(err,userData,msgData)=>{
+                console.log("userStatusHandler callback err: ",err," , userData: ",userData," ,msgData: ",msgData);
                 if(err) {
                     this.setState({
                         modalWindow:true,
@@ -468,6 +468,7 @@ class Chat extends React.Component {
                         confirmMessage:""
                     })
                 }else {
+                    this.printMessage(msgData,this.state.changeStatusName);
                     this.setState({
                         users:userData.contacts,
                         blockedContacts:userData.blockedContacts,
@@ -476,7 +477,6 @@ class Chat extends React.Component {
                         changeStatusAct:"",
                         confirmMessage:""
                     });
-
                 }
             })
         }else{
@@ -494,7 +494,6 @@ class Chat extends React.Component {
         switch (res) {
             case "inviteUser":
                 console.log("onContextMenuHandler inviteUser roomName: ",roomName,", username: ",username);
-
                 this.socket.emit('inviteUserToRoom',roomName,username,date,(err,data)=>{
                     console.log("inviteUserToRoom' cb err: ",err,", cb rooms: ",data);
                     if(err) {
@@ -553,11 +552,11 @@ class Chat extends React.Component {
                     changeStatusName:username,
                     changeStatusAct:"banUser",
                 });
-                this.printMessage({user:this.state.user.username, text:"I added you to my black list.", date:date, status:false},username);
+                //this.printMessage({user:this.state.user.username, text:"I added you to my black list.", date:date, status:false},username);
                 break;
             case "unBanUser":
                 console.log("onContextMenuHandler unBanUser");
-                this.socket.emit('unBanUser', {name:username,date:date},(err,userData)=>{
+                this.socket.emit('unBanUser', {name:username,date:date},(err,userData,msgData)=>{
                     console.log("unBanUser callback err: ",err," ,userData: ",userData);
                     if(err) {
                         this.setState({
@@ -569,11 +568,11 @@ class Chat extends React.Component {
                             confirmMessage:""
                         })
                     }else {
+                        this.printMessage(msgData,username);
                         this.setState({
                             users:userData.contacts,
                             blockedContacts:userData.blockedContacts,
                         });
-                        this.printMessage({user:this.state.user.username, text:"I added you to my contact list.", date:date, status:false},username);
                     }
                 });
                 break;
