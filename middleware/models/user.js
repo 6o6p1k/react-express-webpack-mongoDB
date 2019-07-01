@@ -132,7 +132,7 @@ user.statics.userATBC = async function (reqUser,contact) {//AddToBlockedContacts
     try {
         user = await User.findOne({username:reqUser});
         if(user){
-            if(user.blockedContacts.includes(contact)) return ({err:null,user:user});
+            if(user.blockedContacts.includes(contact) || user.contacts.includes(contact)) return ({err:null,user:user});
             user.blockedContacts.push(contact);//add users from incoming arr
             await user.save();
             return ({err:null,user:user});

@@ -102,7 +102,7 @@ class Chat extends React.Component {
             .on('updateMsgStatus',(itmName,idx,status)=>{
                 console.log("updateMsgData itmName: ",itmName," ,id: ",idx);
                 //let indexCorrection = allMesCounter - this.state.messagesStore[itmName].length;//index correction factor = all messages - showed msg in message store
-
+                if(!itmName || !idx || !status) return;
                 if(itmName === this.state.user.username) return;
                 let messagesStore = this.state.messagesStore;
                 if(!messagesStore[itmName]) return;
@@ -389,7 +389,7 @@ class Chat extends React.Component {
     addMeHandler = (confirmRes) => {
         console.log('confirmRes: ',confirmRes);
         if(confirmRes){
-            this.socket.emit('addMe', {name:this.state.reqAddMeName,date:Date.now()},(err,userData)=>{
+            this.socket.emit('addMe', {name:this.state.reqAddMeName,date:Date.now()},(err,userData,msgData)=>{
                 console.log("addMe callback err: ",err," ,userData: ",userData);
                 if(err) {
                     this.setState({
@@ -405,7 +405,7 @@ class Chat extends React.Component {
                         addMeHandler: false,
                         confirmMessage:"",
                         reqAddMeName:"",
-                    });
+                    },()=>this.printMessage(msgData,this.state.reqAddMeName));
 
                 }
             })
@@ -423,7 +423,7 @@ class Chat extends React.Component {
         if(confirmRes){
             let date = Date.now();
             let addUserName = this.state.resAddMeAddMeName;
-            this.socket.emit('unBanUser', {name:addUserName,date:date},(err,userData)=>{
+            this.socket.emit('unBanUser', {name:addUserName,date:date},(err,userData,msgData)=>{
                 console.log("unBanUser callback err: ",err," ,userData: ",userData);
                 if(err) {
                     this.setState({
@@ -441,7 +441,7 @@ class Chat extends React.Component {
                         resAddMeAddMeName:"",
                         confirmMessage:""
                     });
-                    this.printMessage({user:this.state.user.username, text:"I added you to my contact list.", date:date, status:false},addUserName);
+                    this.printMessage(msgData,addUserName);
                 }
             })
         }else{
@@ -468,7 +468,7 @@ class Chat extends React.Component {
                         confirmMessage:""
                     })
                 }else {
-                    this.printMessage(msgData,this.state.changeStatusName);
+                    if(msgData) this.printMessage(msgData,this.state.changeStatusName);
                     this.setState({
                         users:userData.contacts,
                         blockedContacts:userData.blockedContacts,
@@ -494,7 +494,7 @@ class Chat extends React.Component {
         switch (res) {
             case "inviteUser":
                 console.log("onContextMenuHandler inviteUser roomName: ",roomName,", username: ",username);
-                this.socket.emit('inviteUserToRoom',roomName,username,date,(err,data)=>{
+                this.socket.emit('inviteUserToRoom',roomName,username,date,(err,data,msgData)=>{
                     console.log("inviteUserToRoom' cb err: ",err,", cb rooms: ",data);
                     if(err) {
                         this.setState({
@@ -503,7 +503,7 @@ class Chat extends React.Component {
                         })
                     }else {
                         this.setState({rooms:data.rooms});
-                        this.printMessage({user:this.state.user.username, text:this.state.user.username+" added new user "+username+".",date:date, status:false},roomName);
+                        this.printMessage(msgData,roomName);
                     }
                 });
                 break;
@@ -552,7 +552,6 @@ class Chat extends React.Component {
                     changeStatusName:username,
                     changeStatusAct:"banUser",
                 });
-                //this.printMessage({user:this.state.user.username, text:"I added you to my black list.", date:date, status:false},username);
                 break;
             case "unBanUser":
                 console.log("onContextMenuHandler unBanUser");
