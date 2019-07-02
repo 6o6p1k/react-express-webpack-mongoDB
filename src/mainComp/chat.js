@@ -398,6 +398,7 @@ class Chat extends React.Component {
                         addMeHandler: false,
                         confirmMessage:"",
                         reqAddMeName:"",
+                        foundContacts:[]
                     })
                 }else {
                     this.setState({
@@ -405,9 +406,10 @@ class Chat extends React.Component {
                         addMeHandler: false,
                         confirmMessage:"",
                         reqAddMeName:"",
+                        foundContacts:[]
                     },()=>this.printMessage(msgData,this.state.reqAddMeName));
-
                 }
+                this.refs["nameSearchInp"].value = "";
             })
         }else{
             this.setState({
@@ -654,10 +656,6 @@ class Chat extends React.Component {
             this.setState({scrollTopMax: e.target.scrollTopMax},()=>this.getLog(array,name,msgCount+10));
         }
     };
-
-
-
-
     //message bar handler
     setAsRead = (itmName,i,a,e,idx)=>{
         if(Array.isArray(this.state.messagesStore[itmName][i].status) && this.state.messagesStore[itmName][i].status.includes(this.state.user.username)) return;
@@ -745,7 +743,7 @@ class Chat extends React.Component {
                     <div className="chat-users">
                         <div className="login-form">
                             {this.state.showSearch ?
-                                <input name="nameSearchInp"
+                                <input name="nameSearchInp" ref="nameSearchInp"//this.refs.nameSearchInp.target.value
                                        className={`form-control searchInChat ${this.state.showSearch ? "show" : ""}`}
                                        autoComplete="off" autoFocus placeholder="Search..."
                                        onChange={ev => this.setFiltered(ev.target.value)}
