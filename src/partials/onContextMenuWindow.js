@@ -1,40 +1,62 @@
 import React from 'react';
 
 
-
-
 class OnContextMenu extends React.Component {
 
     constructor(props){
         super(props);
         this.state = {
             onEnterUserList:false,
-
+            onEnterUserRoomList:false,
+            onEnterBanUserRoomList:false,
         }
     }
 
-    showHideUserList =()=>{
-        this.setState({onEnterUserList: !this.state.onEnterUserList})
+    showHideList =(list)=>{
+        this.setState({[list]: !this.state[list]});
     };
 
 
 
     render() {
         const OnEnterUserList =()=>{
-            //console.log("onEnterUserList: ",this.props.userList);
             return (
                 <ul className="userInvite"  >
                     {this.props.userList.map((name,i) => <li className='dropDownBtn' key={i} onClick={()=>{this.props.onContextMenuResponse("inviteUser",name)}}>{name}</li>)}
                 </ul>
             )
         };
+        const OnEnterUserRoomList =()=>{
+            return (
+                <ul className="userInvite" >
+                    {this.props.userRoomList.map((name,i) => <li className='dropDownBtn' key={i} onClick={()=>{this.props.onContextMenuResponse("banRoomUser",name)}}>{name}</li>)}
+                </ul>
+            )
+        };
+        const OnEnterBanUserRoomList =()=>{
+            return (
+                <ul className="userInvite" >
+                    {this.props.userBanRoomList.map((name,i) => <li className='dropDownBtn' key={i} onClick={()=>{this.props.onContextMenuResponse("unBanRoomUser",name)}}>{name}</li>)}
+                </ul>
+            )
+        };
         return (
+
             <div>
                 {this.props.roomList === true ?(
                     <ul className="userDropDown"  style={this.props.contextMenuLocation}>
-                        <li className='dropDownBtn invite' onMouseEnter={(e)=>{e.preventDefault();e.stopPropagation();this.showHideUserList()}} onMouseLeave={()=>this.showHideUserList()} >Invite user
+                        <li className='dropDownBtn invite' onMouseEnter={(e)=>{e.preventDefault();e.stopPropagation();this.showHideList("onEnterUserList")}} onMouseLeave={()=>this.showHideList("onEnterUserList")} >Invite user
                             <OnEnterUserList/>
                         </li>
+                        <li className='dropDownBtn invite' onMouseEnter={(e)=>{e.preventDefault();e.stopPropagation();this.showHideList("onEnterUserRoomList")}} onMouseLeave={()=>this.showHideList("onEnterUserRoomList")} >Ban user
+                            <OnEnterUserRoomList/>
+                        </li>
+                        {
+                            this.props.userBanRoomList.length !== 0 ?
+                                <li className='dropDownBtn invite' onMouseEnter={(e)=>{e.preventDefault();e.stopPropagation();this.showHideList("onEnterBanUserRoomList")}} onMouseLeave={()=>this.showHideList("onEnterBanUserRoomList")} >Unban user
+                                    <OnEnterBanUserRoomList/>
+                                </li> : ''
+                        }
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("moveRoomOnTop")}}>Move group on top</li>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("viewRoomData")}}>View group data</li>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("clearRoomWindow")}}>Clear group window</li>

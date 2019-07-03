@@ -50,6 +50,7 @@ class UserBtn extends React.Component {
         //console.log("onContextMenuResponse res: ", res);
         switch (res){
             case "inviteUser":
+            case "banRoomUser":
                 this.props.onContextMenuHandler(res,username,this.state.onContextMenuUserName);
                 this.setState({onContextMenu:false});
                 break;
@@ -83,16 +84,10 @@ class UserBtn extends React.Component {
                  onMouseLeave={this.rightClickMenuOnHide}
                  type="button"
                  className={`btn user ${this.props.messageBlockHandlerId === i ?"clicked ":""}`}>
-                {this.props.roomList ?
-                    <div className="user-icon"/>
-
-                :""}
-
+                {this.props.roomList ? <div className="user-icon"/> :""}
                 {itm ?
                     <div className="userStatus">
                         <ul>
-
-
                             <li>
                                 {itm.msgCounter !== 0 || itm.msgCounter === undefined ?
                                     <div className="unread-mess">
@@ -101,7 +96,6 @@ class UserBtn extends React.Component {
                                     :""}
                             </li>
                             {!this.props.roomList ? <li className={` statusNet ${itm.onLine ? "onLine":"offLine"}`}/>:""}
-
                         </ul>
                     </div>
                     :""}
@@ -126,6 +120,8 @@ class UserBtn extends React.Component {
                         onContextMenuResponse={this.onContextMenuResponse}
                         contextMenuLocation={this.state.contextMenuLocation}
                         userList={this.props.userList}
+                        userRoomList={this.props.roomList ? itm.members.map(itm => itm.name) : ''}
+                        userBanRoomList={this.props.roomList ? itm.blockedContacts.map(itm => itm.name) : ''}
                     />
                     :''}
             </div>

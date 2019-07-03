@@ -509,6 +509,36 @@ class Chat extends React.Component {
                     }
                 });
                 break;
+            case "banRoomUser":
+                console.log("onContextMenuHandler banRoomUser roomName: ",roomName,", username: ",username);
+                this.socket.emit('blockRoomUser',roomName,username,date,(err,data,msgData)=>{
+                    console.log("blockRoomUser' cb err: ",err,", cb rooms: ",data);
+                    if(err) {
+                        this.setState({
+                            modalWindow:true,
+                            err:{message:err},
+                        })
+                    }else {
+                        this.setState({rooms:data.rooms});
+                        this.printMessage(msgData,roomName);
+                    }
+                });
+                break;
+            case "unBanRoomUser":
+                console.log("onContextMenuHandler unBlockRoomUser roomName: ",roomName,", username: ",username);
+                this.socket.emit('bunBlockRoomUser',roomName,username,date,(err,data,msgData)=>{
+                    console.log("unBlockRoomUser' cb err: ",err,", cb rooms: ",data);
+                    if(err) {
+                        this.setState({
+                            modalWindow:true,
+                            err:{message:err},
+                        })
+                    }else {
+                        this.setState({rooms:data.rooms});
+                        this.printMessage(msgData,roomName);
+                    }
+                });
+                break;
             case "viewRoomData":
                 console.log("onContextMenuHandler viewRoomData: ",roomName);
                 this.getLog("rooms",roomName,null);
