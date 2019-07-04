@@ -918,7 +918,7 @@ class Chat extends React.Component {
                                                                     containment={this.refs.InpUl}
                                                                     onChange={(inView)=> inView && data.status !== true ? this.setAsRead(eUser.name,i,a,e,data._id) : ""}
                                                                 >
-                                                                    <li key={i}
+                                                                    <li className="left" key={i}
                                                                         onClick={()=>{
                                                                             data.status === false || (Array.isArray(data.status) && !data.status.includes(this.state.user.username)) ?
                                                                                 this.setAsRead(eUser.name,i,a,e,data._id) : ""
