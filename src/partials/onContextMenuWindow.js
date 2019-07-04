@@ -28,14 +28,14 @@ class OnContextMenu extends React.Component {
         };
         const OnEnterUserRoomList =()=>{
             return (
-                <ul className="userInvite" >
+                <ul className="userInvite" style={{top:25}}>
                     {this.props.userRoomList.map((name,i) => <li className='dropDownBtn' key={i} onClick={()=>{this.props.onContextMenuResponse("banRoomUser",name)}}>{name}</li>)}
                 </ul>
             )
         };
         const OnEnterBanUserRoomList =()=>{
             return (
-                <ul className="userInvite" >
+                <ul className="userInvite" style={{top:50}}>
                     {this.props.userBanRoomList.map((name,i) => <li className='dropDownBtn' key={i} onClick={()=>{this.props.onContextMenuResponse("unBanRoomUser",name)}}>{name}</li>)}
                 </ul>
             )

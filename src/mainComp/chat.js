@@ -526,7 +526,7 @@ class Chat extends React.Component {
                 break;
             case "unBanRoomUser":
                 console.log("onContextMenuHandler unBlockRoomUser roomName: ",roomName,", username: ",username);
-                this.socket.emit('bunBlockRoomUser',roomName,username,date,(err,data,msgData)=>{
+                this.socket.emit('unBlockRoomUser',roomName,username,date,(err,data,msgData)=>{
                     console.log("unBlockRoomUser' cb err: ",err,", cb rooms: ",data);
                     if(err) {
                         this.setState({
