@@ -26,16 +26,28 @@ class OnContextMenu extends React.Component {
                 </ul>
             )
         };
-        const OnEnterUserRoomList =()=>{
-            return (
-                <ul className="userInvite" style={{top:25}}>
-                    {this.props.userRoomList.map((name,i) => <li className='dropDownBtn' key={i} onClick={()=>{this.props.onContextMenuResponse("banRoomUser",name)}}>{name}</li>)}
-                </ul>
-            )
+        const OnEnterUserRoomList =(prop)=>{
+            switch(prop.action){
+                case "banRoomUser":
+                    return (
+                        <ul className="userInvite" style={{top:25}}>
+                            {this.props.userRoomList.map((name,i) => <li className='dropDownBtn' key={i} onClick={()=>{this.props.onContextMenuResponse("banRoomUser",name)}}>{name}</li>)}
+                        </ul>
+                    );
+                    break;
+                case "setRoomAdmin":
+                    return (
+                        <ul className="userInvite" style={{top:50}}>
+                            {this.props.userRoomList.map((name,i) => <li className='dropDownBtn' key={i} onClick={()=>{this.props.onContextMenuResponse("setRoomAdmin",name)}}>{name}</li>)}
+                        </ul>
+                    );
+                    break;
+                default: console.log("OnEnterUserRoomList Sorry, we are out of " + prop.action + ".")
+            }
         };
         const OnEnterBanUserRoomList =()=>{
             return (
-                <ul className="userInvite" style={{top:50}}>
+                <ul className="userInvite" style={{top:75}}>
                     {this.props.userBanRoomList.map((name,i) => <li className='dropDownBtn' key={i} onClick={()=>{this.props.onContextMenuResponse("unBanRoomUser",name)}}>{name}</li>)}
                 </ul>
             )
@@ -48,15 +60,24 @@ class OnContextMenu extends React.Component {
                         <li className='dropDownBtn invite' onMouseEnter={(e)=>{e.preventDefault();e.stopPropagation();this.showHideList("onEnterUserList")}} onMouseLeave={()=>this.showHideList("onEnterUserList")} >Invite user
                             <OnEnterUserList/>
                         </li>
-                        <li className='dropDownBtn invite' onMouseEnter={(e)=>{e.preventDefault();e.stopPropagation();this.showHideList("onEnterUserRoomList")}} onMouseLeave={()=>this.showHideList("onEnterUserRoomList")} >Ban user
-                            <OnEnterUserRoomList/>
-                        </li>
+
+                        {this.props.userRoomList ?
+                                <div>
+                                    <li className='dropDownBtn invite' onMouseEnter={(e)=>{e.preventDefault();e.stopPropagation();this.showHideList("onEnterUserRoomList")}} onMouseLeave={()=>this.showHideList("onEnterUserRoomList")} >Ban user
+                                        <OnEnterUserRoomList action="banRoomUser"/>
+                                    </li>
+                                    <li className='dropDownBtn invite' onMouseEnter={(e)=>{e.preventDefault();e.stopPropagation();this.showHideList("onEnterUserRoomList")}} onMouseLeave={()=>this.showHideList("onEnterUserRoomList")} >Set Admin
+                                        <OnEnterUserRoomList action="setRoomAdmin"/>
+                                    </li>
+                                </div> : ''
+                        }
                         {
                             this.props.userBanRoomList.length !== 0 ?
                                 <li className='dropDownBtn invite' onMouseEnter={(e)=>{e.preventDefault();e.stopPropagation();this.showHideList("onEnterBanUserRoomList")}} onMouseLeave={()=>this.showHideList("onEnterBanUserRoomList")} >Unban user
                                     <OnEnterBanUserRoomList/>
                                 </li> : ''
                         }
+
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("moveRoomOnTop")}}>Move group on top</li>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("viewRoomData")}}>View group data</li>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("clearRoomWindow")}}>Clear group window</li>

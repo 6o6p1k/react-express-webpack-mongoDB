@@ -14,10 +14,16 @@ var user = new mongoose.Schema({
     blockedContacts: [],
     rooms:[]
 });
+var childRoomMember = new mongoose.Schema({
+    name:String,
+    enable:Boolean,
+    admin:Boolean,
+    created: {type: Date, default: Date.now},
+});
 var room = new mongoose.Schema({
     name: { type: String, lowercase: true, unique: true },
-    members: [],
-    blockedContacts: [],
+    members: [childRoomMember],
+    blockedContacts: [childRoomMember],
     created_at: { type: Date, default: Date.now },
 });
 var childMessage = new mongoose.Schema({
@@ -422,8 +428,10 @@ room.statics.setAdminInRoom = async function(roomName,adminRoom,newAdmin) {
         if(!room.members.some(itm => itm.name === newAdmin) || room.blockedContacts.some(itm => itm.name === newAdmin)) {
             return {err:"User "+newAdmin+" is not a member of this group or is already on the block list.",room:null};
         }
-        room.members.find(itm => itm.name === newAdmin).admin = true;
-        await room.save();
+        if(room.members.find(itm => itm.name === newAdmin).admin === true) return {err:"User "+newAdmin+" is already admin of this group.",room:null};
+        let idx = room.members.find(itm => itm.name === newAdmin)._id;
+        room = await Room.findOneAndUpdate({name:roomName ,"members._id": idx},{"members.$.admin" : true});
+        console.log("setAdminInRoom room: ",room);
         return {err:null,room:room};
     } catch (err) {
         console.log('setAdminInRoom err: ',err);

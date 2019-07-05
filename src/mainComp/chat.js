@@ -240,10 +240,17 @@ class Chat extends React.Component {
         if(nameStr.length === 0) this.setState({filteredUsers: []});
         this.setState({filteredUsers: this.state.users.filter(this.filterSearch(nameStr))},()=>{
             if(this.state.filteredUsers.length === 0) {
-                this.socket.emit('findContacts', nameStr,(usersArr)=>{
-                    this.setState({
-                        foundContacts:usersArr
-                    });
+                this.socket.emit('findContacts', nameStr,(err,usersArr)=>{
+                    if(err) {
+                        this.setState({
+                            modalWindow:true,
+                            err:{message:err},
+                        })
+                    }else {
+                        this.setState({
+                            foundContacts: usersArr
+                        });
+                    }
                 })
             }
         });
@@ -528,6 +535,21 @@ class Chat extends React.Component {
                 console.log("onContextMenuHandler unBlockRoomUser roomName: ",roomName,", username: ",username);
                 this.socket.emit('unBlockRoomUser',roomName,username,date,(err,data,msgData)=>{
                     console.log("unBlockRoomUser' cb err: ",err,", cb rooms: ",data);
+                    if(err) {
+                        this.setState({
+                            modalWindow:true,
+                            err:{message:err},
+                        })
+                    }else {
+                        this.setState({rooms:data.rooms});
+                        this.printMessage(msgData,roomName);
+                    }
+                });
+                break;
+            case "setRoomAdmin":
+                console.log("onContextMenuHandler setRoomAdmin roomName: ",roomName,", username: ",username);
+                this.socket.emit('setRoomAdmin',roomName,username,date,(err,data,msgData)=>{
+                    console.log("setRoomAdmin cb err: ",err,", cb rooms: ",data);
                     if(err) {
                         this.setState({
                             modalWindow:true,
@@ -871,6 +893,7 @@ class Chat extends React.Component {
                                                 banList={false}
                                                 roomList={true}
                                                 userList={this.state.users.map(itm => itm.name)}
+                                                username={this.state.user.username}
                                             />)
                                     }
                                 </div>

@@ -52,6 +52,7 @@ class UserBtn extends React.Component {
             case "inviteUser":
             case "banRoomUser":
             case "unBanRoomUser":
+            case "setRoomAdmin":
                 this.props.onContextMenuHandler(res,username,this.state.onContextMenuUserName);
                 this.setState({onContextMenu:false});
                 break;
@@ -121,7 +122,7 @@ class UserBtn extends React.Component {
                         onContextMenuResponse={this.onContextMenuResponse}
                         contextMenuLocation={this.state.contextMenuLocation}
                         userList={this.props.userList}
-                        userRoomList={this.props.roomList ? itm.members.map(itm => itm.name) : ''}
+                        userRoomList={this.props.roomList ? itm.members.map(itm => itm.name) : ''}//.filter(name => name !== this.props.username)
                         userBanRoomList={this.props.roomList ? itm.blockedContacts.map(itm => itm.name) : ''}
                     />
                     :''}
