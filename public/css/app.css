@@ -255,26 +255,31 @@ footer a:active{
     width: 50%;
 
 }
-
+.chat-list li.left{
+    background-color: #6ca9a0;
+}
 .chat-list li:before{
     content: "";
     width: 0;
     height: 0;
     border-top: 17px solid transparent;
-    border-right: 20px solid #2da292;
+    border-right: 11px solid #2da292;
     border-bottom: 0 solid transparent;
     position: absolute;
-    right: 98%;
+    right: 99%;
     bottom: 0;
     outline: none;
+}
+.chat-list li.left:before{
+    border-right-color: #6ca9a0;
 }
 .chat-list li.right{
     left: 46%;
 }
 .chat-list li.right:before{
-    right: -9px;
-    transform: rotate(90deg);
-    bottom: 1px;
+    right: -5px;
+    transform: scaleX(-1);
+    bottom: 0;
 }
 .btn-unread{
     position: relative;
@@ -452,7 +457,10 @@ footer a:active{
 .display-none {
     display: none;
 }
-
+.modal-main p {
+    display: block;
+    margin: 0 auto 10px;
+}
 .userDropDown{
     position: absolute;
     top: 0!important;
@@ -471,7 +479,7 @@ footer a:active{
     font-size: 12px;
     padding: 5px 10px;
     cursor: pointer;
-
+    position: relative;
 }
 
 .dropDownBtn:hover{
@@ -950,6 +958,7 @@ textarea{
     display: grid;
     grid-template-columns: 1fr 1fr;
     padding: 0 10px;
+    align-items: center;
 }
 .chat-room-name{
     font-weight: 700;
