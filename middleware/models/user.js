@@ -387,12 +387,13 @@ room.statics.blockUserInRoom = async function(roomName,adminRoom,blocked) {
         let room = await Room.findOne({name:roomName});
         if(room.members.find(itm => itm.name === adminRoom).admin !== true) return {err:"You are not admin of this group.",room:null};
         if(room.members.find(itm => itm.name === blocked).admin === true) return {err:"You can not block a group administrator.",room:null};
-        if(!room.members.some(itm => itm.name === blocked) || room.blockedContacts.some(itm => itm.name === blocked)) {
-            return {err:"User "+blocked+" is not a member of this group or is already on the block list.",room:null};
-        }
-        let filterMemberRoom = room.members.filter(itm => itm.name !== blocked);
-        room.members = filterMemberRoom;
-        room.blockedContacts.push({name:blocked,enable:true,admin:false});
+        if(!room.members.some(itm => itm.name === blocked) || room.blockedContacts.some(itm => itm.name === blocked)) return {err:"User "+blocked+" is not a member of this group or is already on the block list.",room:null};
+
+        let idx = room.members.find(itm => itm.name === blocked)._id;
+        let blockedUser = room.members.id(idx);
+        room.members.id(idx).remove();
+        room.blockedContacts.push(blockedUser);
+
         await room.save();
         return {err:null,room:room};
     } catch (err) {
@@ -408,9 +409,12 @@ room.statics.unblockUserInRoom = async function(roomName,adminRoom,unblocked) {
         let room = await Room.findOne({name:roomName});
         if(room.members.find(itm => itm.name === adminRoom).admin !== true) return {err:"You are not admin of this group.",room:null};
         if(room.members.some(itm => itm.name === unblocked) || !room.blockedContacts.some(itm => itm.name === unblocked)) return {err:"User "+unblocked+" is an allowed members of this group.",room:null};
-        let filterMemberRoom = room.blockedContacts.filter(itm => itm.name !== unblocked);
-        room.blockedContacts = filterMemberRoom;
-        room.members.push({name:unblocked,enable:true,admin:false});
+
+        let idx = room.blockedContacts.find(itm => itm.name === unblocked)._id;
+        let unBlockedUser = room.blockedContacts.id(idx);
+        room.blockedContacts.id(idx).remove();
+        room.members.push(unBlockedUser);
+
         await room.save();
         return {err:null,room:room};
     } catch (err) {
