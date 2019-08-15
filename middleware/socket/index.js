@@ -302,7 +302,7 @@ module.exports = function (server) {
                 console.log("findContacts err:",err);
                 return cb(err,null)
             } else {
-                let usersArr = users.map(itm=>itm.username);
+                let usersArr = users.map(itm=>itm.username).filter(name => name !== username);
                 return  cb(null,usersArr);
             }
         });
@@ -572,6 +572,23 @@ module.exports = function (server) {
                     }
                     cb(null,await aggregateUserData(username),mesg)
                 }
+            } catch (err) {
+                console.log("setRoomAdmin err: ",err);
+            }
+        });
+        //enable/disable notification
+        socket.on('changeNtfStatus', async function  (roomName,userName,cb) {
+            try {
+                console.log('changeNtfStatus roomName: ',roomName," ,userName: ",userName);
+                let room = await Room.findOne({name:roomName});
+                if(!room.members.some(itm => itm.name === userName) || room.blockedContacts.some(itm => itm.name === userName)) {
+                    return cb("You are not a member of this group or you are on the block list.",null);
+                }
+                let idx = room.members.find(itm => itm.name === userName)._id;
+                let statusNot = room.members.find(itm => itm.name === userName).enable;
+                room = await Room.findOneAndUpdate({name:roomName ,"members._id": idx},{"members.$.enable" : !statusNot});
+                console.log("changeNtfStatus room: ",room);
+                cb(null,await aggregateUserData(username))
             } catch (err) {
                 console.log("setRoomAdmin err: ",err);
             }

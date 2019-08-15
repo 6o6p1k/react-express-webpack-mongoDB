@@ -4,7 +4,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require("webpack");
 
 
-console.log('webPack output path: ',path.resolve(__dirname, '../public/js'));
+console.log('webPack output path: ',path.resolve(__dirname, '../public/dev'));
 
 module.exports = {
     mode: 'development',
@@ -22,7 +22,7 @@ module.exports = {
     },
 
     output: {
-        path: path.resolve(__dirname, '../public/js'),
+        path: path.resolve(__dirname, '../public/dev'),
         filename: 'bundle.js',
         publicPath: '/' || path.resolve(__dirname, '../public/'),
     },

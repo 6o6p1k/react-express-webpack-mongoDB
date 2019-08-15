@@ -118,6 +118,7 @@ user.statics.userATC = async function (reqUser,contact) {//AddToContacts
     let user = {};
     console.log('userATC userReq: ',reqUser,",","moving contact: ",contact);
     try {
+        if(reqUser === contact) return ({err:"Rejected, you tried to add themselves.",user:null});
         user = await User.findOne({username:reqUser});
         if(user){
             if(user.contacts.includes(contact)) return ({err:null,user:user});
