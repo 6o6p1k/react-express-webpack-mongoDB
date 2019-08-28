@@ -180,7 +180,7 @@ module.exports = function (server) {
         let username = socket.request.user.username;//req username
         let reqSocketId = socket.id;//req user socket id
         const userDB = await User.findOne({username:username});
-        //console.log("connection");
+        console.log("connection");
         //update global chat users obj
         globalChatUsers[username] = {
             sockedId:reqSocketId,
@@ -193,8 +193,12 @@ module.exports = function (server) {
         socket.on('banUser', async function (data,cb) {
             try {
                 console.log("banUser name:" ,data.name);
-                let userRG = await User.userMFCTBC(username,data.name);//move to blockedContacts
-                if(userRG.err) return cb("Move user to black list filed. DB err: " + userRG.err,null);
+                let {err:errRG, user:userRG} = await User.userMFCTBC(username,data.name);//move to blockedContacts
+                if(errRG) return cb("Move user to black list filed. DB err: " + userRG.err,null);
+                //update globalChatUsers[username] data
+                globalChatUsers[username].contacts = userRG.contacts;
+                globalChatUsers[username].blockedContacts = userRG.blockedContacts;
+                //
                 let {err,mes} = await Message.messageHandler({members:[username,data.name],message:{ user: username, text: "I added you to my black list.", status: false, date: data.date}});
                 let idx = mes.messages[mes.messages.length-1]._id;
                 let mesg = {_id:idx,  user: username, text: "I added you to my black list.", status: false, date: data.date};
@@ -211,8 +215,12 @@ module.exports = function (server) {
         socket.on('unBanUser', async function (data,cb) {
             try {
                 console.log("unBanUser name:" ,data.name);
-                let userRG = await User.userMFBCTC(username,data.name);//move to Contacts
-                if(userRG.err) return cb("Move user to black list filed. DB err: " + userRG.err,null);
+                let {err:errRG, user:userRG} = await User.userMFBCTC(username,data.name);//move to Contacts
+                if(errRG) return cb("Move user to black list filed. DB err: " + userRG.err,null);
+                //update globalChatUsers[username] data
+                globalChatUsers[username].contacts = userRG.contacts;
+                globalChatUsers[username].blockedContacts = userRG.blockedContacts;
+                //
                 let {err,mes} = await Message.messageHandler({members:[username,data.name],message:{ user: username, text: "I added you to my contact list.", status: false, date: data.date}});
                 let idx = mes.messages[mes.messages.length-1]._id;
                 let mesg = {_id:idx, user: username, text: "I added you to my contact list.", status: false, date: data.date};
@@ -229,9 +237,12 @@ module.exports = function (server) {
         socket.on('deleteUser', async function (data,cb) {
             try {
                 console.log("deleteUser name:" ,data);
-                let userRG = await User.userRFAL(username,data.name);//remove from contacts & blockedContact
-                console.log("deleteUser userRG.user:" ,userRG.user);
-                if(userRG.err) return cb("Delete user filed. DB err: " + userRG.err,null);
+                let {err:errRG, user:userRG} = await User.userRFAL(username,data.name);//remove from contacts & blockedContact
+                if(errRG) return cb("Delete user filed. DB err: " + userRG.err,null);
+                //update globalChatUsers[username] data
+                globalChatUsers[username].contacts = userRG.contacts;
+                globalChatUsers[username].blockedContacts = userRG.blockedContacts;
+                //
                 let {err,mes} = await Message.messageHandler({members:[username,data.name],message:{ user: username, text: "I deleted you from my contact list.", status: false, date: data.date}});
                 let idx = mes.messages[mes.messages.length-1]._id;
                 if(globalChatUsers[data.name]) {
@@ -274,10 +285,14 @@ module.exports = function (server) {
         socket.on('addMe', async function (data,cb) {
             try {
                 console.log('addMe: ',data);
-                let userRG = await User.userATC(username,data.name);//add to contacts
-                let userRD = await User.userATBC(data.name,username);//add to blocked contacts
-                if(userRG.err) return cb("Request rejected. DB err: "+userRG.err,null);
-                if(userRD.err) return cb("Request rejected. DB err: "+userRD.err,null);
+                let {err:errRG, user:userRG} = await User.userATC(username,data.name);//add to contacts
+                let {err:errRD, user:userRD} = await User.userATBC(data.name,username);//add to blocked contacts
+                if(errRG) return cb("Request rejected. DB err: "+userRG.err,null);
+                if(errRD) return cb("Request rejected. DB err: "+userRD.err,null);
+                //update globalChatUsers[username] data
+                globalChatUsers[username].contacts = userRG.contacts;
+                globalChatUsers[username].blockedContacts = userRG.blockedContacts;
+                //
                 let {err,mes} = await Message.messageHandler({members:[username,data.name]});
                 if(err) return cb("Send message filed. DB err: " + err,null);
                 if(mes.messages[mes.messages.length-1] !== "Please add me to you contact list." || mes.messages.length === 0) {//Save message in DB if last !== "Please add me to you contact list." || len == 0
