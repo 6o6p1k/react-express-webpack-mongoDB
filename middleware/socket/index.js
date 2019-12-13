@@ -209,6 +209,7 @@ module.exports = function (server) {
                 cb(null,await aggregateUserData(username),mesg);
             } catch (err) {
                 console.log("banUser err: ",err);
+                cb(err,null,null)
             }
         });
         //move to white list
@@ -231,6 +232,7 @@ module.exports = function (server) {
                 cb(null,await aggregateUserData(username),mesg);
             } catch (err) {
                 console.log("unBanUser err: ",err);
+                cb(err,null,null)
             }
         });
         //remove completely
@@ -252,6 +254,7 @@ module.exports = function (server) {
                 } else cb(null,await aggregateUserData(username));
             } catch (err) {
                 console.log("deleteUser err: ",err);
+                cb(err,null)
             }
         });
         //check user online
@@ -307,6 +310,7 @@ module.exports = function (server) {
                 }else cb("Request rejected. You always send request. Await then user response you.",null);
             } catch (err) {
                 console.log("addMe err: ",err);
+                cb(err,null,null)
             }
         });
         //Find contacts
@@ -345,6 +349,7 @@ module.exports = function (server) {
                 }
             } catch (err) {
                 console.log("getUserLog err: ",err);
+                cb(err,null)
             }
         });
         //setMesStatus
@@ -364,6 +369,7 @@ module.exports = function (server) {
                 cb(null);
             } catch (err) {
                 console.log("setMesStatus err: ",err);
+                cb(err);
             }
         });
         //setRoomMesStatus
@@ -389,6 +395,7 @@ module.exports = function (server) {
                 cb(null);
             } catch (err) {
                 console.log("setRoomMesStatus err: ",err);
+                cb(err);
             }
         });
         //chat message typing
@@ -402,18 +409,19 @@ module.exports = function (server) {
             try {
                 console.log('message');
                 if (text.length === 0 || !resToUserName) return;
-                if (text.length >= 60) return socket.emit('message', { user: "Admin", text: "To long message!", status: false, date: Date.now()});
+                if (text.length >= 500) return cb("To long message!",null);//socket.emit('message', { user: "Admin", text: "To long message!", status: false, date: Date.now()});
                 let resUser = await User.findOne({username:resToUserName});
-                if(globalChatUsers[username].blockedContacts.includes(resToUserName)) return socket.emit('message', { user: resToUserName, text: "Admin: You can not write to baned users.", status: false, date: Date.now()});
-                if(!resUser.contacts.includes(username)) return socket.emit('message', { user: resToUserName, text: "Admin: user "+resToUserName+" do not add you in his white list!", status: false, date: Date.now()});
+                if(globalChatUsers[username].blockedContacts.includes(resToUserName)) return cb("You can not write to baned users!",null);//socket.emit('message', { user: resToUserName, text: "Admin: You can not write to baned users.", status: false, date: Date.now()});
+                if(!resUser.contacts.includes(username)) return cb("User "+resToUserName+" do not add you in his white list!",null);//socket.emit('message', { user: resToUserName, text: "Admin: user "+resToUserName+" do not add you in his white list!", status: false, date: Date.now()});
                 let {err,mes} = await Message.messageHandler({members:[username,resToUserName],message:{ user: username, text: text, status: false, date: dateNow}});
                 let idx = mes.messages[mes.messages.length-1]._id;
-                if(!globalChatUsers[resToUserName]) return cb && cb(idx);
+                if(!globalChatUsers[resToUserName]) return cb(null,idx);
                 let sid = globalChatUsers[resToUserName].sockedId;
                 socket.broadcast.to(sid).emit('message', {_id:idx, user: username, text: text, status: false, date: dateNow});
-                cb && cb(idx);
+                cb(null,idx);
             } catch (err) {
                 console.log("message err: ",err);
+                cb(err,null);
             }
         });
         //room events
@@ -430,6 +438,7 @@ module.exports = function (server) {
                 }
             } catch (err) {
                 console.log("createRoom err: ",err);
+                cb(err,null)
             }
         });
         //invite users to room
@@ -438,7 +447,7 @@ module.exports = function (server) {
                 console.log('inviteUserToRoom: ',roomName);
                 let {err,room,user} = await Room.inviteUserToRoom(roomName,invitedUser);
                 if(err) {
-                    return cb(err,null)
+                    return cb(err,null,null)
                 } else {
                     let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: username+" added new user "+invitedUser+".", status: false, date: dateNow}});
                     let idx = mes.messages[mes.messages.length-1]._id;
@@ -454,6 +463,7 @@ module.exports = function (server) {
                 }
             } catch (err) {
                 console.log("inviteUserToRoom err: ",err);
+                cb(err,null,null)
             }
         });
         //leave room
@@ -480,6 +490,7 @@ module.exports = function (server) {
                 }
             } catch (err) {
                 console.log("leaveRoom err: ",err);
+                cb(err,null)
             }
         });
         //get room log
@@ -500,6 +511,7 @@ module.exports = function (server) {
                 } else cb(null,cutMes ? cutMes : mes.messages);
             } catch (err) {
                 console.log("getRoomLog err: ",err);
+                cb(err,null)
             }
         });
         //room message handler
@@ -507,18 +519,19 @@ module.exports = function (server) {
             try {
                 console.log('messageRoom text: ',text, 'roomName: ',roomName, 'dateNow: ',dateNow);
                 if (text.length === 0) return;
-                if (text.length >= 60) return socket.emit('messageRoom', { room:roomName,user: "Admin", text: "To long message.", status: false, date: Date.now()});
+                if (text.length >= 500) return cb("To long message.",null);//socket.emit('messageRoom', { room:roomName,user: "Admin", text: "To long message.", status: false, date: Date.now()});
                 let room = await Room.findOne({name:roomName});
-                if(!room.members.some(itm => itm.name === username)) return socket.emit('messageRoom', {room:roomName, user: "Admin", text: "You are not a member of the group.", status: false, date: Date.now()});
-                if(room.blockedContacts.some(itm => itm.name === username)) return socket.emit('messageRoom', {room:roomName, user: "Admin", text: "You have been included in the block list. Send messages to you is no longer available.", status: false, date: Date.now()});
+                if(!room.members.some(itm => itm.name === username)) return cb("You are not a member of the group.",null);//socket.emit('messageRoom', {room:roomName, user: "Admin", text: "You are not a member of the group.", status: false, date: Date.now()});
+                if(room.blockedContacts.some(itm => itm.name === username)) return cb("You have been included in the block list. Send messages to you is no longer available.",null);//socket.emit('messageRoom', {room:roomName, user: "Admin", text: "You have been included in the block list. Send messages to you is no longer available.", status: false, date: Date.now()});
                 let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: text, status: false, date: dateNow}});
                 let idx = mes.messages[mes.messages.length-1]._id;
                 room.members.forEach(itm =>{
                     if(globalChatUsers[itm.name]) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',{_id:idx, room:roomName, user:username, text: text, status: false, date: dateNow,});
                 });
-                cb && cb(idx);
+                cb(null,idx);
             } catch (err) {
                 console.log("messageRoom err: ",err);
+                cb(err,null);
             }
         });
         //block user in room
@@ -528,7 +541,7 @@ module.exports = function (server) {
                 console.log('blockRoomUser roomName: ',roomName," ,bannedUser: ",bannedUser);
                 let {err,room} = await Room.blockUserInRoom(roomName,username,bannedUser);
                 if(err) {
-                    return cb(err,null)
+                    return cb(err,null,null)
                 } else {
                     let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{user:username,text:"The group administrator "+username+" has added user "+bannedUser+" to the block list.",status: false,date: dateNow}});
                     let idx = mes.messages[mes.messages.length-1]._id;
@@ -543,6 +556,7 @@ module.exports = function (server) {
                 }
             } catch (err) {
                 console.log("blockRoomUser err: ",err);
+                cb(err,null,null)
             }
         });
         //unblock user in room
@@ -551,7 +565,7 @@ module.exports = function (server) {
                 console.log('unBlockRoomUser roomName: ',roomName," ,bannedUser: ",unbannedUser);
                 let {err,room} = await Room.unblockUserInRoom(roomName,username,unbannedUser);
                 if(err) {
-                    return cb(err,null)
+                    return cb(err,null,null)
                 } else {
                     let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: "The group administrator "+username+" has removed user "+unbannedUser+" from the block list.", status: false, date: dateNow}});
                     let idx = mes.messages[mes.messages.length-1]._id;
@@ -566,6 +580,7 @@ module.exports = function (server) {
                 }
             } catch (err) {
                 console.log("unBlockRoomUser err: ",err);
+                cb(err,null,null)
             }
         });
         //set room admin
@@ -574,7 +589,7 @@ module.exports = function (server) {
                 console.log('setRoomAdmin roomName: ',roomName," ,userName: ",newAdminName);
                 let {err,room} = await Room.setAdminInRoom(roomName,username,newAdminName);
                 if(err) {
-                    return cb(err,null)
+                    return cb(err,null,null)
                 } else {
                     let {err,mes} = await Message.roomMessageHandler({roomName:roomName,message:{ user: username, text: username+" has appointed "+newAdminName+" a new administrator.", status: false, date: dateNow}});
                     let idx = mes.messages[mes.messages.length-1]._id;
@@ -589,6 +604,7 @@ module.exports = function (server) {
                 }
             } catch (err) {
                 console.log("setRoomAdmin err: ",err);
+                cb(err,null,null)
             }
         });
         //enable/disable notification
@@ -606,6 +622,26 @@ module.exports = function (server) {
                 cb(null,await aggregateUserData(username))
             } catch (err) {
                 console.log("setRoomAdmin err: ",err);
+            }
+        });
+
+        //find message
+        socket.on('findMessage', async function  (roomName,userName,textTofind,cb) {//if roomName null => find user conversation
+            try {
+                console.log('changeNtfStatus roomName: ',roomName," ,userName: ",userName," ,reqUser: ",username);
+                let textArray = textTofind.split(' ');
+                if(!roomName) {
+                    console.log("findMessageRoom do not done yet");
+                    cb("findMessageRoom do not done yet",null)
+                }else {
+                    let sig = setGetSig([username,userName]);
+                    let mesQuery = await Message.find({uniqSig:sig ,"messages.text": {$all: textArray}});
+                    console.log("changeNtfStatus room: ",room);
+                    cb(null,mesQuery)
+                }
+            } catch (err) {
+                console.log("setRoomAdmin err: ",err);
+                cb(err,null)
             }
         });
 

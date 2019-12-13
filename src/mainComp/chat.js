@@ -288,19 +288,35 @@ class Chat extends React.Component {
         switch (this.state.arrayBlockHandlerId){
             case "rooms":
                 console.log("sendMessage rooms");
-                this.socket.emit('messageRoom', this.state.message, name, date, (id)=> {//This name means Group Name
-                    this.printMessage({_id:id, user:this.state.user.username, text:this.state.message, date:date, status:false},name);
-                    this.msgCounter("rooms",this.getUsersIdx("rooms",name));
-                    this.setState({message:''});
+                this.socket.emit('messageRoom', this.state.message, name, date, (err,id)=> {//This name means Group Name
+                    if(err) {
+                        console.log("sendMessage room err: ",err);
+                        this.setState({
+                            modalWindow:true,
+                            err:{message:err},
+                        })
+                    }else{
+                        this.printMessage({_id:id, user:this.state.user.username, text:this.state.message, date:date, status:false},name);
+                        this.msgCounter("rooms",this.getUsersIdx("rooms",name));
+                        this.setState({message:''});
+                    }
                 });
                 break;
             case "users":
                 console.log("sendMessage users");
-                this.socket.emit('message', this.state.message, name, date, (id)=> {//This name means User Name
-                    console.log("sendMessage users cb(mes.id): ",id);
-                    this.printMessage({_id:id, user:this.state.user.username, text:this.state.message, date:date, status:false},name);
-                    this.msgCounter("users",this.getUsersIdx("users",name));
-                    this.setState({message:''});
+                this.socket.emit('message', this.state.message, name, date, (err,id)=> {//This name means User Name
+                    if(err) {
+                        console.log("sendMessage users err: ",err);
+                        this.setState({
+                            modalWindow:true,
+                            err:{message:err},
+                        })
+                    } else {
+                        console.log("sendMessage users cb(mes.id): ",id);
+                        this.printMessage({_id:id, user:this.state.user.username, text:this.state.message, date:date, status:false},name);
+                        this.msgCounter("users",this.getUsersIdx("users",name));
+                        this.setState({message:''});
+                    }
                 });
                 break;
             default:
