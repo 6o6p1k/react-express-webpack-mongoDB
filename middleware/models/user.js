@@ -26,32 +26,17 @@ var room = new mongoose.Schema({
     blockedContacts: [childRoomMember],
     created_at: { type: Date, default: Date.now },
 });
-var childMessage = new mongoose.Schema({
-    user:String,
-    text:String,
+
+var message = new mongoose.Schema({
+    uniqSig: {type: String, required: true},
+    members: [],//["userName1","username2"]
+    text: {type: String,  required: true, index: true},
+    user:String,//author
     status:Boolean,
     statusCheckArr:[],
     date:Date,
 });
-var message = new mongoose.Schema({
-    uniqSig: {type: String, unique: true, required: true},
-    members: [],//["userName1","username2"]
-    messages: [childMessage],
-});
-// var message = new mongoose.Schema({
-//     uniqSig: {type: String, unique: true, required: true},
-//     members: [],//["userName1","username2"]
-//     messages: [],//{ author: John, body: 'Hi what's up', status: true, data: Date.now},{ author: Petr, body: 'Nothing out here :(' , status: false, data: Date.now}
-// });
 
-
-
-
-////Internal methods
-function setGetSig(arr) {
-    arr.sort();
-    return arr[0] + '_' + arr[1];
-};
 
 //User methods
 user.virtual('password').set(function (password) {
@@ -267,70 +252,30 @@ message.statics.messageHandler = async function (data) {
     var Message = this;
     let mes = {};
     let err = {};
-    let sig = setGetSig(data.members);
-    //console.log('DB messageHandler: ',data);
+    //let sig = setGetSig(data.members);
+    console.log('DB messageHandler: ',data);
     try {
-        mes = await Message.findOne({uniqSig:sig});
         if(data.message) {//write data
-            if(mes){
-                mes.messages.push(data.message);
-                await mes.save();
-                return {err:null,mes:mes};
-            }else {
-                mes = new Message({uniqSig:sig,messages:[data.message],members:data.members});
-                await mes.save();
-                return {err:null,mes:mes};
-            }
-        }else {//read data
-            if(!mes) {
-                mes = new Message({uniqSig:sig,messages:[],members:data.members});
-                await mes.save();
-                return {err:null,mes:mes};
-            }else {
-                return {err:null,mes:mes};
-            }
+            mes = new Message({
+                uniqSig: data.sig,//signature from sorted names or Room name
+                members: data.members,//conversation members
+                text: data.message.text,//message
+                user:data.message.user,//author
+                status:data.message.status,//message status read or not
+                statusCheckArr:[],//status of users who read this message
+                date:data.message.date,//data
+            });
+            await mes.save();
+            console.log('DB messageHandler mes: ',mes);
+            return {err:null,mes:mes};//return current message
+        }else {//read data and return log
+            return {err:null,mes:{messages: await Message.find({uniqSig:data.sig})}};
         }
     } catch(err) {
         console.log('messageHandler err: ',err);
-        return {err:err,user:null};
+        return {err:err,mes:null};
     }
 };
-
-message.statics.roomMessageHandler = async function (data) {
-    var Message = this;
-    let mes = {};
-    let err = {};
-
-    //console.log('DB roomMessageHandler: ',data);
-    try {
-        mes = await Message.findOne({uniqSig:data.roomName});
-        //console.log("message.statics.roomMessageHandler mes: ", mes);
-        if(data.message) {//write data
-            if(mes){
-                mes.messages.push(data.message);
-                if(!mes.members.includes(data.message.user)) mes.members.push(data.message.user);
-                await mes.save();
-                return {err:null,mes:mes};
-            }else {
-                mes = new Message({uniqSig:data.roomName,messages:[data.message]});
-                await mes.save();
-                return {err:null,mes:mes};
-            }
-        }else {//read data
-            if(!mes) {
-                mes = new Message({uniqSig:data.roomName,messages:[]});
-                await mes.save();
-                return {err:null,mes:mes};
-            }else {
-                return {err:null,mes:mes};
-            }
-        }
-    } catch(err) {
-        console.log('roomMessageHandler err: ',err);
-        return {err:err,user:null};
-    }
-};
-//
 //room methods
 var User = mongoose.model('User', user);
 var Message = mongoose.model('Message', message);

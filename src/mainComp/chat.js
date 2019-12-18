@@ -63,6 +63,7 @@ class Chat extends React.Component {
             promptSearchUser:false,
             promptRes:"",
             showSearch: false,
+            showHistorySearch:true,
 
             roomPropsWindow:false,
             userPropsWindow:false,
@@ -146,8 +147,8 @@ class Chat extends React.Component {
             })
             .on('messageRoom',(data)=>{
                 //messageRoom receiver
-                this.printMessage(data,data.room);
-                this.msgCounter("rooms",this.getUsersIdx("rooms",data.room));
+                this.printMessage(data,data.uniqSig);
+                this.msgCounter("rooms",this.getUsersIdx("rooms",data.uniqSig));
             })
             .on('typing', (username)=> {
                 //receiver
@@ -265,6 +266,7 @@ class Chat extends React.Component {
     msgCounter =(a,i,unreadFlag)=> {
         console.log("msgCounter a: ",a," ,i: ",i);
         let current = this.state[a][i];
+        console.log("msgCounter current: ",current);
         let currentUserMes = this.state.messagesStore[current.name];
         let unReadMes = 0;
         if(!unreadFlag) current.allMesCounter = current.allMesCounter + 1;
@@ -287,8 +289,8 @@ class Chat extends React.Component {
         let date = Date.now();
         switch (this.state.arrayBlockHandlerId){
             case "rooms":
-                console.log("sendMessage rooms");
-                this.socket.emit('messageRoom', this.state.message, name, date, (err,id)=> {//This name means Group Name
+                console.log("sendMessage rooms name: ",name);
+                this.socket.emit('messageRoom', this.state.message, name, date, (err,mes)=> {//This name means Group Name
                     if(err) {
                         console.log("sendMessage room err: ",err);
                         this.setState({
@@ -296,7 +298,7 @@ class Chat extends React.Component {
                             err:{message:err},
                         })
                     }else{
-                        this.printMessage({_id:id, user:this.state.user.username, text:this.state.message, date:date, status:false},name);
+                        this.printMessage(mes,name);
                         this.msgCounter("rooms",this.getUsersIdx("rooms",name));
                         this.setState({message:''});
                     }
@@ -304,7 +306,7 @@ class Chat extends React.Component {
                 break;
             case "users":
                 console.log("sendMessage users");
-                this.socket.emit('message', this.state.message, name, date, (err,id)=> {//This name means User Name
+                this.socket.emit('message', this.state.message, name, date, (err,mes)=> {//This name means User Name
                     if(err) {
                         console.log("sendMessage users err: ",err);
                         this.setState({
@@ -312,8 +314,7 @@ class Chat extends React.Component {
                             err:{message:err},
                         })
                     } else {
-                        console.log("sendMessage users cb(mes.id): ",id);
-                        this.printMessage({_id:id, user:this.state.user.username, text:this.state.message, date:date, status:false},name);
+                        this.printMessage(mes,name);
                         this.msgCounter("users",this.getUsersIdx("users",name));
                         this.setState({message:''});
                     }
@@ -332,7 +333,7 @@ class Chat extends React.Component {
         console.log("printMessage: ",data);
         let messagesStore = this.state.messagesStore;
         if(!messagesStore[name]) messagesStore[name] = [];
-        messagesStore[name].push({_id:data._id,user:data.user,text:data.text,status:data.status,date:data.date});
+        messagesStore[name].push(data);
         this.setState({messagesStore});
     };
 
@@ -387,6 +388,23 @@ class Chat extends React.Component {
                     modalWindow:true,
                     modalWindowMessage:"User with name or id: "+data+" not found.",
                 })
+            }
+        })
+    };
+
+    historySearch = (text,userName)=> {
+        console.log("historySearch: ",text," ,userName: ",userName);
+        if(!userName || !text) return;
+        this.socket.emit('findMessage','', userName,text,(err,messages)=>{
+            if(err) {
+                console.log("historySearch err: ",err);
+                this.setState({
+                    modalWindow:true,
+                    err:{message:err},
+                })
+            }else{
+                console.log("historySearch mesArr: ",messages);
+
             }
         })
     };
@@ -727,9 +745,6 @@ class Chat extends React.Component {
     //message bar handler
     setAsRead = (itmName,i,a,e,idx)=>{
         if(Array.isArray(this.state.messagesStore[itmName][i].status) && this.state.messagesStore[itmName][i].status.includes(this.state.user.username)) return;
-        //let indexCorrection = this.state[a][e].allMesCounter - this.state.messagesStore[itmName].length;//index correction factor = all messages - showed msg in message store
-        //console.log("setAsRead: ",itmName," ,i: ",i," ,indexCorrection: ",indexCorrection,"this.state[a][e].allMesCounter: ",
-            //this.state[a][e].allMesCounter," ,this.state.messagesStore[itmName].length: ",this.state.messagesStore[itmName].length);
         console.log("setAsRead itmName: ",itmName," ,idx: ",idx);
         this.socket.emit(this.state.arrayBlockHandlerId === "rooms" ? 'setRoomMesStatus' : 'setMesStatus',idx,itmName,(err)=>{
             if(err) {
@@ -936,6 +951,14 @@ class Chat extends React.Component {
                                                 <div onClick={() => this.hideShowProps("userPropsWindow")}>
                                                     <ItmProps user={eUser}/>
                                                 </div> : ""}
+
+{/*                                        {this.state.showHistorySearch ?
+                                            <input name="historySearchInp" ref="historySearchInp"
+                                                   className={`form-control searchInChat ${this.state.showHistorySearch ? "show" : ""}`}
+                                                   autoComplete="off" autoFocus placeholder="Search..."
+                                                   onChange={ev => this.historySearch(ev.target.value,eUser.name)}
+                                            /> : ""}*/}
+
 
                                         <ul onScroll={(evn)=>this.onScrollHandler(evn,eUser.name,a,e)} name="InpUl" className="chat-list" ref="InpUl">
                                             {

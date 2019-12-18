@@ -48,7 +48,7 @@ class RegisterP extends React.Component {
     };
 
     regExpr =(name)=> {
-        var a = /[ !@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?012345679]/;//special letters & numbers
+        var a = /[ !@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/;//special letters & numbers
         return name.match(a);
     };
 
