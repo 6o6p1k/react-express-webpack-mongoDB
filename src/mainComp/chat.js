@@ -392,10 +392,10 @@ class Chat extends React.Component {
         })
     };
 
-    historySearch = (text,userName)=> {
-        console.log("historySearch: ",text," ,userName: ",userName);
-        if(!userName || !text) return;
-        this.socket.emit('findMessage','', userName,text,(err,messages)=>{
+    historySearch = (text,name)=> {
+        console.log("historySearch: ",text," ,userName: ",name);
+        if(!name || !text || !this.state.arrayBlockHandlerId) return;
+        this.socket.emit('findMessage',this.state.arrayBlockHandlerId === "room" ? name : [name,this.state.user.username],text,(err,messages)=>{
             if(err) {
                 console.log("historySearch err: ",err);
                 this.setState({
@@ -952,12 +952,12 @@ class Chat extends React.Component {
                                                     <ItmProps user={eUser}/>
                                                 </div> : ""}
 
-{/*                                        {this.state.showHistorySearch ?
+                                        {this.state.showHistorySearch ?
                                             <input name="historySearchInp" ref="historySearchInp"
                                                    className={`form-control searchInChat ${this.state.showHistorySearch ? "show" : ""}`}
                                                    autoComplete="off" autoFocus placeholder="Search..."
                                                    onChange={ev => this.historySearch(ev.target.value,eUser.name)}
-                                            /> : ""}*/}
+                                            /> : ""}
 
 
                                         <ul onScroll={(evn)=>this.onScrollHandler(evn,eUser.name,a,e)} name="InpUl" className="chat-list" ref="InpUl">

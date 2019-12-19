@@ -30,12 +30,13 @@ var room = new mongoose.Schema({
 var message = new mongoose.Schema({
     uniqSig: {type: String, required: true},
     members: [],//["userName1","username2"]
-    text: {type: String,  required: true, index: true},
+    text: String,
     user:String,//author
     status:Boolean,
     statusCheckArr:[],
     date:Date,
 });
+message.index({ "text": "text" });
 
 
 //User methods

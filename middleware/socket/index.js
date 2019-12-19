@@ -614,19 +614,17 @@ module.exports = function (server) {
             }
         });
 
-        //find message
-        socket.on('findMessage', async function  (roomName,userName,textTofind,cb) {//if roomName null => find user conversation
-            try {
-                console.log('findMessage, roomName: ',roomName," ,userName: ",userName," ,reqUser: ",username);
-                if(roomName) {
-                    console.log("findMessageRoom do not done yet");
-                    cb("findMessageRoom do not done yet",null)
-                }else {
-                    let sig = setGetSig([username,userName]);
-                    console.log('findMessage, mesQuery: ',sig);
 
-                    cb("findMessage do not done yet",null)
-                }
+        //find message
+        socket.on('findMessage', async function  (sig,textSearch,cb) {
+            try {
+                if( Array.isArray(sig)) sig = setGetSig(sig);
+                console.log('findMessage, sig: ',sig," ,textSearch: ",textSearch);
+                let mesQuery = await Message.find(
+                    { uniqSig: sig, $text: { $search: textSearch } },
+                    { score: { $meta: "textScore" } }
+                ).sort( { date: 1, score: { $meta: "textScore" } } );
+                cb(null,mesQuery)
             } catch (err) {
                 console.log("findMessage err: ",err);
                 cb(err,null)
