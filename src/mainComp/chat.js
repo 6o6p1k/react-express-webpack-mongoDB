@@ -89,7 +89,7 @@ class Chat extends React.Component {
             //.emit('sayOnLine')
 
             .on('updateUserData',(userData)=>{
-                console.log("updateUserData: ",userData);
+                //console.log("updateUserData: ",userData);
                 if(userData.username !== this.state.user.username) return;
                 //let sortUsers = userData.contacts.sort((a,b)=> b.onLine - a.onLine);
                 //let sortBlockedUsers = userData.blockedContacts.sort((a,b)=> b.onLine - a.onLine);
@@ -205,7 +205,7 @@ class Chat extends React.Component {
     };
 
     scrollToBottom = (element) => {
-        //console.log("this.state.scrollTopMax: ",this.state.scrollTopMax);
+        //console.log("this.state.scrollTopMax: ",this.state.scrollTopMax, " ,element.scrollHeight: ",element.scrollHeight);
         element.scrollTop = element.scrollTopMax - this.state.scrollTopMax || element.scrollHeight;
     };
 
@@ -266,13 +266,13 @@ class Chat extends React.Component {
     msgCounter =(a,i,unreadFlag)=> {
         console.log("msgCounter a: ",a," ,i: ",i);
         let current = this.state[a][i];
-        console.log("msgCounter current: ",current);
+        //console.log("msgCounter current: ",current);
         let currentUserMes = this.state.messagesStore[current.name];
         let unReadMes = 0;
         if(!unreadFlag) current.allMesCounter = current.allMesCounter + 1;
         currentUserMes.forEach(itm => itm.status === false  && itm.user !== this.state.user.username ? unReadMes += 1 : "");
         current.msgCounter = unReadMes;
-        this.setState({current},()=>console.log("msgCounter this.state[a][i]:", current));
+        this.setState({current});
     };
     //set current subscriber
     inxHandler =(a,i)=> {
@@ -300,7 +300,7 @@ class Chat extends React.Component {
                     }else{
                         this.printMessage(mes,name);
                         this.msgCounter("rooms",this.getUsersIdx("rooms",name));
-                        this.setState({message:''});
+                        this.setState({message:''},()=>this.scrollToBottom(this.refs.InpUl));
                     }
                 });
                 break;
@@ -316,7 +316,7 @@ class Chat extends React.Component {
                     } else {
                         this.printMessage(mes,name);
                         this.msgCounter("users",this.getUsersIdx("users",name));
-                        this.setState({message:''});
+                        this.setState({message:''},()=>this.scrollToBottom(this.refs.InpUl));
                     }
                 });
                 break;
@@ -330,7 +330,7 @@ class Chat extends React.Component {
     };
     //pushing incoming msgs
     printMessage =(data,name)=> {//a - array itm, i - index in a - array
-        console.log("printMessage: ",data);
+        //console.log("printMessage: ",data);
         let messagesStore = this.state.messagesStore;
         if(!messagesStore[name]) messagesStore[name] = [];
         messagesStore[name].push(data);
@@ -952,12 +952,12 @@ class Chat extends React.Component {
                                                     <ItmProps user={eUser}/>
                                                 </div> : ""}
 
-                                        {this.state.showHistorySearch ?
+{/*                                        {this.state.showHistorySearch ?
                                             <input name="historySearchInp" ref="historySearchInp"
                                                    className={`form-control searchInChat ${this.state.showHistorySearch ? "show" : ""}`}
                                                    autoComplete="off" autoFocus placeholder="Search..."
                                                    onChange={ev => this.historySearch(ev.target.value,eUser.name)}
-                                            /> : ""}
+                                            /> : ""}*/}
 
 
                                         <ul onScroll={(evn)=>this.onScrollHandler(evn,eUser.name,a,e)} name="InpUl" className="chat-list" ref="InpUl">
@@ -985,8 +985,8 @@ class Chat extends React.Component {
                                                                             data.status === false || (Array.isArray(data.status) && !data.status.includes(this.state.user.username)) ?
                                                                                 this.setAsRead(eUser.name,i,a,e,data._id) : ""
                                                                         }}
-
-                                                                    >{data.text}
+                                                                    >
+                                                                        {data.text}
                                                                         <span className="messageData">{data.user}
                                                                             <span className="messageTime">{this.dateToString(data.date)}</span>
                                                                             {data.status === true ?
