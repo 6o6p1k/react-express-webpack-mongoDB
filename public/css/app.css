@@ -437,6 +437,13 @@ footer a:active{
     color: #fff;
     cursor: pointer;
 }
+.modal-main-btnRight-center {
+    position: absolute;
+    right: 10px;
+    top: 40px;
+    color: #fff;
+    cursor: pointer;
+}
 .modal-main-btnRight:hover{
     color: #2da292;
 }
@@ -469,8 +476,14 @@ footer a:active{
     background-color: #403b3b;
     padding-left: 0;
     z-index: 100;
+}
 
-
+.btnDropDown{
+    position: absolute;
+    height: auto;
+    background-color: #403b3b;
+    padding-left: 0;
+    z-index: 100;
 }
 
 .dropDownBtn{
@@ -479,7 +492,6 @@ footer a:active{
     font-size: 12px;
     padding: 5px 10px;
     cursor: pointer;
-
 }
 
 .dropDownBtn:hover{

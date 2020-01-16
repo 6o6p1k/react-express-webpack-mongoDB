@@ -23,17 +23,6 @@ var app = express();
 app.set('port', config.get('port'));
 app.disable('x-powered-by');
 
-//webPack
-// var webpack = require('webpack');
-// var devMiddleware = require('webpack-dev-middleware');
-// var configWP = require('./config/webpack.prod.config.js');//Production mod webPack config
-// var compiler = webpack(configWP);
-// app.use(devMiddleware(compiler, {
-//     noInfo: true,
-//     publicPath:  configWP.output.publicPath,
-// }));
-
-
 app.use(favicon());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded());
@@ -64,8 +53,6 @@ app.use('/*', function (req, res, next) {
 errorHandler(app);
 //Create Server
 var server = http.createServer(app);
-//clean global chat history after restart server
-//messageLogClean('messages.txt');
 //var server = https.createServer(options,app);
 server.listen(config.get('port'), function(){
     console.log('Express server listening on ip:',ip.address(),',port:',config.get('port'));

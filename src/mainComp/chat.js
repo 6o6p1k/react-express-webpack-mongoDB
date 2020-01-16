@@ -15,6 +15,14 @@ import addUserImg from '../../public/img/add-user-button.png'
 //third-party applications
 import VisibilitySensor from'react-visibility-sensor'
 
+import OnContextMenuBtn from '../partials/onContextMenuBtn.js'
+let contentMenuStyle = {
+    display: location ? 'block' : 'none',
+    position: 'absolute',
+    left: location ? location.x : 0,
+    top: location ? location.y : 0
+};
+
 
 
 
@@ -63,7 +71,7 @@ class Chat extends React.Component {
             promptSearchUser:false,
             promptRes:"",
             showSearch: false,
-            showHistorySearch:true,
+            showHistorySearch:false,
 
             roomPropsWindow:false,
             userPropsWindow:false,
@@ -71,6 +79,12 @@ class Chat extends React.Component {
             connectionLost:false,
 
             scrollTopMax: undefined,
+            //Message list context menu states
+            onContextMenuBtn:false,
+            contextMenuLocation: contentMenuStyle,
+            selectModMsgList:[],
+            btnList: ['Find Message','Select Mod'],
+            //['Find Message','Select Mod','Delete Selected','Clear Selected','Forward Selected','Copy Selected as Text'],
         };
     }
     componentDidUpdate(){
@@ -329,8 +343,7 @@ class Chat extends React.Component {
         return this.state[a].map((itm)=>{return itm.name;}).indexOf(i);
     };
     //pushing incoming msgs
-    printMessage =(data,name)=> {//a - array itm, i - index in a - array
-        //console.log("printMessage: ",data);
+    printMessage =(data,name)=> {
         let messagesStore = this.state.messagesStore;
         if(!messagesStore[name]) messagesStore[name] = [];
         messagesStore[name].push(data);
@@ -601,7 +614,7 @@ class Chat extends React.Component {
                 this.setState({
                     messageBlockHandlerId:this.getUsersIdx("rooms",roomName),
                     arrayBlockHandlerId:"rooms",
-                },()=>this.hideShowProps("roomPropsWindow"));
+                },()=>this.hideShow("roomPropsWindow"));
                 break;
             case "leaveRoom":
                 console.log("onContextMenuHandler leaveRoom roomName: ",roomName);
@@ -673,14 +686,14 @@ class Chat extends React.Component {
                     return this.setState({
                         messageBlockHandlerId:this.getUsersIdx("users",username),
                         arrayBlockHandlerId:"users"
-                    },()=>this.hideShowProps("userPropsWindow"));
+                    },()=>this.hideShow("userPropsWindow"));
                 }
                 if(this.getUsersIdx("blockedContacts",username) >= 0) {
                     this.getLog("blockedContacts",username,null);
                     return this.setState({
                         messageBlockHandlerId:this.getUsersIdx("blockedContacts",username),
                         arrayBlockHandlerId:"blockedContacts"
-                    },()=>this.hideShowProps("userPropsWindow"));
+                    },()=>this.hideShow("userPropsWindow"));
                 }
                 break;
             case "moveOnTop":
@@ -722,11 +735,7 @@ class Chat extends React.Component {
         this.setState({modalWindow: false,modalWindowMessage:"",err:{}});
     };
 
-    hideShowProps = (name) => {
-        this.setState({[name]: !this.state[name]});
-    };
-
-    hideShowPrompt = (name) => {
+    hideShow = (name) => {
         this.setState({[name]: !this.state[name]});
     };
 
@@ -758,6 +767,41 @@ class Chat extends React.Component {
                 this.setState({messagesStore},()=> {console.log("setAsRead DONE!");this.msgCounter(this.state.arrayBlockHandlerId,this.state.messageBlockHandlerId,true)})
             }
         })
+    };
+    //chat list contextMenu
+    rightClickMenuOn =(e)=> {
+        //console.log("rightClickMenuOn itm: ",itm);
+        console.log("rightClickMenuOn e.pageX: ",e.pageX," ,e.pageY: ",e.pageY);
+        this.setState({
+            onContextMenuBtn:this.state.arrayBlockHandlerId !== undefined,
+            contextMenuLocation: {left: e.pageX, top:e.pageY},
+            btnList: this.state.selectModMsgList.length === 0 ? ['Find Message','Select Mod'] : ['Find Message','Select Mod','Delete Selected','Clear Selected','Forward Selected','Copy Selected as Text'],
+        })
+    };
+
+    rightClickMenuOnHide =()=> {
+        //console.log("rightClickMenuOnHide");
+        this.setState({
+            onContextMenuBtn: false,
+            contextMenuLocation: contentMenuStyle
+        });
+    };
+
+    onContextMenuBtnResponse =(res)=> {
+        switch (res){
+            case "Find Message":
+                console.log("onContextMenuBtnResponse Find Message");
+                this.setState({
+                    showHistorySearch:true,
+                    onContextMenuBtn: false,
+                });
+                break;
+            case "Delete Message":
+                console.log("onContextMenuBtnResponse Delete Message");
+                break;
+            default:
+                console.log("onContextMenuBtnResponse Sorry, we are out of " + res + ".");
+        }
     };
 
     render() {
@@ -794,7 +838,7 @@ class Chat extends React.Component {
                     <Prompt
                         promptHandler={this.createRoom}
                         show={this.state.promptCreateRoom}
-                        handleClose={()=>this.hideShowPrompt("promptCreateRoom")}
+                        handleClose={()=>this.hideShow("promptCreateRoom")}
                         name={"Group name"}
                         type={""}
                         placeholder={"Group name"}
@@ -804,7 +848,7 @@ class Chat extends React.Component {
                     <Prompt
                         promptHandler={this.searchUser}
                         show={this.state.promptSearchUser}
-                        handleClose={()=>this.hideShowPrompt("promptSearchUser")}
+                        handleClose={()=>this.hideShow("promptSearchUser")}
                         name={"User name"}
                         type={""}
                         placeholder={"name/id"}
@@ -813,15 +857,23 @@ class Chat extends React.Component {
                 {(this.state.roomPropsWindow) ?
                     (<RoomProps
                         curentRoom={this.state.rooms[this.state.messageBlockHandlerId]}
-                        handleClose={()=>this.hideShowProps("roomPropsWindow")}
+                        handleClose={()=>this.hideShow("roomPropsWindow")}
                         show={this.state.roomPropsWindow}
                     />) : ("")}
                 {(this.state.userPropsWindow) ?
                     (<UserProps
                         curentUser={this.state[this.state.arrayBlockHandlerId][this.state.messageBlockHandlerId]}
-                        handleClose={()=>this.hideShowProps("userPropsWindow")}
+                        handleClose={()=>this.hideShow("userPropsWindow")}
                         show={this.state.userPropsWindow}
                     />) : ("")}
+                {this.state.onContextMenuBtn ?
+                    <OnContextMenuBtn
+                        onContextMenuBtnsResponse={this.onContextMenuBtnResponse}
+                        contextMenuLocation={this.state.contextMenuLocation}
+                        rightClickMenuOnHide={this.rightClickMenuOnHide}
+                        btnList={this.state.btnList}
+                    />
+                    :''}
                 <div className="chat-room">
                     <div className="chat-users">
                         <div className="login-form">
@@ -840,12 +892,12 @@ class Chat extends React.Component {
                                     <span className="tooltiptext">Search</span>
                                 </button>
 
-                                <button onClick={() => this.hideShowPrompt("promptCreateRoom")} name="msgBtn" type="button" className="btn">
+                                <button onClick={() => this.hideShow("promptCreateRoom")} name="msgBtn" type="button" className="btn">
                                     <img src={addGroupImg} alt="add user"/>
                                     <span className="tooltiptext">Create group</span>
                                 </button>
 
-                                <button onClick={() => this.hideShowPrompt("promptSearchUser")} name="msgBtn" type="button" className="btn">
+                                <button onClick={() => this.hideShow("promptSearchUser")} name="msgBtn" type="button" className="btn">
                                     <img src={addUserImg} alt="add user"/>
                                     <span className="tooltiptext">Add user</span>
                                 </button>
@@ -945,22 +997,26 @@ class Chat extends React.Component {
                                 <div className="message-block">
                                     <div name="chatRoom" id="chatDiv">
                                         {a === "rooms" ?
-                                            <div onClick={() => this.hideShowProps("roomPropsWindow")}>
+                                            <div onClick={() => this.hideShow("roomPropsWindow")}>
                                                 <ItmProps room={eUser}/>
                                             </div> : e !== undefined ?
-                                                <div onClick={() => this.hideShowProps("userPropsWindow")}>
+                                                <div onClick={() => this.hideShow("userPropsWindow")}>
                                                     <ItmProps user={eUser}/>
                                                 </div> : ""}
 
-{/*                                        {this.state.showHistorySearch ?
-                                            <input name="historySearchInp" ref="historySearchInp"
-                                                   className={`form-control searchInChat ${this.state.showHistorySearch ? "show" : ""}`}
-                                                   autoComplete="off" autoFocus placeholder="Search..."
-                                                   onChange={ev => this.historySearch(ev.target.value,eUser.name)}
-                                            /> : ""}*/}
+                                        {this.state.showHistorySearch ?
+                                            <div>
+                                                <input name="historySearchInp" ref="historySearchInp"
+                                                       className={`form-control searchInChat ${this.state.showHistorySearch ? "show" : ""}`}
+                                                       autoComplete="off" autoFocus placeholder="Search..."
+                                                       onChange={ev => this.historySearch(ev.target.value,eUser.name)}/>
+                                                    <div className='modal-main-btnRight-center' onClick={()=> this.hideShow("showHistorySearch")}>X</div>
+                                            </div> : ""}
 
 
-                                        <ul onScroll={(evn)=>this.onScrollHandler(evn,eUser.name,a,e)} name="InpUl" className="chat-list" ref="InpUl">
+                                        <ul onScroll={(evn)=>this.onScrollHandler(evn,eUser.name,a,e)}
+                                            onContextMenu={(e)=>{e.preventDefault();this.rightClickMenuOn(e); return false;}}
+                                            name="InpUl" className="chat-list" ref="InpUl">
                                             {
                                                 (eUser && eStore) ? (
                                                     eStore.map((data, i) => {

@@ -69,8 +69,6 @@ app.use('/*', function (req, res, next) {
 errorHandler(app);
 //Create Server
 var server = http.createServer(app);
-//clean global chat history after restart server
-//messageLogClean('messages.txt');
 //var server = https.createServer(options,app);
 server.listen(config.get('port'), function(){
     console.log('Express server listening on ip:',ip.address(),',port:',config.get('port'));
