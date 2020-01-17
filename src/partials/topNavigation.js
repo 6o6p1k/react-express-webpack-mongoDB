@@ -24,7 +24,7 @@ class TopNav extends React.Component {
                     {this.props.user ?
                     <li>
                         <Link to="/chat">CHAT</Link>
-                        <Link to="/userPage">MY PROFILE</Link>
+                        <Link to="/userPage">MY PROFILE - {this.props.user.username}</Link>
                     </li>
                      : ""
                     }
