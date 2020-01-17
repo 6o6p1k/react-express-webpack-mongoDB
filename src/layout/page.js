@@ -1,6 +1,7 @@
 import React from 'react';
-import TopNav from '../partials/TopNavigation.js';
+
 import BottomNav from '../partials/botNavigation.js';
+import TopNav from "../partials/topNavigation";
 
 
 class Page extends React.Component {

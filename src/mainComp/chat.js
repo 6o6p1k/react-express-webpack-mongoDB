@@ -301,42 +301,44 @@ class Chat extends React.Component {
     //send msg handler
     sendMessage =(name)=> {
         let date = Date.now();
-        switch (this.state.arrayBlockHandlerId){
-            case "rooms":
-                console.log("sendMessage rooms name: ",name);
-                this.socket.emit('messageRoom', this.state.message, name, date, (err,mes)=> {//This name means Group Name
-                    if(err) {
-                        console.log("sendMessage room err: ",err);
-                        this.setState({
-                            modalWindow:true,
-                            err:{message:err},
-                        })
-                    }else{
-                        this.printMessage(mes,name);
-                        this.msgCounter("rooms",this.getUsersIdx("rooms",name));
-                        this.setState({message:''},()=>this.scrollToBottom(this.refs.InpUl));
-                    }
-                });
-                break;
-            case "users":
-                console.log("sendMessage users");
-                this.socket.emit('message', this.state.message, name, date, (err,mes)=> {//This name means User Name
-                    if(err) {
-                        console.log("sendMessage users err: ",err);
-                        this.setState({
-                            modalWindow:true,
-                            err:{message:err},
-                        })
-                    } else {
-                        this.printMessage(mes,name);
-                        this.msgCounter("users",this.getUsersIdx("users",name));
-                        this.setState({message:''},()=>this.scrollToBottom(this.refs.InpUl));
-                    }
-                });
-                break;
-            default:
-                console.log("sendMessage: Sorry, we are out of " + res + ".");
-        }
+
+            switch (this.state.arrayBlockHandlerId) {
+                case "rooms":
+                    console.log("sendMessage rooms name: ", name);
+                    this.socket.emit('messageRoom', this.state.message, name, date, (err, mes) => {//This name means Group Name
+                        if (err) {
+                            console.log("sendMessage room err: ", err);
+                            this.setState({
+                                modalWindow: true,
+                                err: {message: err},
+                            })
+                        } else {
+                            this.printMessage(mes, name);
+                            this.msgCounter("rooms", this.getUsersIdx("rooms", name));
+                            this.setState({message: ''}, () => this.scrollToBottom(this.refs.InpUl));
+                        }
+                    });
+                    break;
+                case "users":
+                    console.log("sendMessage users");
+                    this.socket.emit('message', this.state.message, name, date, (err, mes) => {//This name means User Name
+                        if (err) {
+                            console.log("sendMessage users err: ", err);
+                            this.setState({
+                                modalWindow: true,
+                                err: {message: err},
+                            })
+                        } else {
+                            this.printMessage(mes, name);
+                            this.msgCounter("users", this.getUsersIdx("users", name));
+                            this.setState({message: ''}, () => this.scrollToBottom(this.refs.InpUl));
+                        }
+                    });
+                    break;
+                default:
+                    console.log("sendMessage: Sorry, we are out of " + res + ".");
+            }
+
     };
     //send req for log data
     getUsersIdx =(a,i)=> {
@@ -1063,21 +1065,22 @@ class Chat extends React.Component {
                                         </ul>
 
                                         <form onSubmit={(ev) => {
-                                            ev.preventDefault();
-                                            ev.stopPropagation();
-                                            //this.sendMessage(eUser.name)
-                                        }} name="chatRoomForm" className="writeMessWrapp">
+                                                ev.preventDefault();
+                                                //ev.stopPropagation();
+                                                this.sendMessage(eUser.name)
+                                           }} name="chatRoomForm" className="writeMessWrapp">
                                             <div className="input-group writeMess">
-                                                        <textarea name="formInp" className="form-control"
-                                                                  autoComplete="off"
+                                                        <input name="formInp" className="form-control writeChatMess"
+                                                                 // autoComplete="off"
                                                                   autoFocus placeholder="Message..."
                                                                   value={this.state.message}
                                                                   onChange={ev => (this.typing(eUser.name, ev))}
+
                                                         />
                                                 {
                                                     (a !== "blockedContacts") ?
-                                                        <button onClick={() => this.sendMessage(eUser.name)}
-                                                                name="msgBtn" type="button" className="btn">
+                                                        <button type='submit'
+                                                                name="msgBtn"  className="btn">
                                                             SEND</button> :
                                                         <button onClick={() => this.resAddMe(eUser.name)} name="msgBtn"
                                                                 type="button" className="btn">ALLOW USER</button>

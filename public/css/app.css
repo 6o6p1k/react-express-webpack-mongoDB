@@ -547,7 +547,7 @@ footer a:active{
     padding-left: 7px;
     display: inline-block;
 }
-textarea{
+.writeChatMess{
     width: 100%;
     border: none;
     color: #fff!important;
@@ -555,7 +555,7 @@ textarea{
     resize: none;
     box-shadow: none;
     height:100%;
-    background-color: #4c4c4c;
+    background-color: #4c4c4c!important;
     padding:0 15px;
 }
 .ReactTable.-striped .rt-tr.-even{
