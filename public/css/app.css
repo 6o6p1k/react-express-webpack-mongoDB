@@ -1075,3 +1075,63 @@ footer a:active{
 .btn.search img{
     width: 16px;
 }
+.message-block-search{
+    padding-left: 5px;
+}
+.message-count{
+    color: #ddd;
+}
+.message-search-data{
+    display: grid;
+    align-items: center;
+    grid-template-columns: 20px 1fr;
+    color:#1d1c1c
+}
+.message-search-title .user{
+    margin: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 85%;
+    overflow: hidden;
+}
+.message-search-text{
+    color:#a29b9b;
+    margin: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 85%;
+    overflow: hidden;
+}
+.message-status{
+    background-position: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+    height: 12px;
+    width: 12px;
+}
+.message-status.unread{
+    background-image: url(../img/012-checked.png);
+}
+.message-status.read{
+    background-image: url(../img/013-tick.png);
+}
+.message-search-title{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    justify-self: center;
+    align-items: center;
+}
+.message-search-list{
+    padding-left: 0;
+}
+.message-search-item{
+    transition: background-color .2s linear;
+    cursor: pointer;
+    padding: 5px 10px;
+    width: 94%;
+}
+
+.message-search-item:hover{
+     background-color: #666666;
+}
+
