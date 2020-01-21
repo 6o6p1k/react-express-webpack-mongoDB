@@ -439,6 +439,14 @@ class Chat extends React.Component {
         })
     };
 
+    changeScrollPos =(mesId)=> {
+
+        const element = this.refs["InpUl"];
+        const elemToScroll = this.refs[mesId];
+        console.log("changeScrollPos mesId: ",mesId, " ,this.refs.InpUl: ",element, " ,this.refs.mesId: ",elemToScroll);
+        element.scrollTo(0, this.refs[mesId].offsetTop)//.scrollTo(0, ref.current.offsetTop)
+    };
+
 
 
     addMe =(name)=> {
@@ -837,7 +845,7 @@ class Chat extends React.Component {
         const elements = this.state.messSearchArr.map((message)=>{
             const{text, user, date, status} = message;
             return(
-                <li key={message._id} className='message-search-item'>
+                <li key={message._id} className='message-search-item' onClick={() => this.changeScrollPos(message._id)}>
                     <div className='message-search-title'>
                         <p className='user'>{user}</p>
                         <div className='message-search-data'>
@@ -1073,7 +1081,7 @@ class Chat extends React.Component {
                                                     eStore.map((data, i) => {
                                                         return (
                                                             (data.user === this.state.user.username)?(
-                                                                <li key={i} className="right">{data.text}
+                                                                <li key={i} className="right" ref={data._id}>{data.text}
                                                                     <span className="messageData">{data.user}
                                                                         <span className="messageTime">{this.dateToString(data.date)}</span>
                                                                         <span className="messageTime">{data.status === true ? " R" : Array.isArray(data.status) ? (
@@ -1087,7 +1095,7 @@ class Chat extends React.Component {
                                                                     containment={this.refs.InpUl}
                                                                     onChange={(inView)=> inView && data.status !== true ? this.setAsRead(eUser.name,i,a,e,data._id) : ""}
                                                                 >
-                                                                    <li className="left" key={i}
+                                                                    <li className="left" key={i} ref={data._id}
                                                                         onClick={()=>{
                                                                             data.status === false || (Array.isArray(data.status) && !data.status.includes(this.state.user.username)) ?
                                                                                 this.setAsRead(eUser.name,i,a,e,data._id) : ""
