@@ -281,6 +281,13 @@ footer a:active{
     transform: scaleX(-1);
     bottom: 0;
 }
+.chat-list li.active{
+    background-color: #1a6057;
+    color: #ddd;
+}
+.chat-list li.active:before{
+    border-right: 11px solid #1a6057;
+}
 .btn-unread{
     position: relative;
 }
@@ -1131,7 +1138,8 @@ footer a:active{
     width: 94%;
 }
 
-.message-search-item:hover{
+.message-search-item:hover,
+.message-search-item.active{
      background-color: #666666;
 }
 

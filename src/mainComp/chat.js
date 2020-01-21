@@ -55,6 +55,7 @@ class Chat extends React.Component {
             searchMess: false,
             messSearchArr: [],
             textSearchMess: '',
+            messageLink: '',
 
             arrayBlockHandlerId: undefined,
             messageBlockHandlerId: undefined,
@@ -440,11 +441,15 @@ class Chat extends React.Component {
     };
 
     changeScrollPos =(mesId)=> {
-
         const element = this.refs["InpUl"];
         const elemToScroll = this.refs[mesId];
         console.log("changeScrollPos mesId: ",mesId, " ,this.refs.InpUl: ",element, " ,this.refs.mesId: ",elemToScroll);
-        element.scrollTo(0, this.refs[mesId].offsetTop)//.scrollTo(0, ref.current.offsetTop)
+        element.scrollTo(0, elemToScroll.offsetTop)//.scrollTo(0, ref.current.offsetTop)
+        this.setState({
+            messageLink: mesId
+        })
+
+
     };
 
 
@@ -765,7 +770,8 @@ class Chat extends React.Component {
     hideShow = (name) => {
         this.setState({
             [name]: !this.state[name],
-            searchMess: false
+            searchMess: false,
+            messageLink:''
         });
     };
 
@@ -842,10 +848,11 @@ class Chat extends React.Component {
         if (this.state.loginRedirect) {
             return <Redirect to='/login'/>
         }
+        const test = this.refs["InpUl"];
         const elements = this.state.messSearchArr.map((message)=>{
             const{text, user, date, status} = message;
             return(
-                <li key={message._id} className='message-search-item' onClick={() => this.changeScrollPos(message._id)}>
+                <li key={message._id} className={`message-search-item ${message._id === this.state.messageLink ? 'active' :''}`} onClick={() => this.changeScrollPos(message._id)}>
                     <div className='message-search-title'>
                         <p className='user'>{user}</p>
                         <div className='message-search-data'>
@@ -953,7 +960,13 @@ class Chat extends React.Component {
 
                             {this.state.showHistorySearch && this.state.messSearchArr.length >= 1 ?
                                 <div className='message-block-search'>
-                                    <p className='message-count'>Found {this.state.messSearchArr.length} message{this.state.messSearchArr.length > 1 ? 's' :''} </p>
+                                    {
+                                        this.state.messSearchArr.length <=0 ?
+                                            <p className='message-count'>Mo messages found</p>
+                                            :
+                                            <p className='message-count'>Found {this.state.messSearchArr.length} message{this.state.messSearchArr.length > 1 ? 's' :''} </p>
+                                    }
+
                                     <ul className='message-search-list'>
                                         {elements}
                                     </ul>
@@ -1081,7 +1094,7 @@ class Chat extends React.Component {
                                                     eStore.map((data, i) => {
                                                         return (
                                                             (data.user === this.state.user.username)?(
-                                                                <li key={i} className="right" ref={data._id}>{data.text}
+                                                                <li key={i} className={`right ${this.state.messageLink === data._id ? 'active' :''}`} ref={data._id}>{data.text}
                                                                     <span className="messageData">{data.user}
                                                                         <span className="messageTime">{this.dateToString(data.date)}</span>
                                                                         <span className="messageTime">{data.status === true ? " R" : Array.isArray(data.status) ? (
