@@ -444,7 +444,7 @@ class Chat extends React.Component {
         const element = this.refs["InpUl"];
         const elemToScroll = this.refs[mesId];
         console.log("changeScrollPos mesId: ",mesId, " ,this.refs.InpUl: ",element, " ,this.refs.mesId: ",elemToScroll);
-        element.scrollTo(0, elemToScroll.offsetTop)//.scrollTo(0, ref.current.offsetTop)
+        element.scrollTo(0, elemToScroll.offsetTop - 350)//.scrollTo(0, ref.current.offsetTop)
         this.setState({
             messageLink: mesId
         })
