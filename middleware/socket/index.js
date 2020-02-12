@@ -335,18 +335,26 @@ module.exports = function (server) {
             } else return cb(null)
         });
         //chat users history cb
-        socket.on('getUserLog', async function (reqUsername,reqMesCountCb,cb) {
+        socket.on('getUserLog', async function (reqUsername,reqMesCountCb,reqMesId,cb) {
             try {
-                console.log("getUserLog reqUsername: ", reqUsername," ,reqMesCountCb: ",reqMesCountCb);
+                console.log("getUserLog reqUsername: ", reqUsername);
                 let {err,mes} = await Message.messageHandler({sig:setGetSig([username,reqUsername])});
+                let cutMes;
                 if(reqMesCountCb) {
+                    console.log(" ,reqMesCountCb: ",reqMesCountCb);
                     let beginInx = mes.messages.length - reqMesCountCb < 0 ? 0 : mes.messages.length - reqMesCountCb;
-                    var cutMes = mes.messages.slice(beginInx)
+                    cutMes = mes.messages.slice(beginInx)
+                } else {
+                    if(reqMesId) {
+                        let getInx = mes.messages.findIndex(itm => itm._id == reqMesId);
+                        console.log(" ,reqMesId: ",reqMesId,", getInx: ",getInx);
+                        cutMes = mes.messages.slice(getInx);
+                    }
                 }
                 if(err) {
                     return cb(err,null);
                 }else {
-                    return cb(null,cutMes ? cutMes : mes.messages);
+                    return cb(null,cutMes !== undefined ? cutMes : mes.messages);
                 }
             } catch (err) {
                 console.log("getUserLog err: ",err);

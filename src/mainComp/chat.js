@@ -224,7 +224,7 @@ class Chat extends React.Component {
     };
 
     scrollToBottom = (element) => {
-        //console.log("this.state.scrollTopMax: ",this.state.scrollTopMax, " ,element.scrollHeight: ",element.scrollHeight);
+        console.log("this.state.scrollTopMax: ",this.state.scrollTopMax, " ,element.scrollHeight: ",element.scrollHeight);
         element.scrollTop = element.scrollTopMax - this.state.scrollTopMax || element.scrollHeight;
     };
 
@@ -235,9 +235,10 @@ class Chat extends React.Component {
         if(!messagesStore[e]) messagesStore[e] = [];
         if(messagesStore[e].length >= 15 && reqMesCountCb === null) return;
         if(!reqMesCountCb) reqMesCountCb = 15;
+        console.log("getLog a,e: ",a,e);
         if(messagesStore[e].length === this.state[a][this.getUsersIdx(a,e)].allMesCounter) return;
         console.log("getLog: ",a," ,",e," ,",reqMesCountCb);
-        this.socket.emit(a === "rooms" ? 'getRoomLog' : 'getUserLog',e,reqMesCountCb,(err,arr)=>{
+        this.socket.emit(a === "rooms" ? 'getRoomLog' : 'getUserLog',e,reqMesCountCb,null,(err,arr)=>{
             //console.log("getUserLog arr: ",arr," ,err: ",err);
             if(err) {
                 this.setState({
@@ -434,25 +435,35 @@ class Chat extends React.Component {
                     messSearchArr: [...messages],
                     textSearchMess: text
                 })
-
             }
-
         })
     };
 
     changeScrollPos =(mesId)=> {
         const element = this.refs["InpUl"];
         const elemToScroll = this.refs[mesId];
-        console.log("changeScrollPos mesId: ",mesId, " ,this.refs.InpUl: ",element, " ,this.refs.mesId: ",elemToScroll);
-        element.scrollTo(0, elemToScroll.offsetTop - 350)//.scrollTo(0, ref.current.offsetTop)
-        this.setState({
-            messageLink: mesId
-        })
-
+        if(elemToScroll === undefined) {
+            let messagesStore = this.state.messagesStore;
+            let userName = this.state.users[this.state.messageBlockHandlerId].name;
+            this.socket.emit(this.state.arrayBlockHandlerId === "rooms" ? 'getRoomLog' : 'getUserLog',userName,null,mesId,(err,arr)=>{
+                console.log("getUserLog arr: ",arr," ,err: ",err);
+                if(err) {
+                    this.setState({
+                        modalWindow:true,
+                        err:{message:err},
+                    })
+                }else {
+                    messagesStore[userName] = arr;
+                    this.setState({messagesStore}, ()=> this.changeScrollPos(mesId))
+                }
+            });
+        }else {
+            //console.log("changeScrollPos mesId: ",mesId, " ,this.refs.InpUl: ",element, " ,this.refs.mesId: ",elemToScroll);
+            element.scrollTo(0, elemToScroll.offsetTop - 350)//.scrollTo(0, ref.current.offsetTop)
+            this.setState({messageLink: mesId})
+        }
 
     };
-
-
 
     addMe =(name)=> {
         console.log("addMe: ",name);
@@ -834,6 +845,9 @@ class Chat extends React.Component {
                 break;
             case "Delete Message":
                 console.log("onContextMenuBtnResponse Delete Message");
+                break;
+            case "Select Mode":
+                console.log("onContextMenuBtnResponse Select Mode");
                 break;
             default:
                 console.log("onContextMenuBtnResponse Sorry, we are out of " + res + ".");
