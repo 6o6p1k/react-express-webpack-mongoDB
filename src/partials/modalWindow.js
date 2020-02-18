@@ -25,11 +25,11 @@ class ModalWindow extends React.Component {
                     }
                     {this.props.err.message && typeof this.props.err.message === 'string' ?
                         <p className="errorDescription">{this.props.err.message} </p>
-                        :"Unrecognized error message"
+                        :""
                     }
                     {this.props.message && typeof this.props.message === 'string' ?
                         <p className="errorDescription">{this.props.message} </p>
-                        :"Unrecognized error message"
+                        :""
                     }
                     {this.props.children}
 
