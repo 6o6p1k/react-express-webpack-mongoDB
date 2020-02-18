@@ -339,6 +339,7 @@ module.exports = function (server) {
             try {
                 console.log("getUserLog reqUsername: ", reqUsername);
                 let {err,mes} = await Message.messageHandler({sig:setGetSig([username,reqUsername])});
+                if(err) return cb(err,null);
                 let cutMes;
                 if(reqMesCountCb) {
                     console.log(" ,reqMesCountCb: ",reqMesCountCb);
@@ -351,11 +352,7 @@ module.exports = function (server) {
                         cutMes = mes.messages.slice(getInx);
                     }
                 }
-                if(err) {
-                    return cb(err,null);
-                }else {
-                    return cb(null,cutMes !== undefined ? cutMes : mes.messages);
-                }
+                return cb(null,cutMes !== undefined ? cutMes : mes.messages);
             } catch (err) {
                 console.log("getUserLog err: ",err);
                 cb(err,null)
@@ -494,7 +491,7 @@ module.exports = function (server) {
             }
         });
         //get room log
-        socket.on('getRoomLog', async function  (roomName,reqMesCountCb,cb) {
+        socket.on('getRoomLog', async function  (roomName,reqMesCountCb,reqMesId,cb) {
             try {
                 console.log("getRoomLog: ",roomName);
                 let room = await Room.findOne({name:roomName});
@@ -502,13 +499,19 @@ module.exports = function (server) {
                 if(room.blockedContacts.some(itm => itm.name === username)) return cb("You have been included in the block list. Message history is no longer available to you.",null);
                 if(!room.members.some(itm => itm.name === username)) return cb("You are not a member of the group.",null);
                 let {err,mes} = await Message.messageHandler({sig:roomName});
+                if(err) return cb(err,null);
+                let cutMes;
                 if(reqMesCountCb) {
                     let beginInx = mes.messages.length - reqMesCountCb < 0 ? 0 : mes.messages.length - reqMesCountCb;
-                    var cutMes = mes.messages.slice(beginInx)
+                    cutMes = mes.messages.slice(beginInx)
+                } else {
+                    if(reqMesId) {
+                        let getInx = mes.messages.findIndex(itm => itm._id == reqMesId);
+                        console.log(" ,reqMesId: ",reqMesId,", getInx: ",getInx);
+                        cutMes = mes.messages.slice(getInx);
+                    }
                 }
-                if(err) {
-                    return cb(err,null)
-                } else cb(null,cutMes ? cutMes : mes.messages);
+                return cb(null,cutMes !== undefined ? cutMes : mes.messages);
             } catch (err) {
                 console.log("getRoomLog err: ",err);
                 cb(err,null)
@@ -626,7 +629,12 @@ module.exports = function (server) {
         //find message
         socket.on('findMessage', async function  (sig,textSearch,cb) {
             try {
+                //if sig array - get user log else sig - room name & get room log
+                //check what user req his history
+
                 if( Array.isArray(sig)) sig = setGetSig(sig);
+                //check Is username room member?
+                if(!sig.includes(username)) cb("Canceled. Attempted unauthorized access to data.",null);
                 console.log('findMessage, sig: ',sig," ,textSearch: ",textSearch);
                 let mesQuery = await Message.find(
                     { uniqSig: sig, $text: { $search: textSearch } },
@@ -636,6 +644,19 @@ module.exports = function (server) {
             } catch (err) {
                 console.log("findMessage err: ",err);
                 cb(err,null)
+            }
+        });
+        //delete messages, only for users conversation
+        socket.on('deleteMessages', async function  (reqUsername,ids,cb) {
+            try {
+                //delete all messages with ids and check members array
+                await Message.deleteMany({$and:[{_id:{$in:ids}},{members:{$all:[username,reqUsername]}}]});
+                //delete user's messages in messageStore
+                if(globalChatUsers[reqUsername]) socket.broadcast.to(globalChatUsers[reqUsername].sockedId).emit('updateMessageStore',username,ids);
+                cb(null)
+            } catch (err) {
+                console.log("deleteMessage err: ",err);
+                cb(err)
             }
         });
 
