@@ -129,6 +129,14 @@ class Chat extends React.Component {
                 messagesStore[itmName].find(itm => itm._id === idx).status = status;
                 this.setState({messagesStore});
             })
+            .on('updateMessageStore',(username,ids)=> {
+                console.log("updateMessageStore username: ", username, " ,mes ids: ", ids);
+                let userStore = this.state.messagesStore[username];
+                userStore.forEach((itm,i,obj) => {
+                    if(ids.includes(itm._id)) obj.splice(i,1)
+                });
+                this.setState({userStore:userStore})
+            })
             .on('onLine', (name)=> {
                 //console.log('receiver user offLine: ',name," ,this.getUsersIdx: ", this.getUsersIdx("users",name));
                 let users = this.state.users;
@@ -1114,6 +1122,7 @@ class Chat extends React.Component {
                                                                         <span className="messageTime">{data.status === true ? " R" : Array.isArray(data.status) ? (
                                                                              data.status.map((name,i) => <span key={i} className="messageTime">{name}</span>)
                                                                            ):("")}</span>
+                                                                        <span className="messageTime">id:{data._id}</span>
                                                                     </span>
                                                                 </li>
                                                             ):(
@@ -1136,6 +1145,7 @@ class Chat extends React.Component {
                                                                                     <span className="messageTime">UR</span> :
                                                                                     <span className="messageTime">UR</span>
                                                                             }
+                                                                            <span className="messageTime">id:{data._id}</span>
 
                                                                         </span>
                                                                     </li>

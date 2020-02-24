@@ -382,6 +382,23 @@ module.exports = function (server) {
         socket.on('message', async function (text,resToUserName,dateNow,cb) {
             try {
                 console.log('message');
+                if(text.split(' ')[0] === 'console:'){
+                    let consoleArr = text.split(' ');
+                    console.log('message console command: ', consoleArr[1],',', 'message console data: ', consoleArr[2]);
+                    switch (consoleArr[1]){
+                        case "deleteMsg":
+                            console.log("message console deleteMsg DATA: ", consoleArr[2].split(','));
+                            let ids = consoleArr[2].split(',');
+                            //delete all messages with ids and check members array
+                            await Message.deleteMany({$and:[{_id:{$in:ids}},{members:{$all:[username,resToUserName]}}]});
+                            //delete user's messages in messageStore
+                            socket.emit('updateMessageStore',resToUserName,ids);
+                            if(globalChatUsers[resToUserName]) socket.broadcast.to(globalChatUsers[resToUserName].sockedId).emit('updateMessageStore',username,ids);
+                            break;
+                        default:
+                            console.log("message console : Sorry, we are out of " + consoleArr[1] + ".");
+                    }
+                }
                 if (text.length === 0 || !resToUserName) return;
                 if (text.length >= 500) return cb("To long message!",null);
                 let resUser = await User.findOne({username:resToUserName});
@@ -624,8 +641,6 @@ module.exports = function (server) {
                 cb(err,null)
             }
         });
-
-
         //find message
         socket.on('findMessage', async function  (sig,textSearch,cb) {
             try {
