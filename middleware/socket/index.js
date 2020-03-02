@@ -385,6 +385,7 @@ module.exports = function (server) {
                 if(text.split(' ')[0] === 'console:'){
                     let consoleArr = text.split(' ');
                     console.log('message console command: ', consoleArr[1],',', 'message console data: ', consoleArr[2]);
+                    let mes;
                     switch (consoleArr[1]){
                         case "deleteMsg":
                             console.log("message console deleteMsg DATA: ", consoleArr[2].split(','));
@@ -394,6 +395,31 @@ module.exports = function (server) {
                             //delete user's messages in messageStore
                             socket.emit('updateMessageStore',resToUserName,ids);
                             if(globalChatUsers[resToUserName]) socket.broadcast.to(globalChatUsers[resToUserName].sockedId).emit('updateMessageStore',username,ids);
+                            break;
+                        case "getAllUsersOnline":
+                            console.log("message console getAllUsersOnline: ");
+                            let usersOnLine = Object.keys(globalChatUsers).join();
+                            mes = { members:[username,resToUserName],
+                                statusCheckArr: [],
+                                _id: 'noId',
+                                uniqSig: setGetSig([username,resToUserName]),
+                                text: usersOnLine,
+                                user: username,
+                                status: true,
+                                date: Date.now()};
+                            return cb(null,mes);
+                            break;
+                        case "getMyId":
+                            console.log("message console getMyId: ");
+                            mes = { members:[username,resToUserName],
+                                statusCheckArr: [],
+                                _id: 'noId',
+                                uniqSig: setGetSig([username,resToUserName]),
+                                text: userDB._id,
+                                user: username,
+                                status: true,
+                                date: Date.now()};
+                            return cb(null,mes);
                             break;
                         default:
                             console.log("message console : Sorry, we are out of " + consoleArr[1] + ".");

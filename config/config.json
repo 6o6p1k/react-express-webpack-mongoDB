@@ -1,6 +1,6 @@
 {
   "port": 5555,
-  "AdministratorId": "5d888349a5eb111b4479c801",
+  "AdministratorId": "5df9fb172c2bb91d1096aba6",
   "mongoose": {
     "url": "mongodb://localhost:27017/newChatBase",
     "options": {

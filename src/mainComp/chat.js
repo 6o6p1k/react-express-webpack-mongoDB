@@ -86,6 +86,7 @@ class Chat extends React.Component {
             //Message list context menu states
             onContextMenuBtn:false,
             contextMenuLocation: contentMenuStyle,
+            selectMode:false,
             selectModMsgList:[],
             btnList: ['Find Message','Select Mod'],
             //['Find Message','Select Mod','Delete Selected','Clear Selected','Forward Selected','Copy Selected as Text'],
@@ -830,8 +831,18 @@ class Chat extends React.Component {
         this.setState({
             onContextMenuBtn:this.state.arrayBlockHandlerId !== undefined,
             contextMenuLocation: {left: e.pageX, top:e.pageY},
-            btnList: this.state.selectModMsgList.length === 0 ? ['Find Message','Select Mod'] : ['Find Message','Select Mod','Delete Selected','Clear Selected','Forward Selected','Copy Selected as Text'],
+            btnList: this.state.selectModMsgList.length === 0 ? ['Find Message','Select Mode'] : ['Find Message','Select Mode','Delete Selected','Clear Selected','Forward Selected','Copy Selected as Text'],
         })
+    };
+
+    checkboxMsg =(id)=> {
+        console.log('checkboxMsg msgId: ',id);
+        if(this.state.selectModMsgList.includes(id)){
+            let msgList = this.state.selectModMsgList;
+            let idx = msgList.indexOf(id);
+            msgList.splice(idx, 1);
+            this.setState({selectModMsgList: msgList})
+        } else this.setState({selectModMsgList: [...this.state.selectModMsgList, id]})
     };
 
     rightClickMenuOnHide =()=> {
@@ -843,19 +854,46 @@ class Chat extends React.Component {
     };
 
     onContextMenuBtnResponse =(res)=> {
+        console.log("onContextMenuBtnResponse res: ",res);
+        let currentUser = this.state.users[this.state.messageBlockHandlerId].name
         switch (res){
             case "Find Message":
                 console.log("onContextMenuBtnResponse Find Message");
                 this.setState({
-                    showHistorySearch:true,
+                    showHistorySearch:!this.state.showHistorySearch,
                     onContextMenuBtn: false,
                 });
                 break;
-            case "Delete Message":
-                console.log("onContextMenuBtnResponse Delete Message");
+            case "Delete Selected":
+                console.log("onContextMenuBtnResponse Delete Message: currentUser: ",currentUser,',','selectModMsgList: ',this.state.selectModMsgList);
+                this.socket.emit('deleteMessages',currentUser,this.state.selectModMsgList, (err)=>{
+                    if(err) {
+                        this.setState({
+                            modalWindow:true,
+                            err:{message:err},
+                        })
+                    }else {
+                        //обновить message store, удалить сообщения
+                        let msgStore = this.state.messagesStore[currentUser];
+                        msgStore.forEach((itm,i,obj) => {
+                            if(this.state.selectModMsgList.includes(itm._id)) obj.splice(i,1)
+                        });
+                        this.setState({
+                            selectMode:false,
+                            onContextMenuBtn: false,
+                            selectModMsgList: [],
+                            msgStore:msgStore
+                        });
+                    }
+                });
                 break;
             case "Select Mode":
                 console.log("onContextMenuBtnResponse Select Mode");
+                this.setState({
+                    selectMode:!this.state.selectMode,
+                    onContextMenuBtn: false,
+                    selectModMsgList: []
+                });
                 break;
             default:
                 console.log("onContextMenuBtnResponse Sorry, we are out of " + res + ".");
@@ -1123,6 +1161,11 @@ class Chat extends React.Component {
                                                                              data.status.map((name,i) => <span key={i} className="messageTime">{name}</span>)
                                                                            ):("")}</span>
                                                                         <span className="messageTime">id:{data._id}</span>
+                                                                        {this.state.selectMode ?
+                                                                            <input type="checkbox" name="msgCB"
+                                                                                   onChange={ev => (this.checkboxMsg(data._id))}
+                                                                            /> : ""
+                                                                        }
                                                                     </span>
                                                                 </li>
                                                             ):(
@@ -1146,6 +1189,11 @@ class Chat extends React.Component {
                                                                                     <span className="messageTime">UR</span>
                                                                             }
                                                                             <span className="messageTime">id:{data._id}</span>
+                                                                            {this.state.selectMode ?
+                                                                                <input type="checkbox" name="msgCB"
+                                                                                       onChange={ev => (this.checkboxMsg(data._id))}
+                                                                                /> : ""
+                                                                            }
 
                                                                         </span>
                                                                     </li>
