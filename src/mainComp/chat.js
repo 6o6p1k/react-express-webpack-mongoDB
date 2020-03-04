@@ -1155,18 +1155,37 @@ class Chat extends React.Component {
                                                         return (
                                                             (data.user === this.state.user.username)?(
                                                                 <li key={i} className={`right ${this.state.messageLink === data._id ? 'active' :''}`} ref={data._id}>{data.text}
-                                                                    <span className="messageData">{data.user}
-                                                                        <span className="messageTime">{this.dateToString(data.date)}</span>
-                                                                        <span className="messageTime">{data.status === true ? " R" : Array.isArray(data.status) ? (
-                                                                             data.status.map((name,i) => <span key={i} className="messageTime">{name}</span>)
-                                                                           ):("")}</span>
-                                                                        <span className="messageTime">id:{data._id}</span>
+                                                                    <div className="messageData">
                                                                         {this.state.selectMode ?
-                                                                            <input type="checkbox" name="msgCB"
-                                                                                   onChange={ev => (this.checkboxMsg(data._id))}
-                                                                            /> : ""
+                                                                            <label htmlFor={`${data._id}`} className="label-cbx">
+                                                                                <input id={`${data._id}`} type="checkbox" name="msgCB"  className="invisible"
+                                                                                       onChange={ev => (this.checkboxMsg(data._id))}
+                                                                                />
+                                                                                <div className="checkbox">
+                                                                                    <svg width="10px" height="10px"
+                                                                                         viewBox="0 0 20 20">
+                                                                                        <path
+                                                                                            d="M3,1 L17,1 L17,1 C18.1045695,1 19,1.8954305 19,3 L19,17 L19,17 C19,18.1045695 18.1045695,19 17,19 L3,19 L3,19 C1.8954305,19 1,18.1045695 1,17 L1,3 L1,3 C1,1.8954305 1.8954305,1 3,1 Z"></path>
+                                                                                        <polyline
+                                                                                            points="4 11 8 15 16 6"></polyline>
+                                                                                    </svg>
+                                                                                </div>
+
+                                                                            </label>
+                                                                            : ""
                                                                         }
-                                                                    </span>
+                                                                        <div className='shortMessageInfo'>
+                                                                            {data.user}                                                                             <span className="messageTime">{this.dateToString(data.date)}</span>
+                                                                            <span className="messageTime">{data.status === true ? " R" : Array.isArray(data.status) ? (
+                                                                            data.status.map((name,i) => <span key={i} className="messageTime">{name}</span>)
+                                                                                ):("")}
+                                                                            </span>
+                                                                            {/*<span className="messageTime">id:{data._id}</span>*/}
+                                                                        </div>
+
+
+
+                                                                    </div>
                                                                 </li>
                                                             ):(
                                                                 <VisibilitySensor
@@ -1181,19 +1200,37 @@ class Chat extends React.Component {
                                                                         }}
                                                                     >
                                                                         {data.text}
-                                                                        <span className="messageData">{data.user}
-                                                                            <span className="messageTime">{this.dateToString(data.date)}</span>
-                                                                            {data.status === true ?
-                                                                                "" : Array.isArray(data.status) ? data.status.includes(this.state.user.username) ? "" :
-                                                                                    <span className="messageTime">UR</span> :
-                                                                                    <span className="messageTime">UR</span>
-                                                                            }
-                                                                            <span className="messageTime">id:{data._id}</span>
-                                                                            {this.state.selectMode ?
-                                                                                <input type="checkbox" name="msgCB"
-                                                                                       onChange={ev => (this.checkboxMsg(data._id))}
-                                                                                /> : ""
-                                                                            }
+                                                                        <span className="messageData">
+                                                                             {this.state.selectMode ?
+                                                                                 <label htmlFor={`${data._id}`} className="label-cbx">
+                                                                                     <input id={`${data._id}`} type="checkbox" name="msgCB"  className="invisible"
+                                                                                            onChange={ev => (this.checkboxMsg(data._id))}
+                                                                                     />
+                                                                                     <div className="checkbox">
+                                                                                         <svg width="10px" height="10px"
+                                                                                              viewBox="0 0 20 20">
+                                                                                             <path
+                                                                                                 d="M3,1 L17,1 L17,1 C18.1045695,1 19,1.8954305 19,3 L19,17 L19,17 C19,18.1045695 18.1045695,19 17,19 L3,19 L3,19 C1.8954305,19 1,18.1045695 1,17 L1,3 L1,3 C1,1.8954305 1.8954305,1 3,1 Z"></path>
+                                                                                             <polyline
+                                                                                                 points="4 11 8 15 16 6"></polyline>
+                                                                                         </svg>
+                                                                                     </div>
+
+                                                                                 </label>
+                                                                                 : ""
+                                                                             }
+                                                                            <div className='shortMessageInfo'>
+                                                                                  {data.user}
+                                                                                <span className="messageTime">{this.dateToString(data.date)}</span>
+                                                                                {data.status === true ?
+                                                                                    "" : Array.isArray(data.status) ? data.status.includes(this.state.user.username) ? "" :
+                                                                                        <span className="messageTime">UR</span> :
+                                                                                        <span className="messageTime">UR</span>
+                                                                                }
+
+                                                                            </div>
+
+
 
                                                                         </span>
                                                                     </li>
