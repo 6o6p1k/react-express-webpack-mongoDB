@@ -1228,8 +1228,24 @@ footer a:active{
     margin-right: 5px;
 
 }
+.forwardUserList.show,
 .btnMessageGroup.show{
     opacity: 1;
     z-index: 10;
     transform: scaleY(1);
+}
+.forwardUserList{
+    width: 30%;
+    position: absolute;
+    top: 5%;
+    left: 10%;
+    background-color: #4c4c4c;
+    border-radius: 4px;
+    z-index: 2;
+    transform: scaleY(0);
+    transform-origin: 0 0;
+    transition: all .5s ease;
+}
+.forwardUserList ul{
+    padding-left: 0;
 }

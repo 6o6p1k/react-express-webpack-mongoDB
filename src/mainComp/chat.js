@@ -88,6 +88,7 @@ class Chat extends React.Component {
             contextMenuLocation: contentMenuStyle,
             selectMode:false,
             isChecked: false,
+            isForward: false,
             selectModMsgList:[],
             btnList: ['Find Message','Select Mod'],
             //['Find Message','Select Mod','Delete Selected','Clear Selected','Forward Selected','Copy Selected as Text'],
@@ -900,6 +901,12 @@ class Chat extends React.Component {
                     selectModMsgList: []
                 });
                 break;
+            case "Forward to":
+                console.log("onContextMenuBtnResponse Forward Message: currentUser: ", currentUser);
+                this.setState({
+                    isForward: !this.state.isForward
+                });
+                break;
             default:
                 console.log("onContextMenuBtnResponse Sorry, we are out of " + res + ".");
         }
@@ -1134,7 +1141,13 @@ class Chat extends React.Component {
 
                                             <div className={`btnMessageGroup ${this.state.isChecked ? "show" : ""}`}>
                                                 <button className="btn" data-loading-text="Deleting..." onClick={()=>this.onContextMenuBtnResponse('Delete Selected')}>Delete</button>
-                                                <button className="btn" data-loading-text="Forward to...">Forward to</button>
+                                                <button className="btn" data-loading-text="Forward to..." onClick={()=>this.onContextMenuBtnResponse('Forward to')}>Forward to</button>
+
+                                            </div>
+                                            <div className={`forwardUserList ${this.state.isForward ? "show" : ""}`}>
+                                                <ul>
+                                                    {this.state.users.map((user)=> <li className="btn user">{user.name}</li>)}
+                                                </ul>
                                             </div>
 
 
