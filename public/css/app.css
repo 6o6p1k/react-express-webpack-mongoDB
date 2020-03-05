@@ -1215,3 +1215,21 @@ footer a:active{
     height: 0;
     opacity: 0;
 }
+.btnMessageGroup{
+    position: absolute;
+    top: 0;
+    z-index: 2;
+    left: 0;
+    transform: scaleY(0);
+    transform-origin: 0 0;
+    transition: all .5s ease;
+}
+.btnMessageGroup .btn:first-child{
+    margin-right: 5px;
+
+}
+.btnMessageGroup.show{
+    opacity: 1;
+    z-index: 10;
+    transform: scaleY(1);
+}

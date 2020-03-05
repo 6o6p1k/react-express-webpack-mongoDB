@@ -87,6 +87,7 @@ class Chat extends React.Component {
             onContextMenuBtn:false,
             contextMenuLocation: contentMenuStyle,
             selectMode:false,
+            isChecked: false,
             selectModMsgList:[],
             btnList: ['Find Message','Select Mod'],
             //['Find Message','Select Mod','Delete Selected','Clear Selected','Forward Selected','Copy Selected as Text'],
@@ -842,7 +843,10 @@ class Chat extends React.Component {
             let idx = msgList.indexOf(id);
             msgList.splice(idx, 1);
             this.setState({selectModMsgList: msgList})
-        } else this.setState({selectModMsgList: [...this.state.selectModMsgList, id]})
+        } else this.setState({
+            selectModMsgList: [...this.state.selectModMsgList, id],
+            isChecked: true
+        })
     };
 
     rightClickMenuOnHide =()=> {
@@ -882,7 +886,8 @@ class Chat extends React.Component {
                             selectMode:false,
                             onContextMenuBtn: false,
                             selectModMsgList: [],
-                            msgStore:msgStore
+                            msgStore:msgStore,
+                            isChecked: false
                         });
                     }
                 });
@@ -1126,6 +1131,13 @@ class Chat extends React.Component {
                             return (
                                 <div className="message-block">
                                     <div name="chatRoom" id="chatDiv">
+
+                                            <div className={`btnMessageGroup ${this.state.isChecked ? "show" : ""}`}>
+                                                <button className="btn" data-loading-text="Deleting..." onClick={()=>this.onContextMenuBtnResponse('Delete Selected')}>Delete</button>
+                                                <button className="btn" data-loading-text="Forward to...">Forward to</button>
+                                            </div>
+
+
                                         {a === "rooms" ?
                                             <div onClick={() => this.hideShow("roomPropsWindow")}>
                                                 <ItmProps room={eUser}/>
@@ -1158,7 +1170,7 @@ class Chat extends React.Component {
                                                                     <div className="messageData">
                                                                         {this.state.selectMode ?
                                                                             <label htmlFor={`${data._id}`} className="label-cbx">
-                                                                                <input id={`${data._id}`} type="checkbox" name="msgCB"  className="invisible"
+                                                                                <input id={`${data._id}`} type="checkbox" name="msgCB" className="invisible"
                                                                                        onChange={ev => (this.checkboxMsg(data._id))}
                                                                                 />
                                                                                 <div className="checkbox">
@@ -1203,7 +1215,7 @@ class Chat extends React.Component {
                                                                         <span className="messageData">
                                                                              {this.state.selectMode ?
                                                                                  <label htmlFor={`${data._id}`} className="label-cbx">
-                                                                                     <input id={`${data._id}`} type="checkbox" name="msgCB"  className="invisible"
+                                                                                     <input id={`${data._id}`} type="checkbox" name="msgCB" className="invisible"
                                                                                             onChange={ev => (this.checkboxMsg(data._id))}
                                                                                      />
                                                                                      <div className="checkbox">
