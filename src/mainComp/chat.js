@@ -887,15 +887,17 @@ class Chat extends React.Component {
                         })
                     }else {
                         //обновить message store, удалить сообщения
-                        let msgStore = this.state.messagesStore[currentUser];
-                        msgStore.forEach((itm,i,obj) => {
-                            if(this.state.selectModMsgList.includes(itm._id)) obj.splice(i,1)
+                        let messagesStore = this.state.messagesStore;
+                        let newStore = messagesStore[currentUser].filter((itm) => {
+                            return !this.state.selectModMsgList.includes(itm._id)
                         });
+                        messagesStore[currentUser] = newStore;
+                        this.setState({messagesStore});
                         this.setState({
                             selectMode:false,
                             onContextMenuBtn: false,
                             selectModMsgList: [],
-                            msgStore:msgStore,
+                            dragSelectedElements:[],
                             isChecked: false
                         });
                     }
@@ -930,7 +932,8 @@ class Chat extends React.Component {
         console.log('handleSelection idS:',idS);
         this.setState({
             dragSelectedElements: indexes,
-            dragElIds:idS
+            //dragElIds:idS,
+            selectModMsgList:idS,
         });
     };
     getDragStyle = (index) => {
@@ -1195,7 +1198,7 @@ class Chat extends React.Component {
                                 <div className="message-block">
                                     <div name="chatRoom" id="chatDiv">
 
-                                            <div className={`btnMessageGroup ${this.state.isChecked ? "show" : ""}`}>
+                                            <div className={`btnMessageGroup ${this.state.isChecked || this.state.selectModMsgList.length ? "show" : ""}`}>
                                                 <button className="btn" data-loading-text="Deleting..." onClick={()=>this.onContextMenuBtnResponse('Delete Selected')}>Delete</button>
                                                 <button className="btn" data-loading-text="Forward to..." onClick={()=>this.onContextMenuBtnResponse('Forward to')}>Forward to</button>
 
