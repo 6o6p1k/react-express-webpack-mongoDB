@@ -101,10 +101,20 @@ class Chat extends React.Component {
             dragSelectedElements:[],
         };
     }
-    componentDidUpdate(prevProps){
+    componentDidUpdate(prevProps, prevState){
         //move scroll bootom
         //this.scrollToBottom(this.refs.InpUl);
-
+        if(prevState.messageBlockHandlerId !== this.state.messageBlockHandlerId || prevState.arrayBlockHandlerId !== this.state.arrayBlockHandlerId){
+            console.log(prevState.messageBlockHandlerId ,',',this.state.messageBlockHandlerId ,';', prevState.arrayBlockHandlerId ,',', this.state.arrayBlockHandlerId);
+            this.setState({
+                selectMode:false,
+                dragElRefs: [],
+                onContextMenuBtn: false,
+                selectModMsgList: [],
+                dragSelectedElements:[],
+                isChecked: false
+            });
+        }
     }
 
     componentDidMount(){
@@ -242,7 +252,7 @@ class Chat extends React.Component {
     };
 
     scrollToBottom = (element) => {
-        console.log("this.state.scrollTopMax: ",this.state.scrollTopMax, " ,element.scrollHeight: ",element.scrollHeight);
+        //console.log("this.state.scrollTopMax: ",this.state.scrollTopMax, " ,element.scrollHeight: ",element.scrollHeight);
         element.scrollTop = element.scrollTopMax - this.state.scrollTopMax || element.scrollHeight;
     };
 
@@ -253,9 +263,9 @@ class Chat extends React.Component {
         if(!messagesStore[e]) messagesStore[e] = [];
         if(messagesStore[e].length >= 15 && reqMesCountCb === null) return;
         if(!reqMesCountCb) reqMesCountCb = 15;
-        console.log("getLog a,e: ",a,e);
+        //console.log("getLog a,e: ",a,e);
         if(messagesStore[e].length === this.state[a][this.getUsersIdx(a,e)].allMesCounter) return;
-        console.log("getLog: ",a," ,",e," ,",reqMesCountCb);
+        //console.log("getLog: ",a," ,",e," ,",reqMesCountCb);
         this.socket.emit(a === "rooms" ? 'getRoomLog' : 'getUserLog',e,reqMesCountCb,null,(err,arr)=>{
             //console.log("getUserLog arr: ",arr," ,err: ",err);
             if(err) {
@@ -315,7 +325,8 @@ class Chat extends React.Component {
     //set current subscriber
     inxHandler =(a,i)=> {
         //console.log('inxHandler arrName: ',a,", arrName inx: ", i);
-        this.setState({messageBlockHandlerId: i, arrayBlockHandlerId: a});
+        //this.dragSelectToDefault();
+        this.setState({messageBlockHandlerId: i, arrayBlockHandlerId: a}/*,()=> this.dragSelectToDefault()*/);
     };
     //transform data in milliseconds to string
     dateToString =(dateMlS)=> {
@@ -927,6 +938,18 @@ class Chat extends React.Component {
     // dragElRefs: [],
     // dragElIds:[],
     // dragSelectedElements:[],
+    dragSelectToDefault =()=> {
+        this.setState({
+            selectMode:false,
+            //dragTargetRef: null,
+            dragElRefs: [],
+            onContextMenuBtn: false,
+            selectModMsgList: [],
+            dragSelectedElements:[],
+            isChecked: false
+        });
+    };
+
     handleDragSelection = (indexes) => {
         let idS = indexes.map(itm => this.state.dragElRefs[itm].id);
         console.log('handleSelection idS:',idS);
@@ -948,11 +971,15 @@ class Chat extends React.Component {
         return {};
     };
     addDragElementRef = (ref) => {
-        const elRefs = this.state.dragElRefs;
-        elRefs.push(ref);
-        this.setState({
-            dragElRefs:elRefs,
-        });
+        if(ref) {
+            console.log("addDragElementRef ref.attributes: ",ref);
+
+            const elRefs = this.state.dragElRefs;
+            elRefs.push(ref);
+            this.setState({
+                dragElRefs:elRefs,
+            });
+        }
     };
     renderDragSelection =()=> {
         if (!this.state.dragTargetRef || !this.state.dragElRefs) {
@@ -1235,10 +1262,14 @@ class Chat extends React.Component {
                                                 name="InpUl" className="chat-list" ref="InpUl">
                                                 {
                                                     (eUser && eStore) ? (
+
                                                         eStore.map((data, i) => {
                                                             return (
                                                                 (data.user === this.state.user.username)?(
                                                                     <div
+                                                                        key={i+data._id}
+                                                                        mbh={this.state.messageBlockHandlerId}
+                                                                        abh={this.state.arrayBlockHandlerId}
                                                                         className="dragSelect"
                                                                         id={ data._id }
                                                                         ref={ this.addDragElementRef }
@@ -1282,6 +1313,9 @@ class Chat extends React.Component {
                                                                         onChange={(inView)=> inView && data.status !== true ? this.setAsRead(eUser.name,i,a,e,data._id) : ""}
                                                                     >
                                                                         <div
+                                                                            key={i+data._id}
+                                                                            mbh={this.state.messageBlockHandlerId}
+                                                                            abh={this.state.arrayBlockHandlerId}
                                                                             className="dragSelect"
                                                                             id={ data._id }
                                                                             ref={ this.addDragElementRef }
