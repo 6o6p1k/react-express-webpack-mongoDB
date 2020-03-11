@@ -103,24 +103,13 @@ class Chat extends React.Component {
     }
     componentDidUpdate(prevProps, prevState){
         //move scroll bootom
-        //this.scrollToBottom(this.refs.InpUl);
-        if(prevState.messageBlockHandlerId !== this.state.messageBlockHandlerId || prevState.arrayBlockHandlerId !== this.state.arrayBlockHandlerId){
-            console.log(prevState.messageBlockHandlerId ,',',this.state.messageBlockHandlerId ,';', prevState.arrayBlockHandlerId ,',', this.state.arrayBlockHandlerId);
-            this.setState({
-                selectMode:false,
-                dragElRefs: [],
-                onContextMenuBtn: false,
-                selectModMsgList: [],
-                dragSelectedElements:[],
-                isChecked: false
-            });
-        }
+        //this.scrollToBottom(this.refs.inpul);
     }
 
     componentDidMount(){
         console.log("CDM");
         //move scroll bootom
-        //this.scrollToBottom(this.refs.InpUl);
+        //this.scrollToBottom(this.refs.inpul);
 
         let socket = io.connect('', {reconnection: true});
         //receivers
@@ -275,7 +264,7 @@ class Chat extends React.Component {
                 })
             }else {
                 messagesStore[e] = arr;
-                this.setState({messagesStore},()=>this.scrollToBottom(this.refs.InpUl));
+                this.setState({messagesStore},()=>this.scrollToBottom(this.refs.inpul));
             }
         });
     };
@@ -325,8 +314,16 @@ class Chat extends React.Component {
     //set current subscriber
     inxHandler =(a,i)=> {
         //console.log('inxHandler arrName: ',a,", arrName inx: ", i);
-        //this.dragSelectToDefault();
-        this.setState({messageBlockHandlerId: i, arrayBlockHandlerId: a}/*,()=> this.dragSelectToDefault()*/);
+        this.setState({
+            selectMode:false,
+            //dragTargetRef: null,
+            dragElRefs: [],
+            onContextMenuBtn: false,
+            selectModMsgList: [],
+            dragSelectedElements:[],
+            isChecked: false
+        });
+        this.setState({messageBlockHandlerId: i, arrayBlockHandlerId: a});
     };
     //transform data in milliseconds to string
     dateToString =(dateMlS)=> {
@@ -355,7 +352,7 @@ class Chat extends React.Component {
                         } else {
                             this.printMessage(mes, name);
                             this.msgCounter("rooms", this.getUsersIdx("rooms", name));
-                            this.setState({message: ''}, () => this.scrollToBottom(this.refs.InpUl));
+                            this.setState({message: ''}, () => this.scrollToBottom(this.refs.inpul));
                         }
                     });
                     break;
@@ -371,7 +368,7 @@ class Chat extends React.Component {
                         } else {
                             this.printMessage(mes, name);
                             this.msgCounter("users", this.getUsersIdx("users", name));
-                            this.setState({message: ''}, () => this.scrollToBottom(this.refs.InpUl));
+                            this.setState({message: ''}, () => this.scrollToBottom(this.refs.inpul));
                         }
                     });
                     break;
@@ -469,7 +466,7 @@ class Chat extends React.Component {
     };
 
     changeScrollPos =(mesId)=> {
-        const element = this.refs["InpUl"];
+        const element = this.refs["inpul"];
         const elemToScroll = this.refs[mesId];
         if(elemToScroll === undefined) {
             let messagesStore = this.state.messagesStore;
@@ -487,7 +484,7 @@ class Chat extends React.Component {
                 }
             });
         }else {
-            //console.log("changeScrollPos mesId: ",mesId, " ,this.refs.InpUl: ",element, " ,this.refs.mesId: ",elemToScroll);
+            //console.log("changeScrollPos mesId: ",mesId, " ,this.refs.inpul: ",element, " ,this.refs.mesId: ",elemToScroll);
             element.scrollTo(0, elemToScroll.offsetTop - 350)//.scrollTo(0, ref.current.offsetTop)
             this.setState({messageLink: mesId})
         }
@@ -829,6 +826,7 @@ class Chat extends React.Component {
     };
     //message bar handler
     setAsRead = (itmName,i,a,e,idx)=>{
+        console.log("setAsRead");
         if(Array.isArray(this.state.messagesStore[itmName][i].status) && this.state.messagesStore[itmName][i].status.includes(this.state.user.username)) return;
         console.log("setAsRead itmName: ",itmName," ,idx: ",idx);
         this.socket.emit(this.state.arrayBlockHandlerId === "rooms" ? 'setRoomMesStatus' : 'setMesStatus',idx,itmName,(err)=>{
@@ -938,17 +936,6 @@ class Chat extends React.Component {
     // dragElRefs: [],
     // dragElIds:[],
     // dragSelectedElements:[],
-    dragSelectToDefault =()=> {
-        this.setState({
-            selectMode:false,
-            //dragTargetRef: null,
-            dragElRefs: [],
-            onContextMenuBtn: false,
-            selectModMsgList: [],
-            dragSelectedElements:[],
-            isChecked: false
-        });
-    };
 
     handleDragSelection = (indexes) => {
         let idS = indexes.map(itm => this.state.dragElRefs[itm].id);
@@ -972,8 +959,7 @@ class Chat extends React.Component {
     };
     addDragElementRef = (ref) => {
         if(ref) {
-            console.log("addDragElementRef ref.attributes: ",ref);
-
+            //console.log("addDragElementRef ref.attributes: ",ref);
             const elRefs = this.state.dragElRefs;
             elRefs.push(ref);
             this.setState({
@@ -1006,7 +992,7 @@ class Chat extends React.Component {
         if (this.state.loginRedirect) {
             return <Redirect to='/login'/>
         }
-        const test = this.refs["InpUl"];
+        const test = this.refs["inpul"];
         const elements = this.state.messSearchArr.map((message)=>{
             const{text, user, date, status} = message;
             return(
@@ -1232,7 +1218,7 @@ class Chat extends React.Component {
                                             </div>
                                             <div className={`forwardUserList ${this.state.isForward ? "show" : ""}`}>
                                                 <ul>
-                                                    {this.state.users.map((user)=> <li className="btn user">{user.name}</li>)}
+                                                    {this.state.users.map((user,i)=> <li key={i} className="btn user">{user.name}</li>)}
                                                 </ul>
                                             </div>
 
@@ -1259,7 +1245,7 @@ class Chat extends React.Component {
                                         <div className="chat-list" ref={ this.setDragTargetRef }>
                                             <ul onScroll={(evn)=>this.onScrollHandler(evn,eUser.name,a,e)}
                                                 onContextMenu={(e)=>{e.preventDefault();this.rightClickMenuOn(e); return false;}}
-                                                name="InpUl" className="chat-list" ref="InpUl">
+                                                name="inpul" className="chat-list" ref="inpul">
                                                 {
                                                     (eUser && eStore) ? (
 
@@ -1268,8 +1254,6 @@ class Chat extends React.Component {
                                                                 (data.user === this.state.user.username)?(
                                                                     <div
                                                                         key={i+data._id}
-                                                                        mbh={this.state.messageBlockHandlerId}
-                                                                        abh={this.state.arrayBlockHandlerId}
                                                                         className="dragSelect"
                                                                         id={ data._id }
                                                                         ref={ this.addDragElementRef }
@@ -1309,13 +1293,11 @@ class Chat extends React.Component {
                                                                 ):(
                                                                     <VisibilitySensor
                                                                         key={i+"VisibilitySensor"}
-                                                                        containment={this.refs.InpUl}
+                                                                        containment={this.refs.inpul}
                                                                         onChange={(inView)=> inView && data.status !== true ? this.setAsRead(eUser.name,i,a,e,data._id) : ""}
                                                                     >
                                                                         <div
                                                                             key={i+data._id}
-                                                                            mbh={this.state.messageBlockHandlerId}
-                                                                            abh={this.state.arrayBlockHandlerId}
                                                                             className="dragSelect"
                                                                             id={ data._id }
                                                                             ref={ this.addDragElementRef }
