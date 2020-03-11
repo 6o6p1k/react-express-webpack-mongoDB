@@ -12,12 +12,12 @@ import UserProps from '../partials/userPropsWindow.js'
 import searchImg from '../../public/img/magnifier.svg'
 import addGroupImg from '../../public/img/add-group-of-people.png'
 import addUserImg from '../../public/img/add-user-button.png'
-import Selection from 'react-ds';
-
-//third-party applications
-import VisibilitySensor from'react-visibility-sensor'
 
 import OnContextMenuBtn from '../partials/onContextMenuBtn.js'
+//third-party applications
+import VisibilitySensor from'react-visibility-sensor'
+import Selection from 'react-ds';
+
 let contentMenuStyle = {
     display: location ? 'block' : 'none',
     position: 'absolute',
@@ -959,7 +959,7 @@ class Chat extends React.Component {
     };
     addDragElementRef = (ref) => {
         if(ref) {
-            //console.log("addDragElementRef ref.attributes: ",ref);
+            console.log("addDragElementRef ref.attributes: ",ref);
             const elRefs = this.state.dragElRefs;
             elRefs.push(ref);
             this.setState({
@@ -1252,14 +1252,21 @@ class Chat extends React.Component {
                                                         eStore.map((data, i) => {
                                                             return (
                                                                 (data.user === this.state.user.username)?(
-                                                                    <div
+                                                                    /*<div
                                                                         key={i+data._id}
                                                                         className="dragSelect"
                                                                         id={ data._id }
                                                                         ref={ this.addDragElementRef }
                                                                         style={ this.getDragStyle(i) }
-                                                                    >
-                                                                        <li key={i} className={`right ${this.state.messageLink === data._id ? 'active' :''}`} ref={data._id}>{data.text}
+                                                                    >*/
+                                                                        <li
+                                                                            key={i}
+                                                                            className={`right ${this.state.messageLink === data._id ? 'active' :''}`}
+                                                                            id={ data._id }
+                                                                            ref={ this.addDragElementRef }
+                                                                            style={ this.getDragStyle(i) }
+                                                                        >
+                                                                            {data.text}
                                                                             <div className="messageData">
                                                                                 {this.state.selectMode ?
                                                                                     <label htmlFor={`${data._id}`} className="label-cbx">
@@ -1289,21 +1296,19 @@ class Chat extends React.Component {
                                                                                 </div>
                                                                             </div>
                                                                         </li>
-                                                                    </div>
                                                                 ):(
                                                                     <VisibilitySensor
                                                                         key={i+"VisibilitySensor"}
                                                                         containment={this.refs.inpul}
                                                                         onChange={(inView)=> inView && data.status !== true ? this.setAsRead(eUser.name,i,a,e,data._id) : ""}
                                                                     >
-                                                                        <div
-                                                                            key={i+data._id}
-                                                                            className="dragSelect"
-                                                                            id={ data._id }
-                                                                            ref={ this.addDragElementRef }
-                                                                            style={ this.getDragStyle(i) }
-                                                                        >
-                                                                            <li className={`left ${this.state.messageLink === data._id ? 'active' :''}`}  key={i} ref={data._id}
+
+                                                                            <li
+                                                                                className={`left ${this.state.messageLink === data._id ? 'active' :''}`}
+                                                                                key={i}
+                                                                                id={ data._id }
+                                                                                ref={ this.addDragElementRef }
+                                                                                style={ this.getDragStyle(i) }
                                                                                 onClick={()=>{
                                                                                     data.status === false || (Array.isArray(data.status) && !data.status.includes(this.state.user.username)) ?
                                                                                         this.setAsRead(eUser.name,i,a,e,data._id) : ""
@@ -1344,7 +1349,7 @@ class Chat extends React.Component {
 
                                                                                 </span>
                                                                             </li>
-                                                                        </div>
+
                                                                     </VisibilitySensor >
 
                                                                 )
