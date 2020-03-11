@@ -821,6 +821,15 @@ class Chat extends React.Component {
         if(e.target.scrollTop === 0) {
             //console.log("scrollHandler on top: ",e," ,",name," ,",array," ,",itm);
             let msgCount = this.state.messagesStore[name].length;
+            this.setState({
+                selectMode:false,
+                //dragTargetRef: null,
+                dragElRefs: [],
+                onContextMenuBtn: false,
+                selectModMsgList: [],
+                dragSelectedElements:[],
+                isChecked: false
+            });
             this.setState({scrollTopMax: e.target.scrollTopMax},()=>this.getLog(array,name,msgCount+10));
         }
     };
@@ -936,18 +945,30 @@ class Chat extends React.Component {
     // dragElRefs: [],
     // dragElIds:[],
     // dragSelectedElements:[],
+    // this.setState({
+    //                   selectMode:false,
+    //                   //dragTargetRef: null,
+    //                   dragElRefs: [],
+    //                   onContextMenuBtn: false,
+    //                   selectModMsgList: [],
+    //                   dragSelectedElements:[],
+    //                   isChecked: false
+    //               });
 
     handleDragSelection = (indexes) => {
         let idS = indexes.map(itm => this.state.dragElRefs[itm].id);
-        console.log('handleSelection idS:',idS);
         this.setState({
             dragSelectedElements: indexes,
             //dragElIds:idS,
             selectModMsgList:idS,
-        });
+        },
+            //()=>console.log('selectModMsgList: ',this.state.selectModMsgList,', dragElRefs: ',this.state.dragElRefs,', dragSelectedElements indexes: ',this.state.dragSelectedElements)
+        );
     };
     getDragStyle = (index) => {
-        if (this.state.dragSelectedElements.indexOf(index) > -1) {
+        console.log('getDragStyle index: ',index);
+        if (this.state.dragSelectedElements.includes(index)) {
+
             // Selected state
             return {
                 background: '#2185d0',
@@ -986,6 +1007,7 @@ class Chat extends React.Component {
 
     render() {
         console.log('/chat user:', this.state);
+        console.log('selectModMsgList: ',this.state.selectModMsgList,', dragElRefs: ',this.state.dragElRefs,', dragSelectedElements indexes: ',this.state.dragSelectedElements)
         if (this.state.errorRedirect) {
             return <Redirect to='/error'/>
         }//passing props in Redirect to={{pathname:'/error',state:{error:this.state.err}}} get props: this.props.location.state.error
@@ -1248,19 +1270,11 @@ class Chat extends React.Component {
                                                 name="inpul" className="chat-list" ref="inpul">
                                                 {
                                                     (eUser && eStore) ? (
-
                                                         eStore.map((data, i) => {
                                                             return (
                                                                 (data.user === this.state.user.username)?(
-                                                                    /*<div
-                                                                        key={i+data._id}
-                                                                        className="dragSelect"
-                                                                        id={ data._id }
-                                                                        ref={ this.addDragElementRef }
-                                                                        style={ this.getDragStyle(i) }
-                                                                    >*/
                                                                         <li
-                                                                            key={i}
+                                                                            key={i+data._id}
                                                                             className={`right ${this.state.messageLink === data._id ? 'active' :''}`}
                                                                             id={ data._id }
                                                                             ref={ this.addDragElementRef }
@@ -1277,9 +1291,11 @@ class Chat extends React.Component {
                                                                                             <svg width="10px" height="10px"
                                                                                                  viewBox="0 0 20 20">
                                                                                                 <path
-                                                                                                    d="M3,1 L17,1 L17,1 C18.1045695,1 19,1.8954305 19,3 L19,17 L19,17 C19,18.1045695 18.1045695,19 17,19 L3,19 L3,19 C1.8954305,19 1,18.1045695 1,17 L1,3 L1,3 C1,1.8954305 1.8954305,1 3,1 Z"></path>
+                                                                                                    d="M3,1 L17,1 L17,1 C18.1045695,1 19,1.8954305 19,3 L19,17 L19,17 C19,18.1045695 18.1045695,19 17,19 L3,19 L3,19 C1.8954305,19 1,18.1045695 1,17 L1,3 L1,3 C1,1.8954305 1.8954305,1 3,1 Z">
+                                                                                                </path>
                                                                                                 <polyline
-                                                                                                    points="4 11 8 15 16 6"></polyline>
+                                                                                                    points="4 11 8 15 16 6">
+                                                                                                </polyline>
                                                                                             </svg>
                                                                                         </div>
 
@@ -1305,7 +1321,7 @@ class Chat extends React.Component {
 
                                                                             <li
                                                                                 className={`left ${this.state.messageLink === data._id ? 'active' :''}`}
-                                                                                key={i}
+                                                                                key={i+data._id}
                                                                                 id={ data._id }
                                                                                 ref={ this.addDragElementRef }
                                                                                 style={ this.getDragStyle(i) }
@@ -1325,9 +1341,11 @@ class Chat extends React.Component {
                                                                                                  <svg width="10px" height="10px"
                                                                                                       viewBox="0 0 20 20">
                                                                                                      <path
-                                                                                                         d="M3,1 L17,1 L17,1 C18.1045695,1 19,1.8954305 19,3 L19,17 L19,17 C19,18.1045695 18.1045695,19 17,19 L3,19 L3,19 C1.8954305,19 1,18.1045695 1,17 L1,3 L1,3 C1,1.8954305 1.8954305,1 3,1 Z"></path>
+                                                                                                         d="M3,1 L17,1 L17,1 C18.1045695,1 19,1.8954305 19,3 L19,17 L19,17 C19,18.1045695 18.1045695,19 17,19 L3,19 L3,19 C1.8954305,19 1,18.1045695 1,17 L1,3 L1,3 C1,1.8954305 1.8954305,1 3,1 Z">
+                                                                                                     </path>
                                                                                                      <polyline
-                                                                                                         points="4 11 8 15 16 6"></polyline>
+                                                                                                         points="4 11 8 15 16 6">
+                                                                                                     </polyline>
                                                                                                  </svg>
                                                                                              </div>
 
@@ -1357,8 +1375,8 @@ class Chat extends React.Component {
                                                         })
                                                     ) : ("")
                                                 }
-                                                { this.renderDragSelection() }
                                             </ul>
+                                            { this.renderDragSelection() }
                                         </div>
 
                                         <form onSubmit={(ev) => {
