@@ -670,9 +670,6 @@ module.exports = function (server) {
         //find message
         socket.on('findMessage', async function  (sig,textSearch,cb) {
             try {
-                //if sig array - get user log else sig - room name & get room log
-                //check what user req his history
-
                 if( Array.isArray(sig)) sig = setGetSig(sig);
                 //check Is username room member?
                 if(!sig.includes(username)) cb("Canceled. Attempted unauthorized access to data.",null);

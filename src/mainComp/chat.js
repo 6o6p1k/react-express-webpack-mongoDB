@@ -12,12 +12,10 @@ import UserProps from '../partials/userPropsWindow.js'
 import searchImg from '../../public/img/magnifier.svg'
 import addGroupImg from '../../public/img/add-group-of-people.png'
 import addUserImg from '../../public/img/add-user-button.png'
-
-import OnContextMenuBtn from '../partials/onContextMenuBtn.js'
 //third-party applications
 import VisibilitySensor from'react-visibility-sensor'
-import Selection from 'react-ds';
 
+import OnContextMenuBtn from '../partials/onContextMenuBtn.js'
 let contentMenuStyle = {
     display: location ? 'block' : 'none',
     position: 'absolute',
@@ -94,22 +92,18 @@ class Chat extends React.Component {
             selectModMsgList:[],
             btnList: ['Find Message','Select Mod'],
             //['Find Message','Select Mod','Delete Selected','Clear Selected','Forward Selected','Copy Selected as Text'],
-            //drag select state
-            dragTargetRef: null,
-            dragElRefs: [],
-            dragElIds:[],
-            dragSelectedElements:[],
         };
     }
-    componentDidUpdate(prevProps, prevState){
+    componentDidUpdate(prevProps){
         //move scroll bootom
-        //this.scrollToBottom(this.refs.inpul);
+        //this.scrollToBottom(this.refs.InpUl);
+
     }
 
     componentDidMount(){
         console.log("CDM");
         //move scroll bootom
-        //this.scrollToBottom(this.refs.inpul);
+        //this.scrollToBottom(this.refs.InpUl);
 
         let socket = io.connect('', {reconnection: true});
         //receivers
@@ -241,7 +235,7 @@ class Chat extends React.Component {
     };
 
     scrollToBottom = (element) => {
-        //console.log("this.state.scrollTopMax: ",this.state.scrollTopMax, " ,element.scrollHeight: ",element.scrollHeight);
+        console.log("this.state.scrollTopMax: ",this.state.scrollTopMax, " ,element.scrollHeight: ",element.scrollHeight);
         element.scrollTop = element.scrollTopMax - this.state.scrollTopMax || element.scrollHeight;
     };
 
@@ -252,9 +246,9 @@ class Chat extends React.Component {
         if(!messagesStore[e]) messagesStore[e] = [];
         if(messagesStore[e].length >= 15 && reqMesCountCb === null) return;
         if(!reqMesCountCb) reqMesCountCb = 15;
-        //console.log("getLog a,e: ",a,e);
+        console.log("getLog a,e: ",a,e);
         if(messagesStore[e].length === this.state[a][this.getUsersIdx(a,e)].allMesCounter) return;
-        //console.log("getLog: ",a," ,",e," ,",reqMesCountCb);
+        console.log("getLog: ",a," ,",e," ,",reqMesCountCb);
         this.socket.emit(a === "rooms" ? 'getRoomLog' : 'getUserLog',e,reqMesCountCb,null,(err,arr)=>{
             //console.log("getUserLog arr: ",arr," ,err: ",err);
             if(err) {
@@ -264,7 +258,7 @@ class Chat extends React.Component {
                 })
             }else {
                 messagesStore[e] = arr;
-                this.setState({messagesStore},()=>this.scrollToBottom(this.refs.inpul));
+                this.setState({messagesStore},()=>this.scrollToBottom(this.refs.InpUl));
             }
         });
     };
@@ -314,15 +308,6 @@ class Chat extends React.Component {
     //set current subscriber
     inxHandler =(a,i)=> {
         //console.log('inxHandler arrName: ',a,", arrName inx: ", i);
-        this.setState({
-            selectMode:false,
-            //dragTargetRef: null,
-            dragElRefs: [],
-            onContextMenuBtn: false,
-            selectModMsgList: [],
-            dragSelectedElements:[],
-            isChecked: false
-        });
         this.setState({messageBlockHandlerId: i, arrayBlockHandlerId: a});
     };
     //transform data in milliseconds to string
@@ -352,7 +337,7 @@ class Chat extends React.Component {
                         } else {
                             this.printMessage(mes, name);
                             this.msgCounter("rooms", this.getUsersIdx("rooms", name));
-                            this.setState({message: ''}, () => this.scrollToBottom(this.refs.inpul));
+                            this.setState({message: ''}, () => this.scrollToBottom(this.refs.InpUl));
                         }
                     });
                     break;
@@ -368,7 +353,7 @@ class Chat extends React.Component {
                         } else {
                             this.printMessage(mes, name);
                             this.msgCounter("users", this.getUsersIdx("users", name));
-                            this.setState({message: ''}, () => this.scrollToBottom(this.refs.inpul));
+                            this.setState({message: ''}, () => this.scrollToBottom(this.refs.InpUl));
                         }
                     });
                     break;
@@ -466,7 +451,7 @@ class Chat extends React.Component {
     };
 
     changeScrollPos =(mesId)=> {
-        const element = this.refs["inpul"];
+        const element = this.refs["InpUl"];
         const elemToScroll = this.refs[mesId];
         if(elemToScroll === undefined) {
             let messagesStore = this.state.messagesStore;
@@ -484,7 +469,7 @@ class Chat extends React.Component {
                 }
             });
         }else {
-            //console.log("changeScrollPos mesId: ",mesId, " ,this.refs.inpul: ",element, " ,this.refs.mesId: ",elemToScroll);
+            //console.log("changeScrollPos mesId: ",mesId, " ,this.refs.InpUl: ",element, " ,this.refs.mesId: ",elemToScroll);
             element.scrollTo(0, elemToScroll.offsetTop - 350)//.scrollTo(0, ref.current.offsetTop)
             this.setState({messageLink: mesId})
         }
@@ -821,21 +806,11 @@ class Chat extends React.Component {
         if(e.target.scrollTop === 0) {
             //console.log("scrollHandler on top: ",e," ,",name," ,",array," ,",itm);
             let msgCount = this.state.messagesStore[name].length;
-            this.setState({
-                selectMode:false,
-                //dragTargetRef: null,
-                dragElRefs: [],
-                onContextMenuBtn: false,
-                selectModMsgList: [],
-                dragSelectedElements:[],
-                isChecked: false
-            });
             this.setState({scrollTopMax: e.target.scrollTopMax},()=>this.getLog(array,name,msgCount+10));
         }
     };
     //message bar handler
     setAsRead = (itmName,i,a,e,idx)=>{
-        console.log("setAsRead");
         if(Array.isArray(this.state.messagesStore[itmName][i].status) && this.state.messagesStore[itmName][i].status.includes(this.state.user.username)) return;
         console.log("setAsRead itmName: ",itmName," ,idx: ",idx);
         this.socket.emit(this.state.arrayBlockHandlerId === "rooms" ? 'setRoomMesStatus' : 'setMesStatus',idx,itmName,(err)=>{
@@ -851,7 +826,6 @@ class Chat extends React.Component {
             }
         })
     };
-
     //chat list contextMenu
     rightClickMenuOn =(e)=> {
         //console.log("rightClickMenuOn itm: ",itm);
@@ -905,17 +879,15 @@ class Chat extends React.Component {
                         })
                     }else {
                         //обновить message store, удалить сообщения
-                        let messagesStore = this.state.messagesStore;
-                        let newStore = messagesStore[currentUser].filter((itm) => {
-                            return !this.state.selectModMsgList.includes(itm._id)
+                        let msgStore = this.state.messagesStore[currentUser];
+                        msgStore.forEach((itm,i,obj) => {
+                            if(this.state.selectModMsgList.includes(itm._id)) obj.splice(i,1)
                         });
-                        messagesStore[currentUser] = newStore;
-                        this.setState({messagesStore});
                         this.setState({
                             selectMode:false,
                             onContextMenuBtn: false,
                             selectModMsgList: [],
-                            dragSelectedElements:[],
+                            msgStore:msgStore,
                             isChecked: false
                         });
                     }
@@ -940,81 +912,15 @@ class Chat extends React.Component {
         }
     };
 
-    //drag select functional
-    // dragTargetRef: null,
-    // dragElRefs: [],
-    // dragElIds:[],
-    // dragSelectedElements:[],
-    // this.setState({
-    //                   selectMode:false,
-    //                   //dragTargetRef: null,
-    //                   dragElRefs: [],
-    //                   onContextMenuBtn: false,
-    //                   selectModMsgList: [],
-    //                   dragSelectedElements:[],
-    //                   isChecked: false
-    //               });
-
-    handleDragSelection = (indexes) => {
-        let idS = indexes.map(itm => this.state.dragElRefs[itm].id);
-        this.setState({
-            dragSelectedElements: indexes,
-            //dragElIds:idS,
-            selectModMsgList:idS,
-        },
-            //()=>console.log('selectModMsgList: ',this.state.selectModMsgList,', dragElRefs: ',this.state.dragElRefs,', dragSelectedElements indexes: ',this.state.dragSelectedElements)
-        );
-    };
-    getDragStyle = (index) => {
-        console.log('getDragStyle index: ',index);
-        if (this.state.dragSelectedElements.includes(index)) {
-
-            // Selected state
-            return {
-                background: '#2185d0',
-                borderColor: '#2185d0',
-                color: 'white',
-            };
-        }
-        return {};
-    };
-    addDragElementRef = (ref) => {
-        if(ref) {
-            console.log("addDragElementRef ref.attributes: ",ref);
-            const elRefs = this.state.dragElRefs;
-            elRefs.push(ref);
-            this.setState({
-                dragElRefs:elRefs,
-            });
-        }
-    };
-    renderDragSelection =()=> {
-        if (!this.state.dragTargetRef || !this.state.dragElRefs) {
-            return null;
-        }
-        return (
-            <Selection
-                target={ this.state.dragTargetRef}
-                elements={ this.state.dragElRefs }
-                onSelectionChange={ this.handleDragSelection }
-                style={ this.props.style }
-            />
-        );
-    };
-    setDragTargetRef =(ref)=> {
-        this.setState({ dragTargetRef:ref });
-    };
-
     render() {
         console.log('/chat user:', this.state);
-        console.log('selectModMsgList: ',this.state.selectModMsgList,', dragElRefs: ',this.state.dragElRefs,', dragSelectedElements indexes: ',this.state.dragSelectedElements)
         if (this.state.errorRedirect) {
             return <Redirect to='/error'/>
         }//passing props in Redirect to={{pathname:'/error',state:{error:this.state.err}}} get props: this.props.location.state.error
         if (this.state.loginRedirect) {
             return <Redirect to='/login'/>
         }
-        const test = this.refs["inpul"];
+        const test = this.refs["InpUl"];
         const elements = this.state.messSearchArr.map((message)=>{
             const{text, user, date, status} = message;
             return(
@@ -1233,14 +1139,14 @@ class Chat extends React.Component {
                                 <div className="message-block">
                                     <div name="chatRoom" id="chatDiv">
 
-                                            <div className={`btnMessageGroup ${this.state.isChecked || this.state.selectModMsgList.length ? "show" : ""}`}>
+                                            <div className={`btnMessageGroup ${this.state.isChecked ? "show" : ""}`}>
                                                 <button className="btn" data-loading-text="Deleting..." onClick={()=>this.onContextMenuBtnResponse('Delete Selected')}>Delete</button>
                                                 <button className="btn" data-loading-text="Forward to..." onClick={()=>this.onContextMenuBtnResponse('Forward to')}>Forward to</button>
 
                                             </div>
                                             <div className={`forwardUserList ${this.state.isForward ? "show" : ""}`}>
                                                 <ul>
-                                                    {this.state.users.map((user,i)=> <li key={i} className="btn user">{user.name}</li>)}
+                                                    {this.state.users.map((user)=> <li className="btn user">{user.name}</li>)}
                                                 </ul>
                                             </div>
 
@@ -1264,120 +1170,103 @@ class Chat extends React.Component {
                                             </div> : ""}
 
 
-                                        <div className="chat-list" ref={ this.setDragTargetRef }>
-                                            <ul onScroll={(evn)=>this.onScrollHandler(evn,eUser.name,a,e)}
-                                                onContextMenu={(e)=>{e.preventDefault();this.rightClickMenuOn(e); return false;}}
-                                                name="inpul" className="chat-list" ref="inpul">
-                                                {
-                                                    (eUser && eStore) ? (
-                                                        eStore.map((data, i) => {
-                                                            return (
-                                                                (data.user === this.state.user.username)?(
-                                                                        <li
-                                                                            key={i+data._id}
-                                                                            className={`right ${this.state.messageLink === data._id ? 'active' :''}`}
-                                                                            id={ data._id }
-                                                                            ref={ this.addDragElementRef }
-                                                                            style={ this.getDragStyle(i) }
-                                                                        >
-                                                                            {data.text}
-                                                                            <div className="messageData">
-                                                                                {this.state.selectMode ?
-                                                                                    <label htmlFor={`${data._id}`} className="label-cbx">
-                                                                                        <input id={`${data._id}`} type="checkbox" name="msgCB" className="invisible"
-                                                                                               onChange={ev => (this.checkboxMsg(data._id))}
-                                                                                        />
-                                                                                        <div className="checkbox">
-                                                                                            <svg width="10px" height="10px"
-                                                                                                 viewBox="0 0 20 20">
-                                                                                                <path
-                                                                                                    d="M3,1 L17,1 L17,1 C18.1045695,1 19,1.8954305 19,3 L19,17 L19,17 C19,18.1045695 18.1045695,19 17,19 L3,19 L3,19 C1.8954305,19 1,18.1045695 1,17 L1,3 L1,3 C1,1.8954305 1.8954305,1 3,1 Z">
-                                                                                                </path>
-                                                                                                <polyline
-                                                                                                    points="4 11 8 15 16 6">
-                                                                                                </polyline>
-                                                                                            </svg>
-                                                                                        </div>
 
-                                                                                    </label>
-                                                                                    : ""
-                                                                                }
-                                                                                <div className='shortMessageInfo'>
-                                                                                    {data.user}                                                                             <span className="messageTime">{this.dateToString(data.date)}</span>
-                                                                                    <span className="messageTime">{data.status === true ? " R" : Array.isArray(data.status) ? (
-                                                                                    data.status.map((name,i) => <span key={i} className="messageTime">{name}</span>)
-                                                                                        ):("")}
-                                                                                    </span>
-                                                                                    {/*<span className="messageTime">id:{data._id}</span>*/}
+                                        <ul onScroll={(evn)=>this.onScrollHandler(evn,eUser.name,a,e)}
+                                            onContextMenu={(e)=>{e.preventDefault();this.rightClickMenuOn(e); return false;}}
+                                            name="InpUl" className="chat-list" ref="InpUl">
+                                            {
+                                                (eUser && eStore) ? (
+                                                    eStore.map((data, i) => {
+                                                        return (
+                                                            (data.user === this.state.user.username)?(
+                                                                <li key={i} className={`right ${this.state.messageLink === data._id ? 'active' :''}`} ref={data._id}>{data.text}
+                                                                    <div className="messageData">
+                                                                        {this.state.selectMode ?
+                                                                            <label htmlFor={`${data._id}`} className="label-cbx">
+                                                                                <input id={`${data._id}`} type="checkbox" name="msgCB" className="invisible"
+                                                                                       onChange={ev => (this.checkboxMsg(data._id))}
+                                                                                />
+                                                                                <div className="checkbox">
+                                                                                    <svg width="10px" height="10px"
+                                                                                         viewBox="0 0 20 20">
+                                                                                        <path
+                                                                                            d="M3,1 L17,1 L17,1 C18.1045695,1 19,1.8954305 19,3 L19,17 L19,17 C19,18.1045695 18.1045695,19 17,19 L3,19 L3,19 C1.8954305,19 1,18.1045695 1,17 L1,3 L1,3 C1,1.8954305 1.8954305,1 3,1 Z"></path>
+                                                                                        <polyline
+                                                                                            points="4 11 8 15 16 6"></polyline>
+                                                                                    </svg>
                                                                                 </div>
-                                                                            </div>
-                                                                        </li>
-                                                                ):(
-                                                                    <VisibilitySensor
-                                                                        key={i+"VisibilitySensor"}
-                                                                        containment={this.refs.inpul}
-                                                                        onChange={(inView)=> inView && data.status !== true ? this.setAsRead(eUser.name,i,a,e,data._id) : ""}
+
+                                                                            </label>
+                                                                            : ""
+                                                                        }
+                                                                        <div className='shortMessageInfo'>
+                                                                            {data.user}                                                                             <span className="messageTime">{this.dateToString(data.date)}</span>
+                                                                            <span className="messageTime">{data.status === true ? " R" : Array.isArray(data.status) ? (
+                                                                            data.status.map((name,i) => <span key={i} className="messageTime">{name}</span>)
+                                                                                ):("")}
+                                                                            </span>
+                                                                            {/*<span className="messageTime">id:{data._id}</span>*/}
+                                                                        </div>
+
+
+
+                                                                    </div>
+                                                                </li>
+                                                            ):(
+                                                                <VisibilitySensor
+                                                                    key={i+"VisibilitySensor"}
+                                                                    containment={this.refs.InpUl}
+                                                                    onChange={(inView)=> inView && data.status !== true ? this.setAsRead(eUser.name,i,a,e,data._id) : ""}
+                                                                >
+                                                                    <li className={`left ${this.state.messageLink === data._id ? 'active' :''}`}  key={i} ref={data._id}
+                                                                        onClick={()=>{
+                                                                            data.status === false || (Array.isArray(data.status) && !data.status.includes(this.state.user.username)) ?
+                                                                                this.setAsRead(eUser.name,i,a,e,data._id) : ""
+                                                                        }}
                                                                     >
+                                                                        {data.text}
+                                                                        <span className="messageData">
+                                                                             {this.state.selectMode ?
+                                                                                 <label htmlFor={`${data._id}`} className="label-cbx">
+                                                                                     <input id={`${data._id}`} type="checkbox" name="msgCB" className="invisible"
+                                                                                            onChange={ev => (this.checkboxMsg(data._id))}
+                                                                                     />
+                                                                                     <div className="checkbox">
+                                                                                         <svg width="10px" height="10px"
+                                                                                              viewBox="0 0 20 20">
+                                                                                             <path
+                                                                                                 d="M3,1 L17,1 L17,1 C18.1045695,1 19,1.8954305 19,3 L19,17 L19,17 C19,18.1045695 18.1045695,19 17,19 L3,19 L3,19 C1.8954305,19 1,18.1045695 1,17 L1,3 L1,3 C1,1.8954305 1.8954305,1 3,1 Z"></path>
+                                                                                             <polyline
+                                                                                                 points="4 11 8 15 16 6"></polyline>
+                                                                                         </svg>
+                                                                                     </div>
 
-                                                                            <li
-                                                                                className={`left ${this.state.messageLink === data._id ? 'active' :''}`}
-                                                                                key={i+data._id}
-                                                                                id={ data._id }
-                                                                                ref={ this.addDragElementRef }
-                                                                                style={ this.getDragStyle(i) }
-                                                                                onClick={()=>{
-                                                                                    data.status === false || (Array.isArray(data.status) && !data.status.includes(this.state.user.username)) ?
-                                                                                        this.setAsRead(eUser.name,i,a,e,data._id) : ""
-                                                                                }}
-                                                                            >
-                                                                                {data.text}
-                                                                                <span className="messageData">
-                                                                                     {this.state.selectMode ?
-                                                                                         <label htmlFor={`${data._id}`} className="label-cbx">
-                                                                                             <input id={`${data._id}`} type="checkbox" name="msgCB" className="invisible"
-                                                                                                    onChange={ev => (this.checkboxMsg(data._id))}
-                                                                                             />
-                                                                                             <div className="checkbox">
-                                                                                                 <svg width="10px" height="10px"
-                                                                                                      viewBox="0 0 20 20">
-                                                                                                     <path
-                                                                                                         d="M3,1 L17,1 L17,1 C18.1045695,1 19,1.8954305 19,3 L19,17 L19,17 C19,18.1045695 18.1045695,19 17,19 L3,19 L3,19 C1.8954305,19 1,18.1045695 1,17 L1,3 L1,3 C1,1.8954305 1.8954305,1 3,1 Z">
-                                                                                                     </path>
-                                                                                                     <polyline
-                                                                                                         points="4 11 8 15 16 6">
-                                                                                                     </polyline>
-                                                                                                 </svg>
-                                                                                             </div>
+                                                                                 </label>
+                                                                                 : ""
+                                                                             }
+                                                                            <div className='shortMessageInfo'>
+                                                                                  {data.user}
+                                                                                <span className="messageTime">{this.dateToString(data.date)}</span>
+                                                                                {data.status === true ?
+                                                                                    "" : Array.isArray(data.status) ? data.status.includes(this.state.user.username) ? "" :
+                                                                                        <span className="messageTime">UR</span> :
+                                                                                        <span className="messageTime">UR</span>
+                                                                                }
 
-                                                                                         </label>
-                                                                                         : ""
-                                                                                     }
-                                                                                    <div className='shortMessageInfo'>
-                                                                                          {data.user}
-                                                                                        <span className="messageTime">{this.dateToString(data.date)}</span>
-                                                                                        {data.status === true ?
-                                                                                            "" : Array.isArray(data.status) ? data.status.includes(this.state.user.username) ? "" :
-                                                                                                <span className="messageTime">UR</span> :
-                                                                                                <span className="messageTime">UR</span>
-                                                                                        }
-
-                                                                                    </div>
+                                                                            </div>
 
 
 
-                                                                                </span>
-                                                                            </li>
+                                                                        </span>
+                                                                    </li>
+                                                                </VisibilitySensor >
 
-                                                                    </VisibilitySensor >
-
-                                                                )
                                                             )
-                                                        })
-                                                    ) : ("")
-                                                }
-                                            </ul>
-                                            { this.renderDragSelection() }
-                                        </div>
+                                                        )
+                                                    })
+                                                ) : ("")
+                                            }
+                                        </ul>
 
                                         <form onSubmit={(ev) => {
                                                 ev.preventDefault();
