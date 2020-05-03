@@ -843,7 +843,9 @@ class Chat extends React.Component {
             let msgList = this.state.selectModMsgList;
             let idx = msgList.indexOf(id);
             msgList.splice(idx, 1);
-            this.setState({selectModMsgList: msgList})
+            this.setState({selectModMsgList: msgList});
+            if(msgList.length === 0)  this.setState({selectMode:false,isChecked: false});
+
         } else this.setState({
             selectModMsgList: [...this.state.selectModMsgList, id],
             isChecked: true
@@ -1003,13 +1005,16 @@ class Chat extends React.Component {
                 <div className="chat-room">
                     <div className="chat-users">
                         <div className="login-form">
-                            {this.state.showSearch ?
-                                <input name="nameSearchInp" ref="nameSearchInp"//this.refs.nameSearchInp.target.value
-                                       className={`form-control searchInChat ${this.state.showSearch ? "show" : ""}`}
-                                       autoComplete="off" autoFocus placeholder="Search..."
-                                       onChange={ev => this.setFiltered(ev.target.value)}
-                                />
-                                : ""}
+                            <form className={`${this.state.showSearch ? "show" : ""}`}>
+                                {this.state.showSearch ?
+                                    <input name="nameSearchInp" ref="nameSearchInp"//this.refs.nameSearchInp.target.value
+                                           className={`form-control searchInChat`}
+                                           autoComplete="off" autoFocus placeholder="Search..."
+                                           onChange={ev => this.setFiltered(ev.target.value)}
+                                    />
+                                    : ""}
+                            </form>
+
 
                             <div className="userList btnList">
                                 <button onClick={() => this.toggleSearch()} name="msgBtn" type="button"
@@ -1160,7 +1165,7 @@ class Chat extends React.Component {
                                                 </div> : ""}
 
                                         {this.state.showHistorySearch ?
-                                            <div>
+                                            <div className='historySearchInpWrapper'>
                                                 <input name="historySearchInp" ref="historySearchInp"
                                                        className={`form-control searchInChat ${this.state.showHistorySearch ? "show" : ""}`}
                                                        autoComplete="off" autoFocus placeholder="Search..."

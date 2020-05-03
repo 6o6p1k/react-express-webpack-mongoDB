@@ -118,35 +118,35 @@ ul li{
     border-left: 1px solid #fff;
 
 }
-input[type=text],
-input[type=password]{
+ .form-group input[type=text],
+ .form-group input[type=password]{
     border-radius: 0;
     background-color: transparent!important;
     border: none;
     outline: 0;
     box-shadow: none;
-    color: #fff!important;
+    color: #fff;
     height: 100%;
     padding: 0 5px;
     border-bottom: 1px solid #fff;
 }
 
-input:focus,
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus
-textarea:-webkit-autofill,
-textarea:-webkit-autofill:hover
-textarea:-webkit-autofill:focus,
-select:-webkit-autofill,
-select:-webkit-autofill:hover,
-select:-webkit-autofill:focus {
+.form-group input:focus,
+.form-group input:-webkit-autofill,
+.form-group input:-webkit-autofill:hover,
+.form-group input:-webkit-autofill:focus,
+.form-group textarea:-webkit-autofill,
+.form-group textarea:-webkit-autofill:hover,
+.form-group textarea:-webkit-autofill:focus,
+.form-group select:-webkit-autofill,
+.form-group select:-webkit-autofill:hover,
+.form-group select:-webkit-autofill:focus {
     outline: 0;
     border-bottom: 1px solid #2da292;
     -webkit-text-fill-color: #fff;
     -webkit-box-shadow: none;
     transition: background-color 5000s ease-in-out 0s;
-    color: #fff!important;
+    color: #fff;
     background-color: transparent!important;
 }
 
@@ -161,6 +161,7 @@ select:-webkit-autofill:focus {
     border: none;
     cursor: pointer;
     padding: 10px 20px;
+    height: 40px;
 }
 
 .btn.clicked{background-color: #2da292;}
@@ -447,9 +448,8 @@ footer a:active{
 }
 .modal-main-btnRight-center {
     position: absolute;
-    right: 10px;
-    top: 40px;
-    color: #fff;
+    right: 15px;
+    top: 6px;
     cursor: pointer;
 }
 .modal-main-btnRight:hover{
@@ -505,12 +505,18 @@ footer a:active{
 .dropDownBtn:hover{
     background-color: #2da292;
 }
-.searchInChat{
-    width: 100%;
+.chat-users form{
+    display: flex;
     height: 0;
-    transition: all 2s linear;
+    transition: height .5s linear;
 }
-.searchInChat.show{
+.searchInChat{
+    color: #000;
+    flex: 2;
+    margin: 0 5px;
+    padding-left: 5px;
+}
+.chat-users form.show{
     height: 40px;
 
 }
@@ -1217,17 +1223,17 @@ footer a:active{
 }
 .btnMessageGroup{
     position: absolute;
-    top: 0;
+    top: 10px;
     z-index: 2;
-    left: 0;
+    left: 10px;
     transform: scaleY(0);
     transform-origin: 0 0;
     transition: all .5s ease;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-gap: 5px;
 }
-.btnMessageGroup .btn:first-child{
-    margin-right: 5px;
 
-}
 .forwardUserList.show,
 .btnMessageGroup.show{
     opacity: 1;
@@ -1248,4 +1254,10 @@ footer a:active{
 }
 .forwardUserList ul{
     padding-left: 0;
+}
+.historySearchInpWrapper{
+    width: 100%;
+    display: flex;
+    position: relative;
+    height: 40px;
 }
