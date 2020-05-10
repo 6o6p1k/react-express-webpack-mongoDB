@@ -9,7 +9,7 @@ var routes = require('./middleware/routes');
 var errorHandler = require('./middleware/errorHandler');
 var io = require('./middleware/socket');
 var session = require('express-session');
-var sessionStore = require('./middleware/libs/sessionStore');
+var sessionStore = require('./middleware/db/sessionStore');
 var ip = require('ip');
 var fs = require('fs');
 //Clusters
@@ -75,7 +75,7 @@ if (cluster.isMaster) {
         cookie: config.get('session:cookie'),
         store: sessionStore
     }));
-    app.use(require('./middleware/loadUser'));
+    app.use(require('./middleware/db/loadUser'));
 
     //Routes
     routes(app);

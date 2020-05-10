@@ -1,6 +1,6 @@
-var AuthError = require('./../error').AuthError;
+var AuthError = require('../../error/index').AuthError;
 var crypto = require('crypto');
-var mongoose = require(".././libs/mongoose");
+var mongoose = require("../mongoose");
 var util = require('util');
 
 

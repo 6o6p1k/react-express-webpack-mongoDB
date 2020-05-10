@@ -1,11 +1,11 @@
 var config = require('./../../config');
 var cookie = require('cookie');
-var sessionStore = require('./../libs/sessionStore');
+var sessionStore = require('../db/sessionStore');
 var HttpError = require('./../error/index').HttpError;
 var DevError = require('./../error/index').DevError;
-var User = require('../models/user').User;
-var Message = require('../models/user').Message;
-var Room = require('../models/user').Room;
+var User = require('../db/models/index').User;
+var Message = require('../db/models/index').Message;
+var Room = require('../db/models/index').Room;
 var globalChatUsers = {};
 var common = require('../common').commonEmitter;
 

@@ -1,8 +1,6 @@
 var fs = require('fs');
-var User = require('../models/user').User;
+var User = require('../db/models/index').User;
 var HttpError = require('./../error').HttpError;
-var checkAuth = require('../checkAuth');
-var checkAuthAdmin = require('../checkAuthAdmin');
 var AuthError = require('./../error').AuthError;
 var config = require('../../config');
 var path = require('path');
@@ -64,6 +62,14 @@ module.exports = function(app) {
         common.emit('session:reload',sid,(err)=>{if(err) return next(err)});//Internal Node emit to socketIo session:reload
     });
 
+    var checkAuthAdmin = function(req, res, next) {
+        console.log("checkAuthAdmin: ", req.session);
+        if (req.session.user != config.get('AdministratorId')) {
+            return next(new HttpError(401, "you are not authorized like Administrator"));
+        }
+        next();
+    };
+
     app.post('/users',checkAuthAdmin,async function(req, res, next) {
         function find() {
             console.log('function find()');
@@ -119,6 +125,7 @@ module.exports = function(app) {
     });
 
     app.post('/deleteAccount', async function(req, res, next) {
+
         try {
             let userName = req.body.deleteUsername;
             let checkPass = req.body.checkPass;

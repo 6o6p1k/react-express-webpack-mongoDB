@@ -75,6 +75,7 @@ class UsersAdm extends React.Component {
     };
 
     toggleSelection = (key, shift, row) => {
+        //console.log("toggleSelection key: ", key);
         /*
          Implementation of how to manage the selection state is up to the developer.
          This implementation uses an array stored in the component state.
@@ -146,7 +147,7 @@ class UsersAdm extends React.Component {
     };
 
     render() {
-        //console.log('/UP users:',this.state.user._id);
+        console.log('/UP users:',this.state);
         if(this.state.errorRedirect) {return <Redirect to='/error' />};
 
         const { toggleSelection, toggleAll, isSelected, logSelection, getUsers, delUsers } = this;

@@ -4,6 +4,7 @@
   "mongoose": {
     "url": "mongodb://localhost:27017/newChatBase",
     "options": {
+      "useUnifiedTopology": true,
       "useNewUrlParser": true,
       "useCreateIndex": true,
       "useFindAndModify": false
