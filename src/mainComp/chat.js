@@ -432,7 +432,7 @@ class Chat extends React.Component {
     historySearch = (text,name)=> {
         console.log("historySearch: ",text," ,userName: ",name);
         if(!name || !text || !this.state.arrayBlockHandlerId) return;
-        this.socket.emit('findMessage',this.state.arrayBlockHandlerId === "room" ? name : [name,this.state.user.username],text,(err,messages)=>{
+        this.socket.emit('findMessage',this.state.arrayBlockHandlerId ? name : [name,this.state.user.username],text,(err,messages)=>{
             if(err) {
                 console.log("historySearch err: ",err);
                 this.setState({

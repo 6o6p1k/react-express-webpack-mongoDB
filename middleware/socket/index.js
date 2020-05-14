@@ -670,9 +670,16 @@ module.exports = function (server) {
         //find message
         socket.on('findMessage', async function  (sig,textSearch,cb) {
             try {
-                if( Array.isArray(sig)) sig = setGetSig(sig);
-                //check Is username room member?
-                if(!sig.includes(username)) cb("Canceled. Attempted unauthorized access to data.",null);
+                console.log('findMessage, init sig: ',sig);
+                if( Array.isArray(sig)) {//2 members correspondence else room correspondence
+                    //check: Is username member of correspondence?
+                    if(!sig.includes(username)) return cb("Canceled. Attempted unauthorized access to data.",null);
+                    sig = setGetSig(sig);
+                }
+                //check: Is username member of room?
+                let {members} = await Room.findOne({name:sig});
+                //console.log("members: ",members);
+                if(!members.some((itm) => itm.name === username)) return cb("Canceled. Attempted unauthorized access to data.",null);
                 console.log('findMessage, sig: ',sig," ,textSearch: ",textSearch);
                 let mesQuery = await Message.find(
                     { uniqSig: sig, $text: { $search: textSearch } },
