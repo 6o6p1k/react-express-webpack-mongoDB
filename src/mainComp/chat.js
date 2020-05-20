@@ -432,7 +432,7 @@ class Chat extends React.Component {
     historySearch = (text,name)=> {
         console.log("historySearch: ",text," ,userName: ",name);
         if(!name || !text || !this.state.arrayBlockHandlerId) return;
-        this.socket.emit('findMessage',this.state.arrayBlockHandlerId ? name : [name,this.state.user.username],text,(err,messages)=>{
+        this.socket.emit('findMessage',this.state.arrayBlockHandlerId === "rooms" ? name : [name,this.state.user.username],text,(err,messages)=>{
             if(err) {
                 console.log("historySearch err: ",err);
                 this.setState({
@@ -862,7 +862,7 @@ class Chat extends React.Component {
 
     onContextMenuBtnResponse =(res)=> {
         console.log("onContextMenuBtnResponse res: ",res);
-        let currentUser = this.state.users[this.state.messageBlockHandlerId].name
+        let currentUser = this.state.users[this.state.messageBlockHandlerId].name;
         switch (res){
             case "Find Message":
                 console.log("onContextMenuBtnResponse Find Message");
@@ -873,6 +873,7 @@ class Chat extends React.Component {
                 break;
             case "Delete Selected":
                 console.log("onContextMenuBtnResponse Delete Message: currentUser: ",currentUser,',','selectModMsgList: ',this.state.selectModMsgList);
+                //this.state.arrayBlockHandlerId ? name : [name,this.state.user.username]
                 this.socket.emit('deleteMessages',currentUser,this.state.selectModMsgList, (err)=>{
                     if(err) {
                         this.setState({
@@ -880,7 +881,7 @@ class Chat extends React.Component {
                             err:{message:err},
                         })
                     }else {
-                        //обновить message store, удалить сообщения
+                        //refresh message store, delete messages
                         let msgStore = this.state.messagesStore[currentUser];
                         msgStore.forEach((itm,i,obj) => {
                             if(this.state.selectModMsgList.includes(itm._id)) obj.splice(i,1)
@@ -1169,7 +1170,7 @@ class Chat extends React.Component {
                                                 <input name="historySearchInp" ref="historySearchInp"
                                                        className={`form-control searchInChat ${this.state.showHistorySearch ? "show" : ""}`}
                                                        autoComplete="off" autoFocus placeholder="Search..."
-                                                       onChange={ev => this.historySearch(ev.target.value,eUser.name)}/>
+                                                       onChange={ev => this.historySearch(ev.target.value,this.state.arrayBlockHandlerId === "room" ? eUser : eUser.name)}/>
                                                     <div className='modal-main-btnRight-center' onClick={()=> this.hideShow("showHistorySearch")}>X</div>
 
                                             </div> : ""}
