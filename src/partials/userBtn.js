@@ -59,6 +59,7 @@ class UserBtn extends React.Component {
             case "leaveRoom":
             case "viewRoomData":
             case "moveRoomOnTop":
+            case "changeNotificationStatus":
             case "clearRoomWindow":
                 this.props.onContextMenuHandler(res,null,this.state.onContextMenuUserName);
                 this.setState({onContextMenu:false});
@@ -124,6 +125,7 @@ class UserBtn extends React.Component {
                         userList={this.props.userList}
                         userRoomList={this.props.roomList ? itm.members.map(itm => itm.name) : ''}//.filter(name => name !== this.props.username)
                         userBanRoomList={this.props.roomList ? itm.blockedContacts.map(itm => itm.name) : ''}
+                        userNRSStatus={this.props.userNRSStatus}
                     />
                     :''}
             </div>

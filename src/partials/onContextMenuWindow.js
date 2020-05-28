@@ -19,6 +19,7 @@ class OnContextMenu extends React.Component {
 
 
     render() {
+        console.log("OnContextMenu props: ",this.props);
         const OnEnterUserList =()=>{
             return (
                 <ul className="userInvite"  >
@@ -82,7 +83,7 @@ class OnContextMenu extends React.Component {
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("viewRoomData")}}>View group data</li>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("clearRoomWindow")}}>Clear group window</li>
                         <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("leaveRoom")}}>Leave group</li>
-
+                        <li className='dropDownBtn' onClick={(e)=>{e.preventDefault();e.stopPropagation();this.props.onContextMenuResponse("changeNotificationStatus")}}>{this.props.userNRSStatus ? "Disable Notifications" : "Enable Notifications"}</li>
                     </ul>
                 ):(
                     <ul className="userDropDown" onMouseLeave={this.props.rightClickMenuOnHide} style={this.props.contextMenuLocation}>

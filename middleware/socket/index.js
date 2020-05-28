@@ -191,6 +191,7 @@ module.exports = function (server) {
         const userDB = await User.findOne({username:username});
         console.log("connection");
         //update global chat users obj
+        //obj to store  onLine users sockedId
         globalChatUsers[username] = {
             sockedId:reqSocketId,
             contacts:userDB.contacts, //use only for username otherwise the data may not be updated.
@@ -315,15 +316,15 @@ module.exports = function (server) {
             }
         });
         //Find contacts
-        socket.on('findContacts', async function (data,cb) {
-            //console.log('findContacts: ',data);
-            let {err,users} = await User.userFindContacts(data);
-            if(err) {
-                console.log("findContacts err:",err);
-                return cb(err,null)
-            } else {
+        socket.on('findContacts', async function (nameString,cb) {
+            try {
+                console.log("findContacts nameString:", nameString);
+                let users = await User.find( { "username": { "$regex": nameString, "$options": "i" } } );
                 let usersArr = users.map(itm=>itm.username).filter(name => name !== username);
                 return  cb(null,usersArr);
+            } catch (err) {
+                console.log("findContacts err:",err);
+                return cb(err,null)
             }
         });
         //Check contact
@@ -574,7 +575,7 @@ module.exports = function (server) {
                 //mes['room'] = mes['uniqSig'] && delete mes['uniqSig'];//rename key uniqSig to room.
                 let idx = mes._id;
                 room.members.forEach(itm =>{
-                    if(globalChatUsers[itm.name]) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',mes);
+                    if(globalChatUsers[itm.name] && itm.enable) socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('messageRoom',mes);
                 });
                 cb(null,mes);
             } catch (err) {
@@ -650,17 +651,17 @@ module.exports = function (server) {
             }
         });
         //enable/disable notification
-        socket.on('changeNtfStatus', async function  (roomName,userName,cb) {
+        socket.on('changeNtfStatus', async function  (roomName,cb) {
             try {
-                console.log('changeNtfStatus roomName: ',roomName," ,userName: ",userName);
+                console.log('changeNtfStatus roomName: ',roomName);
                 let room = await Room.findOne({name:roomName});
-                if(!room.members.some(itm => itm.name === userName) || room.blockedContacts.some(itm => itm.name === userName)) {
+                if(!room.members.some(itm => itm.name === username) || room.blockedContacts.some(itm => itm.name === username)) {
                     return cb("You are not a member of this group or you are on the block list.",null);
                 }
-                let idx = room.members.find(itm => itm.name === userName)._id;
-                let statusNot = room.members.find(itm => itm.name === userName).enable;
-                room = await Room.findOneAndUpdate({name:roomName ,"members._id": idx},{"members.$.enable" : !statusNot});
-                console.log("changeNtfStatus room: ",room);
+                let idx = room.members.find(itm => itm.name === username)._id;
+                let statusNot = room.members.find(itm => itm.name === username).enable;
+                await Room.findOneAndUpdate({name:roomName ,"members._id": idx},{"members.$.enable" : !statusNot});
+                //console.log("changeNtfStatus room: ",room);
                 cb(null,await aggregateUserData(username))
             } catch (err) {
                 console.log("setRoomAdmin err: ",err);

@@ -12,10 +12,12 @@ import UserProps from '../partials/userPropsWindow.js'
 import searchImg from '../../public/img/magnifier.svg'
 import addGroupImg from '../../public/img/add-group-of-people.png'
 import addUserImg from '../../public/img/add-user-button.png'
-//third-party applications
-import VisibilitySensor from'react-visibility-sensor'
-
 import OnContextMenuBtn from '../partials/onContextMenuBtn.js'
+
+//third-party applications
+import VisibilitySensor from 'react-visibility-sensor'
+
+
 let contentMenuStyle = {
     display: location ? 'block' : 'none',
     position: 'absolute',
@@ -235,7 +237,7 @@ class Chat extends React.Component {
     };
 
     scrollToBottom = (element) => {
-        console.log("this.state.scrollTopMax: ",this.state.scrollTopMax, " ,element.scrollHeight: ",element.scrollHeight);
+        //console.log("this.state.scrollTopMax: ",this.state.scrollTopMax, " ,element.scrollHeight: ",element.scrollHeight);
         element.scrollTop = element.scrollTopMax - this.state.scrollTopMax || element.scrollHeight;
     };
 
@@ -684,6 +686,21 @@ class Chat extends React.Component {
                     }
                 });
                 break;
+            case "changeNotificationStatus":
+                console.log("onContextMenuHandler changeNotificationStatus: ");
+                //changeNtfStatus
+                this.socket.emit('changeNtfStatus',roomName,(err,data)=>{
+                    console.log("leaveRoom cb err: ",err,", cb rooms: ",data);
+                    if(err) {
+                        this.setState({
+                            modalWindow:true,
+                            err:{message:err},
+                        })
+                    }else {
+                        this.setState({rooms:data.rooms});
+                    }
+                });
+                break;
             case "moveRoomOnTop":
                 console.log("onContextMenuHandler moveRoomOnTop: ",roomName);
                 break;
@@ -915,6 +932,16 @@ class Chat extends React.Component {
         }
     };
 
+    forwardHandler =(username)=>{
+        console.log("forwardHandler username: ",username);
+        console.log("forwardHandler selectModMsgList: ",this.state.selectModMsgList);
+        this.setState({
+            isForward: false,
+            selectMode:false,
+            selectModMsgList:[],
+        });
+    };
+
     render() {
         console.log('/chat user:', this.state);
         if (this.state.errorRedirect) {
@@ -1124,6 +1151,7 @@ class Chat extends React.Component {
                                                         roomList={true}
                                                         userList={this.state.users.map(itm => itm.name)}
                                                         username={this.state.user.username}
+                                                        userNRSStatus={itm.members.find(itm => itm.name === this.state.user.username).enable}//user Room notification status
                                                     />)
                                             }
                                         </div>
@@ -1152,7 +1180,7 @@ class Chat extends React.Component {
                                             </div>
                                             <div className={`forwardUserList ${this.state.isForward ? "show" : ""}`}>
                                                 <ul>
-                                                    {this.state.users.map((user)=> <li className="btn user">{user.name}</li>)}
+                                                    {this.state.users.map((user)=> <li onClick={()=> this.forwardHandler(user.name)} className="btn user">{user.name}</li>)}
                                                 </ul>
                                             </div>
 
