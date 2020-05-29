@@ -32,6 +32,7 @@ var message = new mongoose.Schema({
     members: [],//["userName1","username2"]
     text: String,
     user:String,//author
+    forwardFrom:String,
     status:Boolean,
     statusCheckArr:[],
     date:Date,

@@ -443,6 +443,35 @@ module.exports = function (server) {
                 cb(err,null);
             }
         });
+        //chat message forward
+        socket.on('messageForward', async function (ids,toUserName,cb) {
+            try {
+                console.log('messageForward');
+                let mesArray = await Message.find({_id:{$in:ids}});//find all mes
+                let resUser = await User.findOne({username:toUserName});
+                if(globalChatUsers[username].blockedContacts.includes(toUserName)) return cb("You can not write to baned users!",null);
+                if(!resUser.contacts.includes(username)) return cb("User "+toUserName+" do not add you in his white list!",null);
+
+                //let {err,mes} = await Message.messageHandler({sig:setGetSig([username,toUserName]),members:[username,toUserName],message:{ user: username, text: text, status: false, date: dateNow}});
+
+                for (const item of mesArray) {
+                    item.set('_id', undefined);
+                    item.uniqSig = setGetSig([username,toUserName]);
+                    item.status = false;
+                    item.forwardFrom = username;
+                }
+                console.log('messageForward mes:',mesArray);
+                await Message.insertMany(mesArray);
+
+                if(!globalChatUsers[toUserName]) return cb(null,mesArray);
+                let sid = globalChatUsers[toUserName].sockedId;
+                socket.broadcast.to(sid).emit('messageForward', mesArray,username);
+                cb(null,mesArray);
+            } catch (err) {
+                console.log("messageForward err: ",err);
+                cb(err,null);
+            }
+        });
         //room events
         //setRoomMesStatus
         socket.on('setRoomMesStatus',async function (idx,reqRoom,cb) {

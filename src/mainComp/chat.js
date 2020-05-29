@@ -112,6 +112,11 @@ class Chat extends React.Component {
         this.socket = socket
             //.emit('sayOnLine')
 
+            .on('messageForward', (mesArray,username)=>{
+                mesArray.forEach(itm => this.printMessage(itm, username));
+                this.msgCounter("users",this.getUsersIdx("users",username));
+            })
+
             .on('updateUserData',(userData)=>{
                 //console.log("updateUserData: ",userData);
                 if(userData.username !== this.state.user.username) return;
@@ -935,10 +940,25 @@ class Chat extends React.Component {
     forwardHandler =(username)=>{
         console.log("forwardHandler username: ",username);
         console.log("forwardHandler selectModMsgList: ",this.state.selectModMsgList);
-        this.setState({
-            isForward: false,
-            selectMode:false,
-            selectModMsgList:[],
+        this.socket.emit('messageForward', this.state.selectModMsgList, username, (err, mesArray) => {
+            if (err) {
+                console.log("messageForward: ", err);
+                this.setState({
+                    modalWindow: true,
+                    err: {message: err},
+                })
+            } else {
+                console.log("messageForward successful updatedMes: ", mesArray);
+                mesArray.forEach(itm => this.printMessage(itm, username));
+
+                this.setState({
+                    isForward: false,
+                    selectMode:false,
+                    isChecked: false,
+                    selectModMsgList:[],
+                });
+                //this.msgCounter("users", this.getUsersIdx("users", username));
+            }
         });
     };
 
@@ -1212,7 +1232,7 @@ class Chat extends React.Component {
                                                 (eUser && eStore) ? (
                                                     eStore.map((data, i) => {
                                                         return (
-                                                            (data.user === this.state.user.username)?(
+                                                            (data.user === this.state.user.username || this.state.user.username === data.forwardFrom)?(
                                                                 <li key={i} className={`right ${this.state.messageLink === data._id ? 'active' :''}`} ref={data._id}>{data.text}
                                                                     <div className="messageData">
                                                                         {this.state.selectMode ?
@@ -1240,10 +1260,8 @@ class Chat extends React.Component {
                                                                                 ):("")}
                                                                             </span>
                                                                             {/*<span className="messageTime">id:{data._id}</span>*/}
+                                                                            {data.forwardFrom !== undefined ? " Forwarded from: " + data.forwardFrom : ""}
                                                                         </div>
-
-
-
                                                                     </div>
                                                                 </li>
                                                             ):(
@@ -1286,7 +1304,7 @@ class Chat extends React.Component {
                                                                                         <span className="messageTime">UR</span> :
                                                                                         <span className="messageTime">UR</span>
                                                                                 }
-
+                                                                                {data.forwardFrom !== undefined ? " Forwarded from: " + data.forwardFrom : ""}
                                                                             </div>
 
 
