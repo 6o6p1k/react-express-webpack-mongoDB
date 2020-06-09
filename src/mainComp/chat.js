@@ -937,10 +937,10 @@ class Chat extends React.Component {
         }
     };
 
-    forwardHandler =(username)=>{
-        console.log("forwardHandler username: ",username);
+    forwardHandler =(forwardTo,forwardFrom)=>{
+        console.log("forwardHandler username: ",forwardTo);
         console.log("forwardHandler selectModMsgList: ",this.state.selectModMsgList);
-        this.socket.emit('messageForward', this.state.selectModMsgList, username, (err, mesArray) => {
+        this.socket.emit('messageForward', this.state.selectModMsgList, forwardTo,forwardFrom, (err, mesArray) => {
             if (err) {
                 console.log("messageForward: ", err);
                 this.setState({
@@ -949,7 +949,7 @@ class Chat extends React.Component {
                 })
             } else {
                 console.log("messageForward successful updatedMes: ", mesArray);
-                mesArray.forEach(itm => this.printMessage(itm, username));
+                mesArray.forEach(itm => this.printMessage(itm, forwardTo));
 
                 this.setState({
                     isForward: false,
@@ -1200,7 +1200,7 @@ class Chat extends React.Component {
                                             </div>
                                             <div className={`forwardUserList ${this.state.isForward ? "show" : ""}`}>
                                                 <ul>
-                                                    {this.state.users.map((user)=> <li onClick={()=> this.forwardHandler(user.name)} className="btn user">{user.name}</li>)}
+                                                    {this.state.users.map((user)=> <li onClick={()=> this.forwardHandler(user.name,eUser.name)} className="btn user">{user.name}</li>)}
                                                 </ul>
                                             </div>
 
@@ -1254,7 +1254,7 @@ class Chat extends React.Component {
                                                                             : ""
                                                                         }
                                                                         <div className='shortMessageInfo'>
-                                                                            {data.user}                                                                             <span className="messageTime">{this.dateToString(data.date)}</span>
+                                                                            {data.user}<span className="messageTime">{this.dateToString(data.date)}</span>
                                                                             <span className="messageTime">{data.status === true ? " R" : Array.isArray(data.status) ? (
                                                                             data.status.map((name,i) => <span key={i} className="messageTime">{name}</span>)
                                                                                 ):("")}

@@ -444,7 +444,7 @@ module.exports = function (server) {
             }
         });
         //chat message forward
-        socket.on('messageForward', async function (ids,toUserName,cb) {
+        socket.on('messageForward', async function (ids,toUserName,fromUserName, cb) {
             try {
                 console.log('messageForward');
                 let mesArray = await Message.find({_id:{$in:ids}});//find all mes
@@ -458,7 +458,7 @@ module.exports = function (server) {
                     item.set('_id', undefined);
                     item.uniqSig = setGetSig([username,toUserName]);
                     item.status = false;
-                    item.forwardFrom = username;
+                    item.forwardFrom = fromUserName;
                 }
                 console.log('messageForward mes:',mesArray);
                 await Message.insertMany(mesArray);
