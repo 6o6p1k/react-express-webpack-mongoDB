@@ -456,6 +456,8 @@ module.exports = function (server) {
 
                 for (const item of mesArray) {
                     item.set('_id', undefined);
+                    item.user = username;
+                    item.members = [username,toUserName];
                     item.uniqSig = setGetSig([username,toUserName]);
                     item.status = false;
                     item.forwardFrom = fromUserName;
@@ -726,6 +728,7 @@ module.exports = function (server) {
         //delete messages, only for users conversation
         socket.on('deleteMessages', async function  (reqUsername,ids,cb) {
             try {
+                console.log('deleteMessages, ids: ',ids,' ,reqUsername: ',reqUsername);
                 //delete all messages with ids and check members array
                 await Message.deleteMany({$and:[{_id:{$in:ids}},{members:{$all:[username,reqUsername]}}]});
                 //delete user's messages in messageStore

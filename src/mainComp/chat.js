@@ -141,11 +141,12 @@ class Chat extends React.Component {
             })
             .on('updateMessageStore',(username,ids)=> {
                 console.log("updateMessageStore username: ", username, " ,mes ids: ", ids);
-                let userStore = this.state.messagesStore[username];
-                userStore.forEach((itm,i,obj) => {
-                    if(ids.includes(itm._id)) obj.splice(i,1)
+
+                this.setState(state => {
+                    state.messagesStore[username] = state.messagesStore[username].filter((itm) => !ids.includes(itm._id));
+                    return state
                 });
-                this.setState({userStore:userStore})
+
             })
             .on('onLine', (name)=> {
                 //console.log('receiver user offLine: ',name," ,this.getUsersIdx: ", this.getUsersIdx("users",name));
@@ -885,6 +886,7 @@ class Chat extends React.Component {
     onContextMenuBtnResponse =(res)=> {
         console.log("onContextMenuBtnResponse res: ",res);
         let currentUser = this.state.users[this.state.messageBlockHandlerId].name;
+
         switch (res){
             case "Find Message":
                 console.log("onContextMenuBtnResponse Find Message");
@@ -896,6 +898,9 @@ class Chat extends React.Component {
             case "Delete Selected":
                 console.log("onContextMenuBtnResponse Delete Message: currentUser: ",currentUser,',','selectModMsgList: ',this.state.selectModMsgList);
                 //this.state.arrayBlockHandlerId ? name : [name,this.state.user.username]
+
+
+
                 this.socket.emit('deleteMessages',currentUser,this.state.selectModMsgList, (err)=>{
                     if(err) {
                         this.setState({
@@ -903,16 +908,21 @@ class Chat extends React.Component {
                             err:{message:err},
                         })
                     }else {
-                        //refresh message store, delete messages
-                        let msgStore = this.state.messagesStore[currentUser];
-                        msgStore.forEach((itm,i,obj) => {
-                            if(this.state.selectModMsgList.includes(itm._id)) obj.splice(i,1)
+
+                        let messagesStore = this.state.messagesStore;
+                        console.log("msgStore: ", messagesStore[currentUser]," ,len: ", messagesStore[currentUser].length);
+
+                        this.setState(state => {
+                            state.messagesStore[currentUser] = state.messagesStore[currentUser].filter((itm) => !this.state.selectModMsgList.includes(itm._id));
+                            return state
                         });
+
+
                         this.setState({
                             selectMode:false,
                             onContextMenuBtn: false,
                             selectModMsgList: [],
-                            msgStore:msgStore,
+
                             isChecked: false
                         });
                     }
@@ -1232,7 +1242,7 @@ class Chat extends React.Component {
                                                 (eUser && eStore) ? (
                                                     eStore.map((data, i) => {
                                                         return (
-                                                            (data.user === this.state.user.username || this.state.user.username === data.forwardFrom)?(
+                                                            (data.user === this.state.user.username )?(//|| (data.forwarFrom && !data.members.some(itm => itm === data.user))
                                                                 <li key={i} className={`right ${this.state.messageLink === data._id ? 'active' :''}`} ref={data._id}>{data.text}
                                                                     <div className="messageData">
                                                                         {this.state.selectMode ?
