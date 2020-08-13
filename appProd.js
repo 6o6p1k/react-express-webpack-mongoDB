@@ -27,7 +27,9 @@ app.use(favicon());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded());
 //app.use(cookieParser(""));
+
 app.use(session({
+    connections: config.get('pg'),
     secret: config.get('session:secret'),
     resave: config.get('session:resave'),
     saveUninitialized: config.get('session:saveUninitialized'),

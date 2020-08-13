@@ -1270,7 +1270,7 @@ class Chat extends React.Component {
                                                                                 ):("")}
                                                                             </span>
                                                                             {/*<span className="messageTime">id:{data._id}</span>*/}
-                                                                            {data.forwardFrom !== undefined ? " Forwarded from: " + data.forwardFrom : ""}
+                                                                            {data.forwardFrom !== undefined || data.forwardFrom !== null ? " Forwarded from: " + data.forwardFrom : ""}
                                                                         </div>
                                                                     </div>
                                                                 </li>

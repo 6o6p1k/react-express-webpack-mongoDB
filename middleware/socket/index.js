@@ -36,21 +36,43 @@ function getRoomMembers(room) {
     return room.members.map(itm => itm.name);
 }
 
-function loadUser(session, callback) {
-    if (!session.user) {
-        //console.log('Session %s is anonymous', session.id);
-        return callback(null, null);
-    }
-    //console.log('retrieving user: ', session.user);
-    User.findById(session.user, function(err, user) {
-        if (err) return callback(err);
-
-        if (!user) {
-            return callback(null, null);
+async function loadUser(session) {
+    try {
+        console.log('retrieving user: ', session.user);
+        if (!session.user) {
+            console.log('Session %s is anonymous', session.id);
+            return {err:null,user:null};
         }
+        let user = await User.findByPk(session.user);
         //console.log('user found by Id result: ',user);
-        callback(null, user);
-    });
+        if (!user) return {err:null,user:null};
+        return {err:null,user:user};
+    }catch(err){
+        return {err:err,user:null};
+    }
+}
+
+
+
+
+function findClientsSocket(roomId, namespace) {
+    var res = []
+        // the default namespace is "/"
+        , ns = io.of(namespace ||"/");
+
+    if (ns) {
+        for (var id in ns.connected) {
+            if(roomId) {
+                var index = ns.connected[id].rooms.indexOf(roomId);
+                if(index !== -1) {
+                    res.push(ns.connected[id]);
+                }
+            } else {
+                res.push(ns.connected[id]);
+            }
+        }
+    }
+    return res;
 }
 
 async function asyncIncludes(arr, chkItm) {
@@ -62,13 +84,13 @@ async function asyncIncludes(arr, chkItm) {
 
 async function aggregateUserData(username) {
     try {
-        let userData = await User.findOne({username:username});
-        let contacts = userData.contacts;
-        let blockedContacts = userData.blockedContacts;
-        let rooms = userData.rooms;
+        let userData = await User.findOne({raw: true,where:{username:username}});
+        let contacts = userData.contacts || [];
+        let blockedContacts = userData.blockedContacts || [];
+        let rooms = userData.rooms || [];
         let wL = contacts.map(async (name,i) =>{
             let status = !!globalChatUsers[name];
-            let nameUserDB = await User.findOne({username:name});
+            let nameUserDB = await User.findOne({raw: true,where:{username:name}});
             let banned = nameUserDB.blockedContacts.includes(username);
             let authorized =  !(!nameUserDB.contacts.includes(username) && !nameUserDB.blockedContacts.includes(username));
             let {err,mes} = await Message.messageHandler({sig:setGetSig([username,name])});
@@ -77,7 +99,7 @@ async function aggregateUserData(username) {
         });
         let bL = blockedContacts.map(async (name,i) =>{
             let status = !!globalChatUsers[name];
-            let nameUserDB = await User.findOne({username:name});
+            let nameUserDB = await User.findOne({raw: true,where:{username:name}});
             let banned = nameUserDB.blockedContacts.includes(username);
             let authorized =  !(!nameUserDB.contacts.includes(username) && !nameUserDB.blockedContacts.includes(username));
             let {err,mes} = await Message.messageHandler({sig:setGetSig([username,name])});
@@ -85,7 +107,7 @@ async function aggregateUserData(username) {
             return blockedContacts[i] = {name:name, msgCounter :col, allMesCounter: mes.messages.length,typing:false, onLine:status, banned:banned, authorized:authorized, created_at:nameUserDB.created, userId:nameUserDB._id}
         });
         let rL = rooms.map(async (name,i) =>{
-            let room = await Room.findOne({name:name});
+            let room = await Room.findOne({where:{name:name}});
             let {err,mes} = await Message.messageHandler({sig:name});
             let col = 0;
             for(let itm of mes.messages) {
@@ -103,74 +125,70 @@ async function aggregateUserData(username) {
     }
 }
 
+let getStoreSes = (sig) => {
+    return new Promise(
+        (resolve, reject) => {
+            sessionStore.get(sig,function(err,session){
+                if(err) reject({err:err,session:null});
+                resolve({err:null,session:session})
+            })
+        }
+    )
+};
+
 
 module.exports = function (server) {
 
     var io = require('socket.io').listen(server);
 
-    function findClientsSocket(roomId, namespace) {
-        var res = []
-            // the default namespace is "/"
-            , ns = io.of(namespace ||"/");
 
-        if (ns) {
-            for (var id in ns.connected) {
-                if(roomId) {
-                    var index = ns.connected[id].rooms.indexOf(roomId);
-                    if(index !== -1) {
-                        res.push(ns.connected[id]);
-                    }
-                } else {
-                    res.push(ns.connected[id]);
-                }
-            }
-        }
-        return res;
-    }
 
-    io.set('authorization', function (handshake, callback) {
-        handshake.cookies = cookie.parse(handshake.headers.cookie || '');
-        var sidCookie = handshake.cookies[config.get('session:key')];
-        //console.log('sidCookie: ',sidCookie);
-        if (!sidCookie) return callback(JSON.stringify(new HttpError(401, 'No Cookie')));
-        let sid = getConSid(sidCookie);
-        //console.log('authorizationSessionId: ',sid);
-        sessionStore.load(sid,(err,session)=>{
-            if(err) return callback(new DevError(500, 'Session err: ' + err));
-            //console.log('authorization session: ',session,'err: ',err);
+    io.set('authorization', async function (handshake,callback) {
+        try {
+            handshake.cookies = cookie.parse(handshake.headers.cookie || '');
+            let sidCookie = handshake.cookies[config.get('session:key')];
+            console.log('sidCookie: ',sidCookie);
+            if (!sidCookie) return callback(JSON.stringify(new HttpError(401, 'No Cookie')));
+            let sid = getConSid(sidCookie);
+            console.log('authorizationSessionId: ',sid);
+            let {error,session} = await getStoreSes(sid);
+            console.log('authorizationSessionId session: ',session);
+            if(error) return callback(new DevError(500, 'Session error: ' + error));
+            console.log('authorization session: ',session,'error: ',error);
             if (!session) return callback(JSON.stringify(new HttpError(401, 'No session')));
             handshake.session = session;
-            loadUser(session,(err,user)=>{
-                if(err) return callback(JSON.stringify(new DevError(500, 'DB err: ' + err)));
-                //console.log('loadUser userId: ',user);
-                if(!user) return callback(JSON.stringify(new  HttpError(401, 'Anonymous session may not connect')));
-                if(globalChatUsers[user.username]) {
-                    console.log("multiChatConnection");
-                    delete globalChatUsers[user.username];
-                    return callback(JSON.stringify(new HttpError(423, 'Locked! You tried to open Chat Page in another tab.')));
-                }
-                handshake.user = user;
-                return callback(null, true);
-            });
-        });
+            let {errLU,user} = await loadUser(session);
+            if(errLU) return callback(JSON.stringify(new DevError(500, 'DB error: ' + error)));
+            //console.log('loadUser userId: ',user);
+            if(!user) return callback(JSON.stringify(new  HttpError(401, 'Anonymous session may not connect')));
+            if(globalChatUsers[user.username]) {
+                console.log("multiChatConnection");
+                delete globalChatUsers[user.username];
+                return callback(JSON.stringify(new HttpError(423, 'Locked! You tried to open Chat Page in another tab.')));
+            }
+            handshake.user = user;
+            return callback(null, true);
+        }catch (error) {
+            console.log('authorization error: ',error);
+            return new DevError(500, 'Socket Authorization error: ',error)
+        }
     });
 
-    common.on('session:reload', function (sid,callback) {
-        //console.log('session:reloadSid: ',sid);
-        var clients = findClientsSocket();
-        //console.log('clients: ',clients);
-        clients.forEach(function (client) {
-            let sidCookie = cookie.parse(client.handshake.headers.cookie);
-            //console.log('sidCookie: ',sidCookie);
-            let sessionId = getConSid(sidCookie.sid);
-            //console.log('session:reloadSessionId: ',sessionId);
-            if (sessionId !== sid) return;
-            sessionStore.load(sid, function (err, session) {
+    common.on('session:reload', async function (sid) {
+        try{
+            console.log('session:reloadSid: ',sid);
+            let clients = findClientsSocket();
+            console.log('clients: ',clients);
+            for (const client of clients) {
+                let sidCookie = cookie.parse(client.handshake.headers.cookie);
+                //console.log('sidCookie: ',sidCookie);
+                let sessionId = getConSid(sidCookie.sid);
+                //console.log('session:reloadSessionId: ',sessionId);
+                if (sessionId !== sid) return;
+                let {err,session} = await getStoreSes(sid);
                 if (err) {
                     //console.log('sessionStore.load err: ',err);
-                    //client.emit('error', err);
-                    if(err) return callback(err);
-                    //client.disconnect();
+                    return {err:JSON.stringify(new HttpError(423, 'Socket Session:reload err: ',err)),user:null};
                 }
                 if (!session) {
                     //console.log('sessionStore.load no session find');
@@ -178,18 +196,24 @@ module.exports = function (server) {
                     client.disconnect();
                     return;
                 }
-                //console.log('restore session');
                 client.handshake.session = session;
-            });
-        });
+            }
+        }catch(err){
+            console.log('session:reload err: ',err);
+            return {err:JSON.stringify(new HttpError(423, 'Socket Session:reload err: ',err)),user:null};
+        }
     });
 
     io.sockets.on('connection', async function (socket) {
         //Global Chat Events
         let username = socket.request.user.username;//req username
+        console.log("connection username: ",username);
         let reqSocketId = socket.id;//req user socket id
-        const userDB = await User.findOne({username:username});
-        console.log("connection");
+        const userDB = await User.findOne({
+            where: {username:username},
+            include: [{model: Room,as:'rooms'}],
+        });
+        console.log("connection userDB: ",userDB);
         //update global chat users obj
         //obj to store  onLine users sockedId
         globalChatUsers[username] = {
@@ -197,6 +221,7 @@ module.exports = function (server) {
             contacts:userDB.contacts, //use only for username otherwise the data may not be updated.
             blockedContacts:userDB.blockedContacts, //use only for username otherwise the data may not be updated.
         };
+        console.log("await aggregateUserData(username): ",await aggregateUserData(username));
         //update UserData
         socket.emit('updateUserData',await aggregateUserData(username));
         //move to black list
@@ -294,6 +319,7 @@ module.exports = function (server) {
                 console.log('addMe: ',data);
                 let {err:errRG, user:userRG} = await User.userATC(username,data.name);//add to contacts
                 let {err:errRD, user:userRD} = await User.userATBC(data.name,username);//add to blocked contacts
+                console.log("userRG: ",userRG);
                 if(errRG) return cb("Request rejected. DB err: "+userRG.err,null);
                 if(errRD) return cb("Request rejected. DB err: "+userRD.err,null);
                 //update globalChatUsers[username] data
@@ -316,10 +342,13 @@ module.exports = function (server) {
             }
         });
         //Find contacts
+        const { Op } = require("sequelize");
         socket.on('findContacts', async function (nameString,cb) {
             try {
                 console.log("findContacts nameString:", nameString);
-                let users = await User.find( { "username": { "$regex": nameString, "$options": "i" } } );
+                //let users = await User.find( { "username": { "$regex": nameString, "$options": "i" } } );
+                let users = await User.findAll({where: {username:{[Op.like]: '%' + nameString + '%'}}});
+                console.log("findContacts users:",users);
                 let usersArr = users.map(itm=>itm.username).filter(name => name !== username);
                 return  cb(null,usersArr);
             } catch (err) {
@@ -330,7 +359,7 @@ module.exports = function (server) {
         //Check contact
         socket.on('checkContact', async function (data,cb) {
             console.log('checkContact: ',data);
-            let user = await User.findOne({username:data}) || await User.findOne({_id:data});
+            let user = await User.findOne({raw: true,where:{username:data}}) || await User.findOne({raw: true,where:{_id:data}});
             if(user) {
                 return cb(user.username);
             } else return cb(null)
@@ -363,9 +392,9 @@ module.exports = function (server) {
         socket.on('setMesStatus',async function (idx,reqUsername,cb) {
             try {
                 console.log("setMesStatus: indexArr: ",idx," ,reqUsername: ",reqUsername);
-                let mes = await Message.findOne({_id:idx});
+                let mes = await Message.findOne({raw: true, where:{_id:idx}});
                 if(mes.status === true) return;
-                await Message.findOneAndUpdate({_id:idx},{"status" : true});
+                await Message.update({"status" : true},{where:{_id:idx}});
                 if(globalChatUsers[reqUsername]) socket.broadcast.to(globalChatUsers[reqUsername].sockedId).emit('updateMsgStatus',username,idx,!mes.status);
                 cb(null);
             } catch (err) {
@@ -383,52 +412,52 @@ module.exports = function (server) {
         socket.on('message', async function (text,resToUserName,dateNow,cb) {
             try {
                 console.log('message');
-                if(text.split(' ')[0] === 'console:'){
-                    let consoleArr = text.split(' ');
-                    console.log('message console command: ', consoleArr[1],',', 'message console data: ', consoleArr[2]);
-                    let mes;
-                    switch (consoleArr[1]){
-                        case "deleteMsg":
-                            console.log("message console deleteMsg DATA: ", consoleArr[2].split(','));
-                            let ids = consoleArr[2].split(',');
-                            //delete all messages with ids and check members array
-                            await Message.deleteMany({$and:[{_id:{$in:ids}},{members:{$all:[username,resToUserName]}}]});
-                            //delete user's messages in messageStore
-                            socket.emit('updateMessageStore',resToUserName,ids);
-                            if(globalChatUsers[resToUserName]) socket.broadcast.to(globalChatUsers[resToUserName].sockedId).emit('updateMessageStore',username,ids);
-                            break;
-                        case "getAllUsersOnline":
-                            console.log("message console getAllUsersOnline: ");
-                            let usersOnLine = Object.keys(globalChatUsers).join();
-                            mes = { members:[username,resToUserName],
-                                statusCheckArr: [],
-                                _id: 'noId',
-                                uniqSig: setGetSig([username,resToUserName]),
-                                text: usersOnLine,
-                                user: username,
-                                status: true,
-                                date: Date.now()};
-                            return cb(null,mes);
-                            break;
-                        case "getMyId":
-                            console.log("message console getMyId: ");
-                            mes = { members:[username,resToUserName],
-                                statusCheckArr: [],
-                                _id: 'noId',
-                                uniqSig: setGetSig([username,resToUserName]),
-                                text: userDB._id,
-                                user: username,
-                                status: true,
-                                date: Date.now()};
-                            return cb(null,mes);
-                            break;
-                        default:
-                            console.log("message console : Sorry, we are out of " + consoleArr[1] + ".");
-                    }
-                }
+                // if(text.split(' ')[0] === 'console:'){
+                //     let consoleArr = text.split(' ');
+                //     console.log('message console command: ', consoleArr[1],',', 'message console data: ', consoleArr[2]);
+                //     let mes;
+                //     switch (consoleArr[1]){
+                //         case "deleteMsg":
+                //             console.log("message console deleteMsg DATA: ", consoleArr[2].split(','));
+                //             let ids = consoleArr[2].split(',');
+                //             //delete all messages with ids and check members array
+                //             await Message.deleteMany({$and:[{_id:{$in:ids}},{members:{$all:[username,resToUserName]}}]});
+                //             //delete user's messages in messageStore
+                //             socket.emit('updateMessageStore',resToUserName,ids);
+                //             if(globalChatUsers[resToUserName]) socket.broadcast.to(globalChatUsers[resToUserName].sockedId).emit('updateMessageStore',username,ids);
+                //             break;
+                //         case "getAllUsersOnline":
+                //             console.log("message console getAllUsersOnline: ");
+                //             let usersOnLine = Object.keys(globalChatUsers).join();
+                //             mes = { members:[username,resToUserName],
+                //                 statusCheckArr: [],
+                //                 _id: 'noId',
+                //                 uniqSig: setGetSig([username,resToUserName]),
+                //                 text: usersOnLine,
+                //                 user: username,
+                //                 status: true,
+                //                 date: Date.now()};
+                //             return cb(null,mes);
+                //             break;
+                //         case "getMyId":
+                //             console.log("message console getMyId: ");
+                //             mes = { members:[username,resToUserName],
+                //                 statusCheckArr: [],
+                //                 _id: 'noId',
+                //                 uniqSig: setGetSig([username,resToUserName]),
+                //                 text: userDB._id,
+                //                 user: username,
+                //                 status: true,
+                //                 date: Date.now()};
+                //             return cb(null,mes);
+                //             break;
+                //         default:
+                //             console.log("message console : Sorry, we are out of " + consoleArr[1] + ".");
+                //     }
+                // }
                 if (text.length === 0 || !resToUserName) return;
                 if (text.length >= 500) return cb("To long message!",null);
-                let resUser = await User.findOne({username:resToUserName});
+                let resUser = await User.findOne({raw: true,where:{username:resToUserName}});
                 if(globalChatUsers[username].blockedContacts.includes(resToUserName)) return cb("You can not write to baned users!",null);
                 if(!resUser.contacts.includes(username)) return cb("User "+resToUserName+" do not add you in his white list!",null);
                 let {err,mes} = await Message.messageHandler({sig:setGetSig([username,resToUserName]),members:[username,resToUserName],message:{ user: username, text: text, status: false, date: dateNow}});
@@ -447,8 +476,8 @@ module.exports = function (server) {
         socket.on('messageForward', async function (ids,toUserName,fromUserName, cb) {
             try {
                 console.log('messageForward');
-                let mesArray = await Message.find({_id:{$in:ids}});//find all mes
-                let resUser = await User.findOne({username:toUserName});
+                let mesArray = await Message.findAll({raw: true,where:{_id:{$in:ids}}});//find all mes
+                let resUser = await User.findOne({raw: true,where:{username:toUserName}});
                 if(globalChatUsers[username].blockedContacts.includes(toUserName)) return cb("You can not write to baned users!",null);
                 if(!resUser.contacts.includes(username)) return cb("User "+toUserName+" do not add you in his white list!",null);
 
@@ -479,7 +508,7 @@ module.exports = function (server) {
         socket.on('setRoomMesStatus',async function (idx,reqRoom,cb) {
             try {
                 console.log("setRoomMesStatus: indexArr: ",idx," ,reqRoom: ",reqRoom," ,username: ",username);
-                let currentMes = await Message.findOne({_id:idx});//get mes with id
+                let currentMes = await Message.findOne({raw: true,where:{_id:idx}});//get mes with id
                 //let currentMes = mes.messages.id(idx);
                 if(currentMes.user === username) return;//check if author
                 if(currentMes.status === true || currentMes.statusCheckArr.includes(username)) return cb(null);////check if user set status
@@ -569,7 +598,7 @@ module.exports = function (server) {
         socket.on('getRoomLog', async function  (roomName,reqMesCountCb,reqMesId,cb) {
             try {
                 console.log("getRoomLog: ",roomName);
-                let room = await Room.findOne({name:roomName});
+                let room = await Room.findOne({where:{name:roomName}});
                 if(!room) return cb("Error Group do not exist!",null);
                 if(room.blockedContacts.some(itm => itm.name === username)) return cb("You have been included in the block list. Message history is no longer available to you.",null);
                 if(!room.members.some(itm => itm.name === username)) return cb("You are not a member of the group.",null);
@@ -598,7 +627,7 @@ module.exports = function (server) {
                 console.log('messageRoom text: ',text, 'roomName: ',roomName, 'dateNow: ',dateNow);
                 if (text.length === 0) return;
                 if (text.length >= 500) return cb("To long message.",null);
-                let room = await Room.findOne({name:roomName});
+                let room = await Room.findOne({where:{name:roomName}});
 
                 if(!room.members.some(itm => itm.name === username)) return cb("You are not a member of the group.",null);
                 if(room.blockedContacts.some(itm => itm.name === username)) return cb("You have been included in the block list. Send messages to you is no longer available.",null);
@@ -685,7 +714,7 @@ module.exports = function (server) {
         socket.on('changeNtfStatus', async function  (roomName,cb) {
             try {
                 console.log('changeNtfStatus roomName: ',roomName);
-                let room = await Room.findOne({name:roomName});
+                let room = await Room.findOne({where:{name:roomName}});
                 if(!room.members.some(itm => itm.name === username) || room.blockedContacts.some(itm => itm.name === username)) {
                     return cb("You are not a member of this group or you are on the block list.",null);
                 }
@@ -710,7 +739,7 @@ module.exports = function (server) {
                 }
                 if( typeof sig === 'string') {//room correspondence
                     //check: Is username member of room?
-                    let {members} = await Room.findOne({name:sig});
+                    let {members} = await Room.findOne({where:{name:sig}});
                     //console.log("members: ",members);
                     if(!members.some((itm) => itm.name === username)) return cb("Canceled. Attempted unauthorized access to data.",null);
                     console.log('findMessage, sig: ',sig," ,textSearch: ",textSearch);
@@ -744,8 +773,8 @@ module.exports = function (server) {
         // when the user disconnects perform this
         socket.on('disconnect', async function () {
             try {
-                let contacts = globalChatUsers[username].contacts || await User.findOne({username:username}).contacts;
-                let blockedContacts = globalChatUsers[username].blockedContacts || await User.findOne({username:username}).blockedContacts;
+                let contacts = globalChatUsers[username].contacts || await User.findOne({raw: true,where:{username:username}}).contacts;
+                let blockedContacts = globalChatUsers[username].blockedContacts || await User.findOne({raw: true,where:{username:username}}).blockedContacts;
                 console.log("disconnect, username: ",username,", contacts: ",contacts);
                 //res for my contacts what Iam offLine
                 contacts.concat(blockedContacts).forEach((name)=>{
