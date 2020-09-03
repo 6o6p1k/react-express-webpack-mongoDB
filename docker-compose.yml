@@ -1,0 +1,16 @@
+version: "2"
+services:
+  app:
+    container_name: chatApp
+    build: .
+    ports:
+      - "5555:5555"
+    links:
+      - mongo
+  mongo:
+    container_name: chatMongo
+    image: mongo:3.6.8
+    volumes:
+      - /data/mongodb/db:/data/db
+    ports:
+      - "27017:27017"
