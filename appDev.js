@@ -39,14 +39,14 @@ app.use((webpackHRM)(compiler));
 app.use(favicon());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded());
-
+//app.use(cookieParser(""));
 app.use(session({
     secret: config.get('session:secret'),
     resave: config.get('session:resave'),
     saveUninitialized: config.get('session:saveUninitialized'),
     key: config.get('session:key'),
     cookie: config.get('session:cookie'),
-    store: sessionStore,
+    store: sessionStore
 }));
 app.use(require('./middleware/db/loadUser'));
 

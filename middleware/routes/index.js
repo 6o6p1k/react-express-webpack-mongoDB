@@ -23,9 +23,8 @@ module.exports = function(app) {
                 if(err instanceof AuthError) return next(new HttpError(403, err.message))
                 else return next(err);
             };
-            console.log('/login user._id: ', user._id);
+            console.log('/login user: ', user);
             req.session.user = user._id;
-            console.log('/login req.session.user: ', req.session.user);
             res.send({user});
         } catch(err) {
             console.log('/login err: ',err);
@@ -39,10 +38,11 @@ module.exports = function(app) {
             var username = req.body.username;
             var password = req.body.password;
             if(!username || !password) return next(new HttpError(403, 'incorrect request'));
-            let user = await User.findOne({where: {username:username}});
+            let user = await User.findOne({username:username});
             if(!user) {
-                user = await User.create({ username: username, password: password });
-                console.log('/register user: ', user);
+                user = new User({username: username, password: password});
+                user.save();
+                console.log('/login user: ', user);
                 req.session.user = user._id;
                 res.send({user});
             } else {
@@ -135,23 +135,25 @@ module.exports = function(app) {
         try {
             let userName = req.body.deleteUsername;
             let checkPass = req.body.checkPass;
-            if(!userName || !checkPass) return next(new HttpError(403, "Not fool request for deleting account!"));
+
             console.log('/deleteAccount, userName: ',userName,',','checkPass: ',checkPass);
-            let user = await User.findOne({where:{username:req.body.deleteUsername}});
-            if(!user.checkPassword(req.body.checkPass)) return next(new HttpError(403, "Password is incorrect"));
+            if(!userName || !checkPass) return next(new HttpError(403, "Not fool request for deleting account!"));
+            let {err,user} = await User.findOneAndCheckPass({username:userName,password:checkPass});
+            if(err) {
+                if(err instanceof AuthError) return next(new HttpError(403, err.message))
+                else return next(err);
+            }
             console.log('deleteAccount user: ',user);
             let cont = [...user.contacts,...user.blockedContacts];
             for (let name of cont) {
-                let user = await User.findOne({where: {username:name}});
-                //await Message.update({"status" : true},{where:{_id:idx}});
-                await User.update({
+                let user = await User.findOne({username:name});
+                await User.findOneAndUpdate({username:name},{
                     "contacts":user.contacts.filter(itm => itm !== userName),
                     "blockedContacts":user.blockedContacts.filter(itm => itm !== userName),
-                    },
-                    {where:{username:name}});
-                await Message.destroy({where: {uniqSig: setGetSig([userName,name])}});
+                });
+                await Message.deleteMany({uniqSig: setGetSig([userName,name])});
             }
-            await User.destroy({where: {_id: user._id}});
+            await User.deleteOne({ _id: user._id });
             req.session.user = user._id;
             res.send({user});
         } catch (err) {

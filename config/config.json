@@ -1,12 +1,14 @@
 {
-  "port": 7777,
+  "port": 5555,
   "AdministratorId": "5df9fb172c2bb91d1096aba6",
-  "pg": {
-    "user": "postgres",
-    "host": "localhost",
-    "database": "react_express_webpack_PG",
-    "password": "19Inetkmn83",
-    "port": 5432
+  "mongoose": {
+    "url": "mongodb://localhost:27017/newChatBase",
+    "options": {
+      "useUnifiedTopology": true,
+      "useNewUrlParser": true,
+      "useCreateIndex": true,
+      "useFindAndModify": false
+    }
   },
   "session": {
     "secret": "FackYouSpielbirg",

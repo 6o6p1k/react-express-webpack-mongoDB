@@ -6,11 +6,9 @@ var DevError = require('./../error/index').DevError;
 var User = require('../db/models/index').User;
 var Message = require('../db/models/index').Message;
 var Room = require('../db/models/index').Room;
-var MessageData = require('../db/models/index').MessageData;
 var globalChatUsers = {};
 var common = require('../common').commonEmitter;
-const { Op } = require("sequelize");
-
+var io = require('socket.io').listen(server);
 
 
 
@@ -24,7 +22,9 @@ function getConSid(a) {
                     ConSid += a[j];
                     //continue;
                 }
-                else {return ConSid;};
+                else {
+                    return ConSid;
+                }
             }
         }
     }
@@ -39,26 +39,9 @@ function getRoomMembers(room) {
     return room.members.map(itm => itm.name);
 }
 
-async function loadUser(session) {
-    try {
-        console.log('retrieving user: ', session.user);
-        if (!session.user) {
-            console.log('Session %s is anonymous', session.id);
-            return {err:null,user:null};
-        }
-        let user = await User.findByPk(session.user);
-        //console.log('user found by Id result: ',user);
-        if (!user) return {err:null,user:null};
-        return {err:null,user:user};
-    }catch(err){
-        return {err:err,user:null};
-    }
-}
 
 
-
-
-function findClientsSocket(roomId, namespace, io) {
+function findClientsSocket(roomId, namespace) {
     var res = []
         // the default namespace is "/"
         , ns = io.of(namespace ||"/");
@@ -87,79 +70,60 @@ async function asyncIncludes(arr, chkItm) {
 
 async function aggregateUserData(username) {
     try {
-        let data = await User.findOne({
-            where: {username:username},
-            include: [
-                {model: Room,as:'rooms'},
-                {model: User,as:'contacts'},
-                {model: User,as:'blockedContacts'},
-            ],
-        });
-
-        let userData = await data.reformatData();
-        //console.log('test agrReFormatData: ', userData);
-        let contacts = userData.contacts || [];
-        let blockedContacts = userData.blockedContacts || [];
-        let rooms = userData.rooms|| [];
-
-
+        let userData = await User.findOne({username:username});
+        let contacts = userData.contacts;
+        let blockedContacts = userData.blockedContacts;
+        let rooms = userData.rooms;
         let wL = contacts.map(async (name,i) =>{
             let status = !!globalChatUsers[name];
-            let data = await User.findOne({
-                where:{username:name},
-                include: [
-                    {model: User,as:'contacts'},
-                    {model: User,as:'blockedContacts'},
-                ],
-            });
-            let nameUserDB =  await data.reformatData();
+            let nameUserDB = await User.findOne({username:name});
             let banned = nameUserDB.blockedContacts.includes(username);
             let authorized =  !(!nameUserDB.contacts.includes(username) && !nameUserDB.blockedContacts.includes(username));
             let {err,mes} = await Message.messageHandler({sig:setGetSig([username,name])});
-            let col = mes.filter(itm => itm.author !== username && itm.recipients.find(itm => itm.username === username).MessageData.status === false).length;
-            return contacts[i] = {name:name,  msgCounter :col, allMesCounter: mes.length, typing:false, onLine:status, banned:banned, authorized:authorized, created_at:nameUserDB.created, userId:nameUserDB._id}
+            let col = mes.messages.filter(itm => itm.status === false && itm.user !== username).length;
+            return contacts[i] = {name:name,  msgCounter :col, allMesCounter: mes.messages.length, typing:false, onLine:status, banned:banned, authorized:authorized, created_at:nameUserDB.created, userId:nameUserDB._id}
         });
         let bL = blockedContacts.map(async (name,i) =>{
             let status = !!globalChatUsers[name];
-            let data = await User.findOne({
-                where:{username:name},
-                include: [
-                    {model: User,as:'contacts'},
-                    {model: User,as:'blockedContacts'},
-                ],
-            });
-            let nameUserDB = await data.reformatData();
+            let nameUserDB = await User.findOne({username:name});
             let banned = nameUserDB.blockedContacts.includes(username);
             let authorized =  !(!nameUserDB.contacts.includes(username) && !nameUserDB.blockedContacts.includes(username));
             let {err,mes} = await Message.messageHandler({sig:setGetSig([username,name])});
-            let col = mes.filter(itm => itm.author !== username && itm.recipients.find(itm => itm.username === username).MessageData.status === false).length;
-            return blockedContacts[i] = {name:name, msgCounter :col, allMesCounter: mes.length,typing:false, onLine:status, banned:banned, authorized:authorized, created_at:nameUserDB.created, userId:nameUserDB._id}
+            let col = mes.messages.filter(itm => itm.status === false && itm.user !== username).length;
+            return blockedContacts[i] = {name:name, msgCounter :col, allMesCounter: mes.messages.length,typing:false, onLine:status, banned:banned, authorized:authorized, created_at:nameUserDB.created, userId:nameUserDB._id}
         });
         let rL = rooms.map(async (name,i) =>{
-            let data = await Room.findOne({
-                where:{name:name},
-                include: [
-                    {model: User,as:'members'},
-                    {model: User,as:'blockedMembers'},
-                ],
-            });
-            // room = room.toJSON();
-            let room = await data.reformatData();
+            let room = await Room.findOne({name:name});
             let {err,mes} = await Message.messageHandler({sig:name});
             let col = 0;
-            for(let itm of mes) {
+            for(let itm of mes.messages) {
                 if (itm.user === username || itm.status) continue;
                 if(!(await asyncIncludes(itm.statusCheckArr, username))) col +=1;
             }
-            return rooms[i] = {name:name, msgCounter :col, allMesCounter: mes.length,members:room.members,blockedContacts:room.blockedMembers,created_at:room.created_at, groupId:room._id}
+            return rooms[i] = {name:name, msgCounter :col, allMesCounter: mes.messages.length,members:room.members,blockedContacts:room.blockedContacts,created_at:room.created_at, groupId:room._id}
         });
         userData.contacts = await Promise.all(wL);
         userData.blockedContacts = await Promise.all(bL);
         userData.rooms = await Promise.all(rL);
-        //console.log("aggregateUserData: ",username,": ",userData);
         return userData;
     } catch (err) {
         console.log("aggregateUserData err: ",err)
+    }
+}
+
+async function loadUser(session) {
+    try {
+        console.log('retrieving user: ', session.user);
+        if (!session.user) {
+            console.log('Session %s is anonymous', session.id);
+            return {err:null,user:null};
+        }
+        let user = await User.findById(session.user);
+        console.log('user found by Id result: ',user);
+        if (!user) return {err:null,user:null};
+        return {err:null,user:user};
+    }catch(err){
+        return {err:err,user:null};
     }
 }
 
@@ -175,32 +139,31 @@ let getStoreSes = (sig) => {
 };
 
 
+
+
 module.exports = function (server) {
-
-    var io = require('socket.io').listen(server);
-
 
 
     io.set('authorization', async function (handshake,callback) {
         try {
             handshake.cookies = cookie.parse(handshake.headers.cookie || '');
             let sidCookie = handshake.cookies[config.get('session:key')];
-            //console.log('sidCookie: ',sidCookie);
+            console.log('sidCookie: ',sidCookie);
             if (!sidCookie) return callback(JSON.stringify(new HttpError(401, 'No Cookie')));
             let sid = getConSid(sidCookie);
-            //console.log('authorizationSessionId: ',sid);
+            console.log('authorizationSessionId: ',sid);
             let {error,session} = await getStoreSes(sid);
-            //console.log('authorizationSessionId session: ',session);
+            console.log('authorizationSessionId session: ',session);
             if(error) return callback(new DevError(500, 'Session error: ' + error));
-            //console.log('authorization session: ',session,'error: ',error);
+            console.log('authorization session: ',session,'error: ',error);
             if (!session) return callback(JSON.stringify(new HttpError(401, 'No session')));
             handshake.session = session;
             let {errLU,user} = await loadUser(session);
             if(errLU) return callback(JSON.stringify(new DevError(500, 'DB error: ' + error)));
-            //console.log('loadUser userId: ',user);
+            console.log('loadUser userId: ',user);
             if(!user) return callback(JSON.stringify(new  HttpError(401, 'Anonymous session may not connect')));
             if(globalChatUsers[user.username]) {
-                //console.log("multiChatConnection");
+                console.log("multiChatConnection");
                 delete globalChatUsers[user.username];
                 return callback(JSON.stringify(new HttpError(423, 'Locked! You tried to open Chat Page in another tab.')));
             }
@@ -215,8 +178,8 @@ module.exports = function (server) {
     common.on('session:reload', async function (sid) {
         try{
             console.log('session:reloadSid: ',sid);
-            let clients = findClientsSocket(null,null,io);
-            //console.log('clients: ',clients);
+            let clients = findClientsSocket();
+            console.log('clients: ',clients);
             for (const client of clients) {
                 let sidCookie = cookie.parse(client.handshake.headers.cookie);
                 //console.log('sidCookie: ',sidCookie);
@@ -246,18 +209,17 @@ module.exports = function (server) {
         //Global Chat Events
         let username = socket.request.user.username;//req username
         let reqSocketId = socket.id;//req user socket id
-        const userDB = await aggregateUserData(username);
-        //console.log('connection userDB: ',userDB);
+        const userDB = await User.findOne({username:username});
+        console.log("connection");
         //update global chat users obj
         //obj to store  onLine users sockedId
         globalChatUsers[username] = {
             sockedId:reqSocketId,
-            contacts:userDB.contacts.map(itm => itm.name) || [], //use only for username otherwise the data may not be updated.
-            blockedContacts:userDB.blockedContacts.map(itm => itm.name) || [], //use only for username otherwise the data may not be updated.
+            contacts:userDB.contacts, //use only for username otherwise the data may not be updated.
+            blockedContacts:userDB.blockedContacts, //use only for username otherwise the data may not be updated.
         };
-        console.log('connection globalChatUsers: ',globalChatUsers);
         //update UserData
-        socket.emit('updateUserData',userDB);
+        socket.emit('updateUserData',await aggregateUserData(username));
         //move to black list
         socket.on('banUser', async function (data,cb) {
             try {
@@ -267,7 +229,7 @@ module.exports = function (server) {
                 //update globalChatUsers[username] data
                 globalChatUsers[username].contacts = userRG.contacts;
                 globalChatUsers[username].blockedContacts = userRG.blockedContacts;
-                let {err,mes} = await Message.messageHandler({sig:setGetSig([username,data.name]),members:[username,data.name],message:{ author: username, text: "I added you to my black list.", status: false, date: data.date}});
+                let {err,mes} = await Message.messageHandler({sig:setGetSig([username,data.name]),members:[username,data.name],message:{ user: username, text: "I added you to my black list.", status: false, date: data.date}});
                 if(globalChatUsers[data.name]) {
                     socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('updateUserData',await aggregateUserData(data.name));
                     socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('message',mes);
@@ -287,7 +249,7 @@ module.exports = function (server) {
                 //update globalChatUsers[username] data
                 globalChatUsers[username].contacts = userRG.contacts;
                 globalChatUsers[username].blockedContacts = userRG.blockedContacts;
-                let {err,mes} = await Message.messageHandler({sig:setGetSig([username,data.name]),members:[username,data.name],message:{ author: username, text: "I added you to my contact list.", status: false, date: data.date}});
+                let {err,mes} = await Message.messageHandler({sig:setGetSig([username,data.name]),members:[username,data.name],message:{ user: username, text: "I added you to my contact list.", status: false, date: data.date}});
                 if(globalChatUsers[data.name]) {
                     socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('updateUserData',await aggregateUserData(data.name));//update user data
                     socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('message',mes);
@@ -308,7 +270,7 @@ module.exports = function (server) {
                 globalChatUsers[username].contacts = userRG.contacts;
                 globalChatUsers[username].blockedContacts = userRG.blockedContacts;
                 //
-                let {err,mes} = await Message.messageHandler({sig:setGetSig([username,data.name]),members:[username,data.name],message:{ author: username, text: "I deleted you from my contact list.", status: false, date: data.date}});
+                let {err,mes} = await Message.messageHandler({sig:setGetSig([username,data.name]),members:[username,data.name],message:{ user: username, text: "I deleted you from my contact list.", status: false, date: data.date}});
                 //let idx = mes._id;
                 if(globalChatUsers[data.name]) {
                     socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('updateUserData',await aggregateUserData(data.name));//update user data
@@ -351,24 +313,18 @@ module.exports = function (server) {
         socket.on('addMe', async function (data,cb) {
             try {
                 console.log('addMe: ',data);
-                let sig = setGetSig([username,data.name]);
-                console.log('addMe sig: ',sig);
-                let lastMes = await Message.findAll({
-                    limit:1,
-                    where:{sig:sig},
-                    order: [[ 'createdAt', 'DESC' ],],
-                });
-                console.log("lastMes: ",lastMes);
-                if(lastMes.length === 0 || lastMes[0].text !== "Please add me to you contact list.") {//Save message in DB if last !== "Please add me to you contact list." || len == 0
-                    let {err:errRG, user:userRG} = await User.userATC(username,data.name);//add to contacts
-                    let {err:errRD, user:userRD} = await User.userATBC(data.name,username);//add to blocked contacts
-                    console.log("userRG: ",userRG);
-                    if(errRG) return cb("Request rejected. DB err: "+errRG,null);
-                    if(errRD) return cb("Request rejected. DB err: "+errRD,null);
-
-                    globalChatUsers[username].contacts = userRG.contacts;
-                    globalChatUsers[username].blockedContacts = userRG.blockedContacts;
-                    let {err,mes} = await Message.messageHandler({sig:sig,members:[username,data.name],message:{author: username, text: "Please add me to you contact list.", status: false, date: data.date}});
+                let {err:errRG, user:userRG} = await User.userATC(username,data.name);//add to contacts
+                let {err:errRD, user:userRD} = await User.userATBC(data.name,username);//add to blocked contacts
+                if(errRG) return cb("Request rejected. DB err: "+userRG.err,null);
+                if(errRD) return cb("Request rejected. DB err: "+userRD.err,null);
+                //update globalChatUsers[username] data
+                globalChatUsers[username].contacts = userRG.contacts;
+                globalChatUsers[username].blockedContacts = userRG.blockedContacts;
+                //
+                let {err,mes} = await Message.messageHandler({sig:setGetSig([username,data.name])});
+                if(err) return cb("Send message filed. DB err: " + err,null);
+                if(mes.messages[mes.messages.length-1] !== "Please add me to you contact list." || mes.messages.length === 0) {//Save message in DB if last !== "Please add me to you contact list." || len == 0
+                    let {err,mes} = await Message.messageHandler({sig:setGetSig([username,data.name]),members:[username,data.name],message:{user: username, text: "Please add me to you contact list.", status: false, date: data.date}});
                     if(globalChatUsers[data.name]) {//Send message "Add me to you contact list" if user online
                         socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('updateUserData',await aggregateUserData(data.name));
                         socket.broadcast.to(globalChatUsers[data.name].sockedId).emit('message',mes);
@@ -381,13 +337,10 @@ module.exports = function (server) {
             }
         });
         //Find contacts
-
         socket.on('findContacts', async function (nameString,cb) {
             try {
-                //console.log("findContacts nameString:", nameString);
-                //let users = await User.find( { "username": { "$regex": nameString, "$options": "i" } } );
-                let users = await User.findAll({where: {username:{[Op.iLike]: '%' + nameString + '%'}}});
-                console.log("findContacts users:",users);
+                console.log("findContacts nameString:", nameString);
+                let users = await User.find( { "username": { "$regex": nameString, "$options": "i" } } );
                 let usersArr = users.map(itm=>itm.username).filter(name => name !== username);
                 return  cb(null,usersArr);
             } catch (err) {
@@ -398,7 +351,7 @@ module.exports = function (server) {
         //Check contact
         socket.on('checkContact', async function (data,cb) {
             console.log('checkContact: ',data);
-            let user = await User.findOne({raw: true,where:{username:data}}) || await User.findOne({raw: true,where:{_id:data}});
+            let user = await User.findOne({username:data}) || await User.findOne({_id:data});
             if(user) {
                 return cb(user.username);
             } else return cb(null)
@@ -407,28 +360,34 @@ module.exports = function (server) {
         socket.on('getUserLog', async function (reqUsername,reqMesCountCb,reqMesId,cb) {
             try {
                 console.log("getUserLog reqUsername: ", reqUsername);
-                let {err,mes} = await Message.messageHandler({sig:setGetSig([username,reqUsername])},reqMesCountCb);
+                let {err,mes} = await Message.messageHandler({sig:setGetSig([username,reqUsername])});
                 if(err) return cb(err,null);
-                return cb(null,mes);
+                let cutMes;
+                if(reqMesCountCb) {
+                    console.log(" ,reqMesCountCb: ",reqMesCountCb);
+                    let beginInx = mes.messages.length - reqMesCountCb < 0 ? 0 : mes.messages.length - reqMesCountCb;
+                    cutMes = mes.messages.slice(beginInx)
+                } else {
+                    if(reqMesId) {
+                        let getInx = mes.messages.findIndex(itm => itm._id == reqMesId);
+                        console.log(" ,reqMesId: ",reqMesId,", getInx: ",getInx);
+                        cutMes = mes.messages.slice(getInx);
+                    }
+                }
+                return cb(null,cutMes !== undefined ? cutMes : mes.messages);
             } catch (err) {
                 console.log("getUserLog err: ",err);
-                return cb(err,null)
+                cb(err,null)
             }
         });
         //set chat mes status
         socket.on('setMesStatus',async function (idx,reqUsername,cb) {
             try {
                 console.log("setMesStatus: indexArr: ",idx," ,reqUsername: ",reqUsername);
-                let user = await User.findOne({where:{username:username}});
-                console.log("setMesStatus: user._id: ",user._id);
-                await MessageData.update(
-                    {status: true},
-                    {where:{
-                            messageId:idx,
-                            userId:user._id
-                        }
-                    });
-                if(globalChatUsers[reqUsername]) socket.broadcast.to(globalChatUsers[reqUsername].sockedId).emit('updateMsgStatus',username,idx,true);
+                let mes = await Message.findOne({_id:idx});
+                if(mes.status === true) return;
+                await Message.findOneAndUpdate({_id:idx},{"status" : true});
+                if(globalChatUsers[reqUsername]) socket.broadcast.to(globalChatUsers[reqUsername].sockedId).emit('updateMsgStatus',username,idx,!mes.status);
                 cb(null);
             } catch (err) {
                 console.log("setMesStatus err: ",err);
@@ -445,57 +404,57 @@ module.exports = function (server) {
         socket.on('message', async function (text,resToUserName,dateNow,cb) {
             try {
                 console.log('message');
-                // if(text.split(' ')[0] === 'console:'){
-                //     let consoleArr = text.split(' ');
-                //     console.log('message console command: ', consoleArr[1],',', 'message console data: ', consoleArr[2]);
-                //     let mes;
-                //     switch (consoleArr[1]){
-                //         case "deleteMsg":
-                //             console.log("message console deleteMsg DATA: ", consoleArr[2].split(','));
-                //             let ids = consoleArr[2].split(',');
-                //             //delete all messages with ids and check members array
-                //             await Message.deleteMany({$and:[{_id:{$in:ids}},{members:{$all:[username,resToUserName]}}]});
-                //             //delete user's messages in messageStore
-                //             socket.emit('updateMessageStore',resToUserName,ids);
-                //             if(globalChatUsers[resToUserName]) socket.broadcast.to(globalChatUsers[resToUserName].sockedId).emit('updateMessageStore',username,ids);
-                //             break;
-                //         case "getAllUsersOnline":
-                //             console.log("message console getAllUsersOnline: ");
-                //             let usersOnLine = Object.keys(globalChatUsers).join();
-                //             mes = { members:[username,resToUserName],
-                //                 statusCheckArr: [],
-                //                 _id: 'noId',
-                //                 uniqSig: setGetSig([username,resToUserName]),
-                //                 text: usersOnLine,
-                //                 user: username,
-                //                 status: true,
-                //                 date: Date.now()};
-                //             return cb(null,mes);
-                //             break;
-                //         case "getMyId":
-                //             console.log("message console getMyId: ");
-                //             mes = { members:[username,resToUserName],
-                //                 statusCheckArr: [],
-                //                 _id: 'noId',
-                //                 uniqSig: setGetSig([username,resToUserName]),
-                //                 text: userDB._id,
-                //                 user: username,
-                //                 status: true,
-                //                 date: Date.now()};
-                //             return cb(null,mes);
-                //             break;
-                //         default:
-                //             console.log("message console : Sorry, we are out of " + consoleArr[1] + ".");
-                //     }
-                // }
+                if(text.split(' ')[0] === 'console:'){
+                    let consoleArr = text.split(' ');
+                    console.log('message console command: ', consoleArr[1],',', 'message console data: ', consoleArr[2]);
+                    let mes;
+                    switch (consoleArr[1]){
+                        case "deleteMsg":
+                            console.log("message console deleteMsg DATA: ", consoleArr[2].split(','));
+                            let ids = consoleArr[2].split(',');
+                            //delete all messages with ids and check members array
+                            await Message.deleteMany({$and:[{_id:{$in:ids}},{members:{$all:[username,resToUserName]}}]});
+                            //delete user's messages in messageStore
+                            socket.emit('updateMessageStore',resToUserName,ids);
+                            if(globalChatUsers[resToUserName]) socket.broadcast.to(globalChatUsers[resToUserName].sockedId).emit('updateMessageStore',username,ids);
+                            break;
+                        case "getAllUsersOnline":
+                            console.log("message console getAllUsersOnline: ");
+                            let usersOnLine = Object.keys(globalChatUsers).join();
+                            mes = { members:[username,resToUserName],
+                                statusCheckArr: [],
+                                _id: 'noId',
+                                uniqSig: setGetSig([username,resToUserName]),
+                                text: usersOnLine,
+                                user: username,
+                                status: true,
+                                date: Date.now()};
+                            return cb(null,mes);
+                            break;
+                        case "getMyId":
+                            console.log("message console getMyId: ");
+                            mes = { members:[username,resToUserName],
+                                statusCheckArr: [],
+                                _id: 'noId',
+                                uniqSig: setGetSig([username,resToUserName]),
+                                text: userDB._id,
+                                user: username,
+                                status: true,
+                                date: Date.now()};
+                            return cb(null,mes);
+                            break;
+                        default:
+                            console.log("message console : Sorry, we are out of " + consoleArr[1] + ".");
+                    }
+                }
                 if (text.length === 0 || !resToUserName) return;
                 if (text.length >= 500) return cb("To long message!",null);
-                let resUser = await User.findOne({where:{username:resToUserName},include:[{model:User,as:'contacts'}]});
+                let resUser = await User.findOne({username:resToUserName});
                 if(globalChatUsers[username].blockedContacts.includes(resToUserName)) return cb("You can not write to baned users!",null);
-                if(!resUser.contacts.map(itm => itm.username).includes(username)) return cb("User "+resToUserName+" do not add you in his white list!",null);
-                let {err,mes} = await Message.messageHandler({sig:setGetSig([username,resToUserName]),members:[username,resToUserName],message:{ author: username, text: text, status: false, date: dateNow}});
-                if(err) return cb("Add message to DB err: " + err,null);
-                //console.log('message mes:',mes);
+                if(!resUser.contacts.includes(username)) return cb("User "+resToUserName+" do not add you in his white list!",null);
+                let {err,mes} = await Message.messageHandler({sig:setGetSig([username,resToUserName]),members:[username,resToUserName],message:{ user: username, text: text, status: false, date: dateNow}});
+                console.log('message mes:',mes);
+                let idx = mes._id;
                 if(!globalChatUsers[resToUserName]) return cb(null,mes);
                 let sid = globalChatUsers[resToUserName].sockedId;
                 socket.broadcast.to(sid).emit('message', mes);
@@ -509,11 +468,12 @@ module.exports = function (server) {
         socket.on('messageForward', async function (ids,toUserName,fromUserName, cb) {
             try {
                 console.log('messageForward');
-                let mesArray = await Message.findAll({raw: true,where:{_id:{$in:ids}}});//find all mes
-                let resUser = await User.findOne({raw: true,where:{username:toUserName}});
+                let mesArray = await Message.find({_id:{$in:ids}});//find all mes
+                let resUser = await User.findOne({username:toUserName});
                 if(globalChatUsers[username].blockedContacts.includes(toUserName)) return cb("You can not write to baned users!",null);
                 if(!resUser.contacts.includes(username)) return cb("User "+toUserName+" do not add you in his white list!",null);
 
+                //let {err,mes} = await Message.messageHandler({sig:setGetSig([username,toUserName]),members:[username,toUserName],message:{ user: username, text: text, status: false, date: dateNow}});
 
                 for (const item of mesArray) {
                     item.set('_id', undefined);
@@ -540,7 +500,7 @@ module.exports = function (server) {
         socket.on('setRoomMesStatus',async function (idx,reqRoom,cb) {
             try {
                 console.log("setRoomMesStatus: indexArr: ",idx," ,reqRoom: ",reqRoom," ,username: ",username);
-                let currentMes = await Message.findOne({raw: true,where:{_id:idx}});//get mes with id
+                let currentMes = await Message.findOne({_id:idx});//get mes with id
                 //let currentMes = mes.messages.id(idx);
                 if(currentMes.user === username) return;//check if author
                 if(currentMes.status === true || currentMes.statusCheckArr.includes(username)) return cb(null);////check if user set status
@@ -570,7 +530,7 @@ module.exports = function (server) {
                 if(err) {
                     return cb(err,null)
                 } else {
-                    let {err,mes} = await Message.messageHandler({sig:roomName,members:getRoomMembers(room),message:{ author: username, text: username+" created a new group "+roomName+".", status: false, date: dateNow}});
+                    let {err,mes} = await Message.messageHandler({sig:roomName,members:getRoomMembers(room),message:{ user: username, text: username+" created a new group "+roomName+".", status: false, date: dateNow}});
                     return cb(null,await aggregateUserData(username))
                 }
             } catch (err) {
@@ -586,7 +546,7 @@ module.exports = function (server) {
                 if(err) {
                     return cb(err,null,null)
                 } else {
-                    let {err,mes} = await Message.messageHandler({sig:roomName,members:getRoomMembers(room),message:{ author: username, text: username+" added new user "+invitedUser+".", status: false, date: dateNow}});
+                    let {err,mes} = await Message.messageHandler({sig:roomName,members:getRoomMembers(room),message:{ user: username, text: username+" added new user "+invitedUser+".", status: false, date: dateNow}});
                     if(globalChatUsers[invitedUser]) socket.broadcast.to(globalChatUsers[invitedUser].sockedId).emit('updateUserData',await aggregateUserData(invitedUser));
                     for (let itm of room.members) {
                         if(globalChatUsers[itm.name]) {
@@ -612,7 +572,7 @@ module.exports = function (server) {
                     return cb(err,null)
                 }
                 else {
-                    let {err,mes} = await Message.messageHandler({sig:roomName,members:getRoomMembers(room),message:{ author: username, text: username+" left the group.", status: false, date: dateNow}});
+                    let {err,mes} = await Message.messageHandler({sig:roomName,members:getRoomMembers(room),message:{ user: username, text: username+" left the group.", status: false, date: dateNow}});
                     for (let itm of room.members) {
                         if(globalChatUsers[itm.name]) {
                             socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('updateUserData',await aggregateUserData(itm.name));
@@ -630,7 +590,7 @@ module.exports = function (server) {
         socket.on('getRoomLog', async function  (roomName,reqMesCountCb,reqMesId,cb) {
             try {
                 console.log("getRoomLog: ",roomName);
-                let room = await Room.findOne({where:{name:roomName}});
+                let room = await Room.findOne({name:roomName});
                 if(!room) return cb("Error Group do not exist!",null);
                 if(room.blockedContacts.some(itm => itm.name === username)) return cb("You have been included in the block list. Message history is no longer available to you.",null);
                 if(!room.members.some(itm => itm.name === username)) return cb("You are not a member of the group.",null);
@@ -659,11 +619,11 @@ module.exports = function (server) {
                 console.log('messageRoom text: ',text, 'roomName: ',roomName, 'dateNow: ',dateNow);
                 if (text.length === 0) return;
                 if (text.length >= 500) return cb("To long message.",null);
-                let room = await Room.findOne({where:{name:roomName}});
+                let room = await Room.findOne({name:roomName});
 
                 if(!room.members.some(itm => itm.name === username)) return cb("You are not a member of the group.",null);
                 if(room.blockedContacts.some(itm => itm.name === username)) return cb("You have been included in the block list. Send messages to you is no longer available.",null);
-                let {err,mes} = await Message.messageHandler({sig:roomName,members:getRoomMembers(room),message:{ author: username, text: text, status: false, date: dateNow}});
+                let {err,mes} = await Message.messageHandler({sig:roomName,members:getRoomMembers(room),message:{ user: username, text: text, status: false, date: dateNow}});
                 //mes['room'] = mes['uniqSig'] && delete mes['uniqSig'];//rename key uniqSig to room.
                 let idx = mes._id;
                 room.members.forEach(itm =>{
@@ -706,7 +666,7 @@ module.exports = function (server) {
                 if(err) {
                     return cb(err,null,null)
                 } else {
-                    let {err,mes} = await Message.messageHandler({sig:roomName,members:getRoomMembers(room),message:{ author: username, text: "The group administrator "+username+" has removed user "+unbannedUser+" from the block list.", status: false, date: dateNow}});
+                    let {err,mes} = await Message.messageHandler({sig:roomName,members:getRoomMembers(room),message:{ user: username, text: "The group administrator "+username+" has removed user "+unbannedUser+" from the block list.", status: false, date: dateNow}});
                     for (let itm of room.members){
                         if(globalChatUsers[itm.name]) {
                             socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('updateUserData',await aggregateUserData(itm.name));
@@ -728,7 +688,7 @@ module.exports = function (server) {
                 if(err) {
                     return cb(err,null,null)
                 } else {
-                    let {err,mes} = await Message.messageHandler({sig:roomName,members:getRoomMembers(room),message:{ author: username, text: username+" has appointed "+newAdminName+" a new administrator.", status: false, date: dateNow}});
+                    let {err,mes} = await Message.messageHandler({sig:roomName,members:getRoomMembers(room),message:{ user: username, text: username+" has appointed "+newAdminName+" a new administrator.", status: false, date: dateNow}});
                     for (let itm of room.members){
                         if(globalChatUsers[itm.name]) {
                             socket.broadcast.to(globalChatUsers[itm.name].sockedId).emit('updateUserData',await aggregateUserData(itm.name));
@@ -746,7 +706,7 @@ module.exports = function (server) {
         socket.on('changeNtfStatus', async function  (roomName,cb) {
             try {
                 console.log('changeNtfStatus roomName: ',roomName);
-                let room = await Room.findOne({where:{name:roomName}});
+                let room = await Room.findOne({name:roomName});
                 if(!room.members.some(itm => itm.name === username) || room.blockedContacts.some(itm => itm.name === username)) {
                     return cb("You are not a member of this group or you are on the block list.",null);
                 }
@@ -771,7 +731,7 @@ module.exports = function (server) {
                 }
                 if( typeof sig === 'string') {//room correspondence
                     //check: Is username member of room?
-                    let {members} = await Room.findOne({where:{name:sig}});
+                    let {members} = await Room.findOne({name:sig});
                     //console.log("members: ",members);
                     if(!members.some((itm) => itm.name === username)) return cb("Canceled. Attempted unauthorized access to data.",null);
                     console.log('findMessage, sig: ',sig," ,textSearch: ",textSearch);
@@ -805,9 +765,9 @@ module.exports = function (server) {
         // when the user disconnects perform this
         socket.on('disconnect', async function () {
             try {
-                let contacts = globalChatUsers[username].contacts;
-                let blockedContacts = globalChatUsers[username].blockedContacts;
-                console.log("disconnect, username: ",username,", contacts: ",contacts,", blockedContacts: ",blockedContacts);
+                let contacts = globalChatUsers[username].contacts || await User.findOne({username:username}).contacts;
+                let blockedContacts = globalChatUsers[username].blockedContacts || await User.findOne({username:username}).blockedContacts;
+                console.log("disconnect, username: ",username,", contacts: ",contacts);
                 //res for my contacts what Iam offLine
                 contacts.concat(blockedContacts).forEach((name)=>{
                     if(globalChatUsers[name]) socket.broadcast.to(globalChatUsers[name].sockedId).emit('offLine', username);
