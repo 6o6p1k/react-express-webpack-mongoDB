@@ -103,7 +103,7 @@ class Chat extends React.Component {
     }
 
     componentDidMount(){
-        console.log("CDM");
+        //console.log("CDM");
         //move scroll bootom
         //this.scrollToBottom(this.refs.InpUl);
 
@@ -130,18 +130,16 @@ class Chat extends React.Component {
                 });
             })
             .on('updateMsgStatus',(itmName,idx,status)=>{
-                console.log("updateMsgData itmName: ",itmName," ,id: ",idx);
-                //let indexCorrection = allMesCounter - this.state.messagesStore[itmName].length;//index correction factor = all messages - showed msg in message store
+                console.log("updateMsgData itmName: ",itmName," ,id: ",idx," ,status: ",status);
                 if(!itmName || !idx || !status) return;
                 if(itmName === this.state.user.username) return;
                 let messagesStore = this.state.messagesStore;
                 if(!messagesStore[itmName]) return;
-                messagesStore[itmName].find(itm => itm._id === idx).status = status;
+                messagesStore[itmName].find(itm => itm._id === idx).recipients.find(itm => itm.username === itmName).MessageData.status = status;
                 this.setState({messagesStore});
             })
             .on('updateMessageStore',(username,ids)=> {
                 console.log("updateMessageStore username: ", username, " ,mes ids: ", ids);
-
                 this.setState(state => {
                     state.messagesStore[username] = state.messagesStore[username].filter((itm) => !ids.includes(itm._id));
                     return state
@@ -180,8 +178,9 @@ class Chat extends React.Component {
             })
             .on('message', (data)=> {
                 //message receiver
-                this.printMessage(data,data.user);
-                this.msgCounter("users",this.getUsersIdx("users",data.user));
+                console.log('message receiver: ',data);
+                this.printMessage(data,data.author);
+                this.msgCounter("users",this.getUsersIdx("users",data.author));
             })
             .on('messageRoom',(data)=>{
                 //messageRoom receiver
@@ -201,22 +200,22 @@ class Chat extends React.Component {
             })
 
             .on('disconnect', ()=>{
-                console.log("WSocket connection lost!");
+                //console.log("WSocket connection lost!");
                 this.setState({connectionLost:true})
             })
             .on('connect', ()=>{
-                console.log("WSocket connection restored!");
+                //console.log("WSocket connection restored!");
                 this.setState({connectionLost:false});
                 this.socket.emit('sayOnLine');
             })
             .on('error',(message)=>{
-                console.log('Server error happened: ',message);
+                //console.log('Server error happened: ',message);
                 if(typeof message === 'string' || message instanceof String) {
                     let data = JSON.parse(message);
                     if(data.status == 423 || data.status == 401) {
                         this.setState({err: data});
                         sessionStorage.setItem('error', message);
-                        console.log('error page redirect: ',this.state.err);
+                        //console.log('error page redirect: ',this.state.err);
                         this.setState({errorRedirect: true});
                     }
                     this.setState({
@@ -254,9 +253,9 @@ class Chat extends React.Component {
         if(!messagesStore[e]) messagesStore[e] = [];
         if(messagesStore[e].length >= 15 && reqMesCountCb === null) return;
         if(!reqMesCountCb) reqMesCountCb = 15;
-        console.log("getLog a,e: ",a,e);
+        //console.log("getLog a,e: ",a,e);
         if(messagesStore[e].length === this.state[a][this.getUsersIdx(a,e)].allMesCounter) return;
-        console.log("getLog: ",a," ,",e," ,",reqMesCountCb);
+        //console.log("getLog: ",a," ,",e," ,",reqMesCountCb);
         this.socket.emit(a === "rooms" ? 'getRoomLog' : 'getUserLog',e,reqMesCountCb,null,(err,arr)=>{
             //console.log("getUserLog arr: ",arr," ,err: ",err);
             if(err) {
@@ -276,7 +275,7 @@ class Chat extends React.Component {
     };
     //filter subscribers then user type in search field or send req for search in DB
     setFiltered = (nameStr) => {
-        console.log("setFiltered str: ",nameStr);
+        //console.log("setFiltered str: ",nameStr);
         if(nameStr.length === 0) this.setState({filteredUsers: []});
         this.setState({filteredUsers: this.state.users.filter(this.filterSearch(nameStr))},()=>{
             if(this.state.filteredUsers.length === 0) {
@@ -303,13 +302,12 @@ class Chat extends React.Component {
     };
     //unread msgs counter
     msgCounter =(a,i,unreadFlag)=> {
-        console.log("msgCounter a: ",a," ,i: ",i);
+        //console.log("msgCounter a: ",a," ,i: ",i);
         let current = this.state[a][i];
         //console.log("msgCounter current: ",current);
         let currentUserMes = this.state.messagesStore[current.name];
-        let unReadMes = 0;
         if(!unreadFlag) current.allMesCounter = current.allMesCounter + 1;
-        currentUserMes.forEach(itm => itm.status === false  && itm.user !== this.state.user.username ? unReadMes += 1 : "");
+        let unReadMes = currentUserMes.filter(itm => itm.author !== this.state.user.username && itm.recipients.find(itm => itm.username === this.state.user.username).MessageData.status === false).length;
         current.msgCounter = unReadMes;
         this.setState({current});
     };
@@ -334,10 +332,10 @@ class Chat extends React.Component {
 
             switch (this.state.arrayBlockHandlerId) {
                 case "rooms":
-                    console.log("sendMessage rooms name: ", name);
+                    //console.log("sendMessage rooms name: ", name);
                     this.socket.emit('messageRoom', this.state.message, name, date, (err, mes) => {//This name means Group Name
                         if (err) {
-                            console.log("sendMessage room err: ", err);
+                            //console.log("sendMessage room err: ", err);
                             this.setState({
                                 modalWindow: true,
                                 err: {message: err},
@@ -350,10 +348,10 @@ class Chat extends React.Component {
                     });
                     break;
                 case "users":
-                    console.log("sendMessage users");
+                    //console.log("sendMessage users");
                     this.socket.emit('message', this.state.message, name, date, (err, mes) => {//This name means User Name
                         if (err) {
-                            console.log("sendMessage users err: ", err);
+                            //console.log("sendMessage users err: ", err);
                             this.setState({
                                 modalWindow: true,
                                 err: {message: err},
@@ -366,7 +364,7 @@ class Chat extends React.Component {
                     });
                     break;
                 default:
-                    console.log("sendMessage: Sorry, we are out of " + res + ".");
+                    //console.log("sendMessage: Sorry, we are out of " + res + ".");
             }
 
     };
@@ -385,7 +383,7 @@ class Chat extends React.Component {
     //User functional//
     moveToBlackList =(name)=> {
         this.socket.emit('moveToBlackList',name,(err,userData)=>{
-            console.log("moveToBlackList callback err: ",err," ,userData: ",userData);
+            //console.log("moveToBlackList callback err: ",err," ,userData: ",userData);
             if(err) {
                 this.setState({
                     modalWindow:true,
@@ -405,7 +403,7 @@ class Chat extends React.Component {
 
     deleteUser =(name)=> {
         this.socket.emit('deleteUser',name,(err,userData)=>{
-            console.log("deleteUser callback err: ",err," ,userData: ",userData);
+            //console.log("deleteUser callback err: ",err," ,userData: ",userData);
             if(err) {
                 this.setState({
                     modalWindow:true,
@@ -424,7 +422,7 @@ class Chat extends React.Component {
     };
 
     searchUser = (data)=> {
-        console.log("searchUser: ",data);
+        //console.log("searchUser: ",data);
         this.socket.emit('checkContact',data,(name)=>{
             if(name) {
                 this.addMe(name)
@@ -438,17 +436,17 @@ class Chat extends React.Component {
     };
 
     historySearch = (text,name)=> {
-        console.log("historySearch: ",text," ,userName: ",name);
+       // console.log("historySearch: ",text," ,userName: ",name);
         if(!name || !text || !this.state.arrayBlockHandlerId) return;
         this.socket.emit('findMessage',this.state.arrayBlockHandlerId === "rooms" ? name : [name,this.state.user.username],text,(err,messages)=>{
             if(err) {
-                console.log("historySearch err: ",err);
+                //console.log("historySearch err: ",err);
                 this.setState({
                     modalWindow:true,
                     err:{message:err},
                 })
             }else{
-                console.log("historySearch mesArr: ",messages, 'text.length:', text.length);
+                //console.log("historySearch mesArr: ",messages, 'text.length:', text.length);
                 this.setState({
                     showHistorySearch: true,
                     messSearchArr: [...messages],
@@ -465,7 +463,7 @@ class Chat extends React.Component {
             let messagesStore = this.state.messagesStore;
             let userName = this.state.users[this.state.messageBlockHandlerId].name;
             this.socket.emit(this.state.arrayBlockHandlerId === "rooms" ? 'getRoomLog' : 'getUserLog',userName,null,mesId,(err,arr)=>{
-                console.log("getUserLog arr: ",arr," ,err: ",err);
+                //console.log("getUserLog arr: ",arr," ,err: ",err);
                 if(err) {
                     this.setState({
                         modalWindow:true,
@@ -485,7 +483,7 @@ class Chat extends React.Component {
     };
 
     addMe =(name)=> {
-        console.log("addMe: ",name);
+        //console.log("addMe: ",name);
         this.setState({
             addMeHandler:true,
             reqAddMeName:name,
@@ -494,7 +492,7 @@ class Chat extends React.Component {
     };
 
     resAddMe =(name)=>{
-        console.log("resAddMe: ",name);
+        //console.log("resAddMe: ",name);
         this.setState({
             resAddMeHandler:true,
             resAddMeAddMeName:name,
@@ -503,10 +501,10 @@ class Chat extends React.Component {
     };
 
     addMeHandler = (confirmRes) => {
-        console.log('confirmRes: ',confirmRes);
+        //console.log('confirmRes: ',confirmRes);
         if(confirmRes){
             this.socket.emit('addMe', {name:this.state.reqAddMeName,date:Date.now()},(err,userData,msgData)=>{
-                console.log("addMe callback err: ",err," ,userData: ",userData);
+                //console.log("addMe callback err: ",err," ,userData: ",userData);
                 if(err) {
                     this.setState({
                         modalWindow:true,
@@ -542,7 +540,7 @@ class Chat extends React.Component {
             let date = Date.now();
             let addUserName = this.state.resAddMeAddMeName;
             this.socket.emit('unBanUser', {name:addUserName,date:date},(err,userData,msgData)=>{
-                console.log("unBanUser callback err: ",err," ,userData: ",userData);
+                //console.log("unBanUser callback err: ",err," ,userData: ",userData);
                 if(err) {
                     this.setState({
                         modalWindow:true,
@@ -572,10 +570,10 @@ class Chat extends React.Component {
     };
 
     userStatusHandler =(confirmRes)=> {
-        console.log('userStatusHandler: ',confirmRes,' ,this.state.changeStatusAct: ',this.state.changeStatusAct,', this.state.changeStatusName: ',this.state.changeStatusName);
+        //console.log('userStatusHandler: ',confirmRes,' ,this.state.changeStatusAct: ',this.state.changeStatusAct,', this.state.changeStatusName: ',this.state.changeStatusName);
         if(confirmRes){
             this.socket.emit(this.state.changeStatusAct, {name:this.state.changeStatusName,date:Date.now()},(err,userData,msgData)=>{
-                console.log("userStatusHandler callback err: ",err," , userData: ",userData," ,msgData: ",msgData);
+                //console.log("userStatusHandler callback err: ",err," , userData: ",userData," ,msgData: ",msgData);
                 if(err) {
                     this.setState({
                         modalWindow:true,
@@ -611,9 +609,9 @@ class Chat extends React.Component {
         let date = Date.now();
         switch (res) {
             case "inviteUser":
-                console.log("onContextMenuHandler inviteUser roomName: ",roomName,", username: ",username);
+                //console.log("onContextMenuHandler inviteUser roomName: ",roomName,", username: ",username);
                 this.socket.emit('inviteUserToRoom',roomName,username,date,(err,data,msgData)=>{
-                    console.log("inviteUserToRoom' cb err: ",err,", cb rooms: ",data);
+                    //console.log("inviteUserToRoom' cb err: ",err,", cb rooms: ",data);
                     if(err) {
                         this.setState({
                             modalWindow:true,
@@ -626,9 +624,9 @@ class Chat extends React.Component {
                 });
                 break;
             case "banRoomUser":
-                console.log("onContextMenuHandler banRoomUser roomName: ",roomName,", username: ",username);
+                //console.log("onContextMenuHandler banRoomUser roomName: ",roomName,", username: ",username);
                 this.socket.emit('blockRoomUser',roomName,username,date,(err,data,msgData)=>{
-                    console.log("blockRoomUser' cb err: ",err,", cb rooms: ",data);
+                    //console.log("blockRoomUser' cb err: ",err,", cb rooms: ",data);
                     if(err) {
                         this.setState({
                             modalWindow:true,
@@ -641,9 +639,9 @@ class Chat extends React.Component {
                 });
                 break;
             case "unBanRoomUser":
-                console.log("onContextMenuHandler unBlockRoomUser roomName: ",roomName,", username: ",username);
+                //console.log("onContextMenuHandler unBlockRoomUser roomName: ",roomName,", username: ",username);
                 this.socket.emit('unBlockRoomUser',roomName,username,date,(err,data,msgData)=>{
-                    console.log("unBlockRoomUser' cb err: ",err,", cb rooms: ",data);
+                    //console.log("unBlockRoomUser' cb err: ",err,", cb rooms: ",data);
                     if(err) {
                         this.setState({
                             modalWindow:true,
@@ -656,9 +654,9 @@ class Chat extends React.Component {
                 });
                 break;
             case "setRoomAdmin":
-                console.log("onContextMenuHandler setRoomAdmin roomName: ",roomName,", username: ",username);
+                //console.log("onContextMenuHandler setRoomAdmin roomName: ",roomName,", username: ",username);
                 this.socket.emit('setRoomAdmin',roomName,username,date,(err,data,msgData)=>{
-                    console.log("setRoomAdmin cb err: ",err,", cb rooms: ",data);
+                    //console.log("setRoomAdmin cb err: ",err,", cb rooms: ",data);
                     if(err) {
                         this.setState({
                             modalWindow:true,
@@ -671,7 +669,7 @@ class Chat extends React.Component {
                 });
                 break;
             case "viewRoomData":
-                console.log("onContextMenuHandler viewRoomData: ",roomName);
+                //console.log("onContextMenuHandler viewRoomData: ",roomName);
                 this.getLog("rooms",roomName,null);
                 this.setState({
                     messageBlockHandlerId:this.getUsersIdx("rooms",roomName),
@@ -679,9 +677,9 @@ class Chat extends React.Component {
                 },()=>this.hideShow("roomPropsWindow"));
                 break;
             case "leaveRoom":
-                console.log("onContextMenuHandler leaveRoom roomName: ",roomName);
+                //console.log("onContextMenuHandler leaveRoom roomName: ",roomName);
                 this.socket.emit('leaveRoom',roomName,date,(err,data)=>{
-                    console.log("leaveRoom cb err: ",err,", cb rooms: ",data);
+                    //console.log("leaveRoom cb err: ",err,", cb rooms: ",data);
                     if(err) {
                         this.setState({
                             modalWindow:true,
@@ -693,10 +691,10 @@ class Chat extends React.Component {
                 });
                 break;
             case "changeNotificationStatus":
-                console.log("onContextMenuHandler changeNotificationStatus: ");
+                //console.log("onContextMenuHandler changeNotificationStatus: ");
                 //changeNtfStatus
                 this.socket.emit('changeNtfStatus',roomName,(err,data)=>{
-                    console.log("leaveRoom cb err: ",err,", cb rooms: ",data);
+                    //console.log("leaveRoom cb err: ",err,", cb rooms: ",data);
                     if(err) {
                         this.setState({
                             modalWindow:true,
@@ -708,13 +706,13 @@ class Chat extends React.Component {
                 });
                 break;
             case "moveRoomOnTop":
-                console.log("onContextMenuHandler moveRoomOnTop: ",roomName);
+                //console.log("onContextMenuHandler moveRoomOnTop: ",roomName);
                 break;
             case "clearRoomWindow":
-                console.log("onContextMenuHandler clearRoomWindow");
+                //console.log("onContextMenuHandler clearRoomWindow");
                 break;
             case "deleteUser":
-                console.log("onContextMenuHandler deleteUser");
+                //console.log("onContextMenuHandler deleteUser");
                 this.setState({
                     changeStatusHandler:true,
                     confirmMessage:"Are you sure you want to delete a user "+username+"?",
@@ -723,7 +721,7 @@ class Chat extends React.Component {
                 });
                 break;
             case "banUser":
-                console.log("onContextMenuHandler banUser");
+                //console.log("onContextMenuHandler banUser");
                 this.setState({
                     changeStatusHandler:true,
                     confirmMessage:"Are you sure you want to ban a user "+username+"?",
@@ -732,9 +730,9 @@ class Chat extends React.Component {
                 });
                 break;
             case "unBanUser":
-                console.log("onContextMenuHandler unBanUser");
+                //console.log("onContextMenuHandler unBanUser");
                 this.socket.emit('unBanUser', {name:username,date:date},(err,userData,msgData)=>{
-                    console.log("unBanUser callback err: ",err," ,userData: ",userData);
+                    //console.log("unBanUser callback err: ",err," ,userData: ",userData);
                     if(err) {
                         this.setState({
                             modalWindow:true,
@@ -754,10 +752,10 @@ class Chat extends React.Component {
                 });
                 break;
             case "clearChatWindow":
-                console.log("onContextMenuHandler clearChatWindow");
+                //console.log("onContextMenuHandler clearChatWindow");
                 break;
             case "viewUserData":
-                console.log("onContextMenuHandler viewUserData: ",username);
+                //console.log("onContextMenuHandler viewUserData: ",username);
                 if(this.getUsersIdx("users",username) >= 0) {
                     this.getLog("users",username,null);
                     return this.setState({
@@ -777,7 +775,7 @@ class Chat extends React.Component {
                 console.log("onContextMenuHandler moveOnTop");
                 break;
             case "reqAuth":
-                console.log("onContextMenuHandler reqAuth");
+                //console.log("onContextMenuHandler reqAuth");
                 this.setState({reqAddMeName:username},()=>this.addMeHandler(true));
                 break;
             default:
@@ -787,9 +785,9 @@ class Chat extends React.Component {
 
     //Group functional//
     createRoom =(roomName)=>{
-        console.log("createRoom: ",roomName);
+        //console.log("createRoom: ",roomName);
         this.socket.emit('createRoom',roomName,Date.now(),(err,userData)=>{
-            console.log("createRoom res err: ",err," ,userData: ",userData);
+            //console.log("createRoom res err: ",err," ,userData: ",userData);
             if(err){
                 this.setState({
                     modalWindow:true,
@@ -832,11 +830,9 @@ class Chat extends React.Component {
             this.setState({scrollTopMax: e.target.scrollTopMax},()=>this.getLog(array,name,msgCount+10));
         }
     };
-    //message bar handler
-    setAsRead = (itmName,i,a,e,idx)=>{
-        if(Array.isArray(this.state.messagesStore[itmName][i].status) && this.state.messagesStore[itmName][i].status.includes(this.state.user.username)) return;
+    setAsRead = (itmName,idx)=>{
         console.log("setAsRead itmName: ",itmName," ,idx: ",idx);
-        this.socket.emit(this.state.arrayBlockHandlerId === "rooms" ? 'setRoomMesStatus' : 'setMesStatus',idx,itmName,(err)=>{
+        this.socket.emit('setMesStatus',idx,itmName,(err)=>{
             if(err) {
                 this.setState({
                     modalWindow:true,
@@ -844,15 +840,17 @@ class Chat extends React.Component {
                 })
             } else {
                 let messagesStore = this.state.messagesStore;
-                messagesStore[itmName].find(itm => itm._id === idx).status = true;
-                this.setState({messagesStore},()=> {console.log("setAsRead DONE!");this.msgCounter(this.state.arrayBlockHandlerId,this.state.messageBlockHandlerId,true)})
+                messagesStore[itmName].find(itm => itm._id === idx).recipients.find(itm => itm.username === this.state.user.username).MessageData.status = true;
+                this.setState({messagesStore},()=> {
+                    //console.log("setAsRead DONE!");
+                    this.msgCounter(this.state.arrayBlockHandlerId,this.state.messageBlockHandlerId,true)})
             }
         })
     };
     //chat list contextMenu
     rightClickMenuOn =(e)=> {
         //console.log("rightClickMenuOn itm: ",itm);
-        console.log("rightClickMenuOn e.pageX: ",e.pageX," ,e.pageY: ",e.pageY);
+        //console.log("rightClickMenuOn e.pageX: ",e.pageX," ,e.pageY: ",e.pageY);
         this.setState({
             onContextMenuBtn:this.state.arrayBlockHandlerId !== undefined,
             contextMenuLocation: {left: e.pageX, top:e.pageY},
@@ -861,7 +859,7 @@ class Chat extends React.Component {
     };
 
     checkboxMsg =(id)=> {
-        console.log('checkboxMsg msgId: ',id);
+        //console.log('checkboxMsg msgId: ',id);
         if(this.state.selectModMsgList.includes(id)){
             let msgList = this.state.selectModMsgList;
             let idx = msgList.indexOf(id);
@@ -884,19 +882,19 @@ class Chat extends React.Component {
     };
 
     onContextMenuBtnResponse =(res)=> {
-        console.log("onContextMenuBtnResponse res: ",res);
+        //console.log("onContextMenuBtnResponse res: ",res);
         let currentUser = this.state.users[this.state.messageBlockHandlerId].name;
 
         switch (res){
             case "Find Message":
-                console.log("onContextMenuBtnResponse Find Message");
+                //console.log("onContextMenuBtnResponse Find Message");
                 this.setState({
                     showHistorySearch:!this.state.showHistorySearch,
                     onContextMenuBtn: false,
                 });
                 break;
             case "Delete Selected":
-                console.log("onContextMenuBtnResponse Delete Message: currentUser: ",currentUser,',','selectModMsgList: ',this.state.selectModMsgList);
+                //console.log("onContextMenuBtnResponse Delete Message: currentUser: ",currentUser,',','selectModMsgList: ',this.state.selectModMsgList);
                 //this.state.arrayBlockHandlerId ? name : [name,this.state.user.username]
 
 
@@ -910,7 +908,7 @@ class Chat extends React.Component {
                     }else {
 
                         let messagesStore = this.state.messagesStore;
-                        console.log("msgStore: ", messagesStore[currentUser]," ,len: ", messagesStore[currentUser].length);
+                        //console.log("msgStore: ", messagesStore[currentUser]," ,len: ", messagesStore[currentUser].length);
 
                         this.setState(state => {
                             state.messagesStore[currentUser] = state.messagesStore[currentUser].filter((itm) => !this.state.selectModMsgList.includes(itm._id));
@@ -929,7 +927,7 @@ class Chat extends React.Component {
                 });
                 break;
             case "Select Mode":
-                console.log("onContextMenuBtnResponse Select Mode");
+                //console.log("onContextMenuBtnResponse Select Mode");
                 this.setState({
                     selectMode:!this.state.selectMode,
                     onContextMenuBtn: false,
@@ -937,28 +935,28 @@ class Chat extends React.Component {
                 });
                 break;
             case "Forward to":
-                console.log("onContextMenuBtnResponse Forward Message: currentUser: ", currentUser);
+                //console.log("onContextMenuBtnResponse Forward Message: currentUser: ", currentUser);
                 this.setState({
                     isForward: !this.state.isForward
                 });
                 break;
             default:
-                console.log("onContextMenuBtnResponse Sorry, we are out of " + res + ".");
+                //console.log("onContextMenuBtnResponse Sorry, we are out of " + res + ".");
         }
     };
 
     forwardHandler =(forwardTo,forwardFrom)=>{
-        console.log("forwardHandler username: ",forwardTo);
-        console.log("forwardHandler selectModMsgList: ",this.state.selectModMsgList);
+        //console.log("forwardHandler username: ",forwardTo);
+        //console.log("forwardHandler selectModMsgList: ",this.state.selectModMsgList);
         this.socket.emit('messageForward', this.state.selectModMsgList, forwardTo,forwardFrom, (err, mesArray) => {
             if (err) {
-                console.log("messageForward: ", err);
+                //console.log("messageForward: ", err);
                 this.setState({
                     modalWindow: true,
                     err: {message: err},
                 })
             } else {
-                console.log("messageForward successful updatedMes: ", mesArray);
+                //console.log("messageForward successful updatedMes: ", mesArray);
                 mesArray.forEach(itm => this.printMessage(itm, forwardTo));
 
                 this.setState({
@@ -1210,7 +1208,7 @@ class Chat extends React.Component {
                                             </div>
                                             <div className={`forwardUserList ${this.state.isForward ? "show" : ""}`}>
                                                 <ul>
-                                                    {this.state.users.map((user)=> <li onClick={()=> this.forwardHandler(user.name,eUser.name)} className="btn user">{user.name}</li>)}
+                                                    {this.state.users.map((user,i)=> <li key={i} onClick={()=> this.forwardHandler(user.name,eUser.name)} className="btn user">{user.name}</li>)}
                                                 </ul>
                                             </div>
 
@@ -1242,7 +1240,7 @@ class Chat extends React.Component {
                                                 (eUser && eStore) ? (
                                                     eStore.map((data, i) => {
                                                         return (
-                                                            (data.user === this.state.user.username )?(//|| (data.forwarFrom && !data.members.some(itm => itm === data.user))
+                                                            (data.author === this.state.user.username )?(
                                                                 <li key={i} className={`right ${this.state.messageLink === data._id ? 'active' :''}`} ref={data._id}>{data.text}
                                                                     <div className="messageData">
                                                                         {this.state.selectMode ?
@@ -1264,13 +1262,14 @@ class Chat extends React.Component {
                                                                             : ""
                                                                         }
                                                                         <div className='shortMessageInfo'>
-                                                                            {data.user}<span className="messageTime">{this.dateToString(data.date)}</span>
-                                                                            <span className="messageTime">{data.status === true ? " R" : Array.isArray(data.status) ? (
-                                                                            data.status.map((name,i) => <span key={i} className="messageTime">{name}</span>)
-                                                                                ):("")}
+                                                                            {data.author}<span className="messageTime">{this.dateToString(data.date)}</span>
+                                                                            <span className="messageTime">
+                                                                               {
+                                                                                   data.recipients.length === 1 ? data.recipients[0].MessageData.status === true ? " R":"" :
+                                                                                       data.recipients.map((itm,i) => itm.MessageData.status === true ? <span key={i} className="messageTime">{itm.username}</span> : "")
+                                                                               }
                                                                             </span>
-                                                                            {/*<span className="messageTime">id:{data._id}</span>*/}
-                                                                            {data.forwardFrom !== undefined || data.forwardFrom !== null ? " Forwarded from: " + data.forwardFrom : ""}
+                                                                            {data.forwardFrom == null ? "" : " Forwarded from: " + data.forwardFrom.username }
                                                                         </div>
                                                                     </div>
                                                                 </li>
@@ -1278,12 +1277,12 @@ class Chat extends React.Component {
                                                                 <VisibilitySensor
                                                                     key={i+"VisibilitySensor"}
                                                                     containment={this.refs.InpUl}
-                                                                    onChange={(inView)=> inView && data.status !== true ? this.setAsRead(eUser.name,i,a,e,data._id) : ""}
+                                                                    onChange={(inView)=> inView && data.recipients.find(itm => itm.username === this.state.user.username).MessageData.status === false ? this.setAsRead(eUser.name,data._id) : ""}
                                                                 >
                                                                     <li className={`left ${this.state.messageLink === data._id ? 'active' :''}`}  key={i} ref={data._id}
                                                                         onClick={()=>{
-                                                                            data.status === false || (Array.isArray(data.status) && !data.status.includes(this.state.user.username)) ?
-                                                                                this.setAsRead(eUser.name,i,a,e,data._id) : ""
+                                                                            data.recipients.find(itm => itm.username === this.state.user.username).MessageData.status === false  ?
+                                                                                this.setAsRead(eUser.name,data._id) : ""
                                                                         }}
                                                                     >
                                                                         {data.text}
@@ -1307,14 +1306,12 @@ class Chat extends React.Component {
                                                                                  : ""
                                                                              }
                                                                             <div className='shortMessageInfo'>
-                                                                                  {data.user}
+                                                                                  {data.author}
                                                                                 <span className="messageTime">{this.dateToString(data.date)}</span>
-                                                                                {data.status === true ?
-                                                                                    "" : Array.isArray(data.status) ? data.status.includes(this.state.user.username) ? "" :
-                                                                                        <span className="messageTime">UR</span> :
-                                                                                        <span className="messageTime">UR</span>
+                                                                                {
+                                                                                    data.recipients.find(itm => itm.username === this.state.user.username).MessageData.status === true ? "":" UR"
                                                                                 }
-                                                                                {data.forwardFrom !== undefined ? " Forwarded from: " + data.forwardFrom : ""}
+                                                                                {data.forwardFrom == null ? "" : " Forwarded from: " + data.forwardFrom.username }
                                                                             </div>
 
 

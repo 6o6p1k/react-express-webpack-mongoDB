@@ -8,7 +8,7 @@ const sequelize = new Sequelize(pgConf.database,pgConf.username, pgConf.password
     host: 'localhost',
     dialect: 'postgres',
 });
-//var sequelize = require('../sequelize');
+const { Op } = require("sequelize");
 
 const User = sequelize.define('user', {
     _id: {
@@ -42,23 +42,36 @@ const User = sequelize.define('user', {
         type: Sequelize.STRING,
         allowNull: false,
     },
-    // contacts: {
-    //     type: Sequelize.ARRAY(Sequelize.TEXT),
-    //     allowNull: true,
-    //     defaultValue: []
-    // },
-    // blockedContacts: {
-    //     type: Sequelize.ARRAY(Sequelize.TEXT),
-    //     allowNull: true,
-    //     defaultValue: []
-    // },
-    // rooms:{
-    //     type: Sequelize.ARRAY(Sequelize.TEXT),
-    //     allowNull: true,
-    //     defaultValue: []
-    // },
 }, {tableName: 'user'});
 User.sync();
+//
+var Contacts = sequelize.define('Contacts', {
+    userId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+    },
+    contactId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+    },
+}, { timestamps: false,tableName: 'Contacts' });
+Contacts.sync();
+//
+var BlockedContacts = sequelize.define('BlockedContacts', {
+    userId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+    },
+    blockedContactId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+    },
+}, { timestamps: false,tableName: 'BlockedContacts' });
+BlockedContacts.sync();
+//
+User.belongsToMany(User, {as:'contacts',otherKey:'contactId',foreignKey:'userId',through: 'Contacts'});
+User.belongsToMany(User, {as:'blockedContacts',otherKey:'blockedContactId',foreignKey:'userId',through: 'BlockedContacts'});
+//
 var Room = sequelize.define('room', {
     _id: {
         type: Sequelize.INTEGER,
@@ -72,20 +85,18 @@ var Room = sequelize.define('room', {
         allowNull: false,
         unique: true
     },
-    // members: {
-    //     type: Sequelize.ARRAY(Sequelize.TEXT),
-    //     allowNull: true,
-    //     defaultValue: []
-    // },
-    // blockedMembers: {
-    //     type: Sequelize.ARRAY(Sequelize.TEXT),
-    //     allowNull: true,
-    //     defaultValue: []
-    // },
 }, {tableName: 'room'});
 Room.sync();
-
+//
 var UserRoom = sequelize.define('UserRoom', {
+    roomId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+    },
+    userId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+    },
     enable:{
         type: Sequelize.BOOLEAN,
         allowNull: false,
@@ -97,23 +108,15 @@ var UserRoom = sequelize.define('UserRoom', {
         defaultValue:false,
     },
 }, { timestamps: false,tableName: 'UserRoom' });
-
-
+UserRoom.sync();
+//
 Room.belongsToMany(User, {as: 'members', through: UserRoom});
 //Magic methods setMembers, addMembers, removeMembers eth..
-Room.belongsToMany(User, {as: 'blockedMembers', through: UserRoom});//"roomBlockedMembers"
+Room.belongsToMany(User, {as: 'blockedMembers', through: UserRoom});
 //Magic methods setBlockedMembers, addBlockedMembers, removeBlockedMembers eth..
 User.belongsToMany(Room, {as:'rooms', through: UserRoom});
 //Magic methods setRooms, addRooms, removeRooms eth..
-User.hasMany(User, {as:'contacts'});
-User.hasMany(User, {as:'blockedContacts'});
-
-
-
-// User.belongsToMany(Room, {as: 'rooms',through: 'UserRoom', foreignKey: 'userId'});
-// Room.belongsToMany(User, {as: 'members',through: 'UserRoom', foreignKey: 'roomId'});
-// Room.belongsToMany(User, {as: 'blockedMembers',through: 'UserRoom', foreignKey: 'roomId'});
-
+//
 const Message = sequelize.define('message', {
     _id: {
         type: Sequelize.INTEGER,
@@ -122,68 +125,113 @@ const Message = sequelize.define('message', {
         autoIncrement: true,
         unique: true
     },
-    uniqSig: {
-        type: Sequelize.STRING,
-        allowNull: false,
-    },
-    members: {//members of conversation
-        type: Sequelize.ARRAY(Sequelize.TEXT),
-        allowNull: false,
-        defaultValue: []
-    },
     text: {//message text
         type: Sequelize.STRING,
         allowNull: false,
     },
-    user:{//author
+    author:{
+        type: Sequelize.STRING,
+        allowNull: false,
+    },
+    sig: {//message text
         type: Sequelize.STRING,
         allowNull: false,
     },
     forwardFrom:{
-        type: Sequelize.STRING,
-        allowNull: true,
-        defaultValue: undefined
-    },
-    status:{
-        type: Sequelize.BOOLEAN,
-        allowNull: false,
-        defaultValue:false,
-    },
-    statusCheckArr:{
-        type: Sequelize.ARRAY(Sequelize.TEXT),
-        allowNull: true,
-        defaultValue: []
+        type: Sequelize.INTEGER,
     },
     date:{
         type: Sequelize.DATE,
         allowNull: false,
     },
 }, {tableName: 'message'});
-//Message.hasMany(User, {as: 'Members'});
+Message.sync();
+//
+const MessageData  = sequelize.define('MessageData', {
+    messageId:{
+        type: Sequelize.INTEGER,
+        allowNull: false,
+    },
+    userId:{
+        type: Sequelize.INTEGER,
+        allowNull: false,
+    },
+    status:{//author
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue:false,
+    },
+});
+MessageData.sync();
+//
+Message.belongsToMany(User, {as: 'recipients',through: MessageData});
+Message.belongsTo(User, {foreignKey:'forwardFrom'});
 Message.sync();
 
+Message.prototype.reformatData = async function() {
+    let mes = JSON.stringify(this);
+    mes = JSON.parse(mes);
+    console.log("Message.prototype.reformatData mes: ", mes);
+    if(Array.isArray(mes)){
+        return mes.map((itm) => {
+            itm.recipients.forEach((user) => {
+                user['status'] = user.MessageData.status;
+                delete user.MessageData
+            });
+            return itm;
+        });
+    } else {
+        mes.recipients.forEach((user) => {
+            user['status'] = user.MessageData.status;
+            delete user.MessageData
+        });
+        return mes;
+    }
+};
+
 //message methods
-Message.messageHandler = async function (data) {
+Message.messageHandler = async function (data,limit) {
     var Message = this;
-    let mes = {};
+    //let mes = {};
     let err = {};
     //let sig = setGetSig(data.members);
     console.log('DB messageHandler: ',data);
     try {
         if(data.message) {//write data
-            mes = await Message.create({
-                uniqSig: data.sig,//signature from sorted names or Room name
-                members: data.members,//conversation members
-                text: data.message.text,//message
-                user:data.message.user,//author
-                status:data.message.status,//message status read or not
-                statusCheckArr:[],//status of users who read this message
-                date:data.message.date,//data
+            let mes = await Message.create({text: data.message.text,sig:data.sig,date:data.message.date,author:data.message.author});
+            for (let name of data.members) {
+                if(name !== data.message.author) await mes.addRecipient(await User.findOne({where:{username:name}}))
+            }
+            mes = await Message.findOne({
+                where: {_id:mes._id},
+                include:{
+                    model:User,
+                    as:'recipients',
+                    attributes: ['username'],
+                    through: {attributes: ['status']}
+                }
             });
-            console.log('DB messageHandler mes: ',mes);
+            //await mes.reformatData();
+            //console.log('DB messageHandler mes: ',mes);
             return {err:null,mes:mes};//return current message
         }else {//read data and return log
-            return {err:null,mes:{messages: await Message.findAll({raw: true,where:{uniqSig:data.sig}})}};
+            let mes = await Message.findAll({
+                limit:limit,
+                where:{sig:data.sig},
+                order: [
+                    [ 'createdAt', 'DESC' ],
+                ],
+                include:{
+                    model:User,
+                    as:'recipients',
+                    attributes: ['username'],
+                    through: {attributes: ['status']}
+                }
+            });
+            mes.sort((a,b) => a.createdAt > b.createdAt);
+            //await mes.reformatData();
+            //console.log('DB messageHandler mes2: ',mes);
+            return {err:null,mes: mes};
         }
     } catch(err) {
         console.log('messageHandler err: ',err);
@@ -191,10 +239,7 @@ Message.messageHandler = async function (data) {
     }
 };
 //////////////////////////////////////////////////////////////////
-
-
-
-
+//internal methods
 User.prototype.encryptPassword = function(password) {
     console.log("encryptPassword password: ",password);
     return CryptoJS.HmacSHA1(password,this.salt).toString(CryptoJS.enc.Hex);
@@ -204,6 +249,26 @@ User.prototype.checkPassword = function(password) {
     console.log("checkPassword password: ",password);
     return  this.encryptPassword(password) === this.hashedPassword;
 };
+
+User.prototype.reformatData = async function() {
+    let nameUserDB = this;
+    //console.log("reformatData: ",nameUserDB);
+    nameUserDB = nameUserDB.toJSON();
+    if(nameUserDB.contacts) nameUserDB.contacts = nameUserDB.contacts.map(itm => itm.username) || [];
+    if(nameUserDB.blockedContacts) nameUserDB.blockedContacts = nameUserDB.blockedContacts.map(itm => itm.username) || [];
+    if(nameUserDB.rooms) nameUserDB.rooms = nameUserDB.rooms.map(itm => itm.name)  || [];
+    return nameUserDB
+};
+
+Room.prototype.reformatData = async function() {
+    let nameUserDB = this;
+    //console.log("reformatData: ",nameUserDB);
+    nameUserDB = nameUserDB.toJSON();
+    nameUserDB.members = nameUserDB.members.map(itm => itm.username);
+    nameUserDB.blockedMembers = nameUserDB.blockedMembers.map(itm => itm.username);
+    return nameUserDB
+};
+
 //user methods
 User.authorize = async function(paramAuth) {
     let User = this;
@@ -237,60 +302,22 @@ User.userATC = async function (reqUser,contact) {//AddToContacts
     console.log('userATC userReq: ',reqUser,",","moving contact: ",contact);
     try {
         if(reqUser === contact) return ({err:"Rejected, you tried to add themselves.",user:null});
-        user = await User.findOne({raw: true,where:{username:reqUser}});
+        user = await User.findOne({
+            where:{username:reqUser},
+            include: [
+                {model: User,as:'contacts'},
+                {model: User,as:'blockedContacts'},
+            ],
+        });
+        console.log('AddToContacts user: ',user);
         if(!user) return ({err:"No user name "+reqUser+" found.",user:null});
-        if(user.contacts.includes(contact)) return ({err:null,user:user});
-        user = await User.update(
-            {contacts:[...user.contacts,contact]},
-            {where:{username:reqUser}}
-        );
+        if(user.contacts.map(itm => itm.name).includes(contact)) return ({err:null,user:user});
+        let newContact = await User.findOne({where:{username:contact}});
+        if(!newContact) return ({err:"No user name "+contact+" found.",user:null});
+        user = await user.addContacts(newContact);
         return ({err:null,user:user});
     } catch(err) {
         console.log('userATC err: ',err);
-        return {err:err,user:null};
-    }
-};
-//
-User.userMFCTBC = async function (reqUser,contact) {//MoveFromContactsToBlockedContacts
-    let User = this;
-    let user = {};
-    //console.log('userMFBCTC userReq: ',reqUser,",","moving contact: ",contact);
-    try {
-        user = await User.findOne({raw: true,where:{username:reqUser}});
-        if(!user) return ({err:"No user name "+reqUser+" found.",user:null});
-        if(user.blockedContacts.includes(contact)) return {err:"You always moved contact.",user:null};
-        user = await User.update(
-            {
-                contacts:[...user.contacts.filter(itm => itm !== contact)],
-                blockedContacts:[...user.blockedContacts,contact]
-            },
-            {where:{username:reqUser}}
-        );
-        return {err:null,user:user};
-    } catch(err) {
-        console.log('userMFCTBC err: ',err);
-        return {err:err,user:null};
-    }
-};
-//
-User.userMFBCTC = async function (reqUser,contact) {//MoveFromBlockedContactsToContacts
-    let User = this;
-    let user = {};
-    //console.log('userMFBCTC userReq: ',reqUser,",","moving contact: ",contact);
-    try {
-        user = await User.findOne({raw: true,where:{username:reqUser}});
-        if(!user) return ({err:"No user name "+reqUser+" found.",user:null});
-        if(user.contacts.includes(contact)) return {err:"You always send request",user:null};
-        user = await User.update(
-            {
-                blockedContacts:[...user.blockedContacts.filter(itm => itm !== contact)],
-                contacts:[...user.contacts,contact]
-            },
-            {where:{username:reqUser}}
-        );
-        return {err:null,user:user};
-    } catch(err) {
-        console.log('userMFBCTC err: ',err);
         return {err:err,user:null};
     }
 };
@@ -300,13 +327,19 @@ User.userATBC = async function (reqUser,contact) {//AddToBlockedContacts
     let user = {};
     console.log('userATBC userReq: ',reqUser,",","moving contact: ",contact);
     try {
-        user = await User.findOne({raw: true,where:{username:reqUser}});
+        if(reqUser === contact) return ({err:"Rejected, you tried to add themselves.",user:null});
+        user = await User.findOne({
+            where:{username:reqUser},
+            include: [
+                {model: User,as:'contacts'},
+                {model: User,as:'blockedContacts'},
+            ],
+        });
         if(!user) return ({err:"No user name "+reqUser+" found.",user:null});
-        if(user.blockedContacts.includes(contact) || user.contacts.includes(contact)) return ({err:null,user:user});
-        user = await User.update(
-            {blockedContacts:[...user.blockedContacts,contact]},
-            {where:{username:reqUser}}
-        );
+        if(user.blockedContacts.map(itm => itm.name).includes(contact)) return ({err:"You always add this user to Blocked contacts.",user:null});
+        let newContact = await User.findOne({where:{username:contact}});
+        if(!newContact) return ({err:"No user name "+contact+" found.",user:null});
+        user = await user.addBlockedContacts(newContact);
         return ({err:null,user:user});
     } catch(err) {
         console.log('userATBC err: ',err);
@@ -314,47 +347,103 @@ User.userATBC = async function (reqUser,contact) {//AddToBlockedContacts
     }
 };
 //
-User.userRFAL = async function (reqUser,contact) {//RemoveFromAllList
+User.userMFBCTC = async function (reqUser,contact) {//MoveFromBlockedContactsToContacts
     let User = this;
     let user = {};
-    console.log('userRFAL userReq: ',reqUser,",","moving contact: ",contact);
+    //console.log('userMFBCTC userReq: ',reqUser,",","moving contact: ",contact);
     try {
-        user = await User.findOne({rew:true,where:{username:reqUser}});
+        if(reqUser === contact) return ({err:"Rejected, you tried to add themselves.",user:null});
+        user = await User.findOne({
+            where:{username:reqUser},
+            include:[
+                {model: User,as:'contacts'},
+                {model: User,as:'blockedContacts'},
+                ]
+        });
+        await user.reformatData();
         if(!user) return ({err:"No user name "+reqUser+" found.",user:null});
-        user = await User.update(
-            {
-                blockedContacts:[...user.blockedContacts.filter(itm => itm !== contact)],
-                contacts:[...user.contacts.filter(itm => itm !== contact)]
-            },
-            {where:{username:reqUser}}
-        );
+        if(user.contacts.includes(contact)) return ({err:"You always add this user to contacts.",user:null});
+        let newContact = await User.findOne({where:{username:contact}});
+        if(!newContact) return ({err:"No user name "+contact+" found.",user:null});
+        await user.removeBlockedContacts(newContact);
+        user = await user.addContacts(newContact);
         return {err:null,user:user};
     } catch(err) {
-        console.log('userRFAL err: ',err);
+        console.log('userMFBCTC err: ',err);
         return {err:err,user:null};
     }
 };
 //
-User.findOneAndCheckPass = async function (data) {
+User.userMFCTBC = async function (reqUser,contact) {//MoveFromContactsToBlockedContacts
     let User = this;
     let user = {};
-    let err = {};
-    console.log('findOneAndCheckPass data: ',data);
+    //console.log('userMFBCTC userReq: ',reqUser,",","moving contact: ",contact);
     try {
-        user = await User.findOne({where:{username: data.username}});
-        if(user.checkPassword(data.password)) {
-            return {err:null,user:user};
-        } else {
-            err = new AuthError("Password is incorrect");
-            console.log('user.err: ',err);
-            return {err:err,user:null};
-        }
+        if(reqUser === contact) return ({err:"Rejected, you tried to add themselves.",user:null});
+        user = await User.findOne({
+            where:{username:reqUser},
+            include:[
+                {model: User,as:'contacts'},
+                {model: User,as:'blockedContacts'},
+            ]
+        });
+        await user.reformatData();
+        if(!user) return ({err:"No user name "+reqUser+" found.",user:null});
+        if(user.blockedContacts.includes(contact)) return {err:"You always moved contact.",user:null};
+        let newContact = await User.findOne({where:{username:contact}});
+        if(!newContact) return ({err:"No user name "+contact+" found.",user:null});
+        await user.removeContacts(newContact);
+        user = await user.addBlockedContacts(newContact);
+        return {err:null,user:user};
     } catch(err) {
-        console.log('findOneAndCheckPass err: ',err);
+        console.log('userMFCTBC err: ',err);
         return {err:err,user:null};
     }
-
 };
+//
+//
+// //
+// User.userRFAL = async function (reqUser,contact) {//RemoveFromAllList
+//     let User = this;
+//     let user = {};
+//     console.log('userRFAL userReq: ',reqUser,",","moving contact: ",contact);
+//     try {
+//         user = await User.findOne({rew:true,where:{username:reqUser}});
+//         if(!user) return ({err:"No user name "+reqUser+" found.",user:null});
+//         user = await User.update(
+//             {
+//                 blockedContacts:[...user.blockedContacts.filter(itm => itm !== contact)],
+//                 contacts:[...user.contacts.filter(itm => itm !== contact)]
+//             },
+//             {where:{username:reqUser}}
+//         );
+//         return {err:null,user:user};
+//     } catch(err) {
+//         console.log('userRFAL err: ',err);
+//         return {err:err,user:null};
+//     }
+// };
+// //
+// User.findOneAndCheckPass = async function (data) {
+//     let User = this;
+//     let user = {};
+//     let err = {};
+//     console.log('findOneAndCheckPass data: ',data);
+//     try {
+//         user = await User.findOne({where:{username: data.username}});
+//         if(user.checkPassword(data.password)) {
+//             return {err:null,user:user};
+//         } else {
+//             err = new AuthError("Password is incorrect");
+//             console.log('user.err: ',err);
+//             return {err:err,user:null};
+//         }
+//     } catch(err) {
+//         console.log('findOneAndCheckPass err: ',err);
+//         return {err:err,user:null};
+//     }
+//
+// };
 //
 
 //
@@ -565,6 +654,7 @@ Room.createRoom = async function(roomName,username) {
 module.exports.User = User;
 module.exports.Message = Message;
 module.exports.Room = Room;
+module.exports.MessageData = MessageData;
 
 
 
